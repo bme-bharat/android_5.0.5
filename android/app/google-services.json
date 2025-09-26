@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "508112170615",
+    "project_id": "bme-bharat-app",
+    "storage_bucket": "bme-bharat-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:508112170615:android:69aa0462aeb6e9bacaa072",
+        "android_client_info": {
+          "package_name": "com.bmebharat.newapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCJ6R6IaNcxhca_CgxZZX4HW75fllLRWGo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

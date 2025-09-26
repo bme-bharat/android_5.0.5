@@ -1,0 +1,730 @@
+import { useEffect, useRef, useState } from 'react';
+import { Modal, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { OtpInput } from "react-native-otp-entry";
+import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import RNRestart from 'react-native-restart';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+import { showToast } from '../AppUtils/CustomToast';
+
+export const useDeleteAccountFlow = (phoneNumber) => {
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [step, setStep] = useState(1);
+  const [otp, setOTP] = useState('');
+  const otpRef = useRef('');
+  const [timer, setTimer] = useState(30);
+  const [isResendEnabled, setIsResendEnabled] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  
+  useEffect(() => {
+    if (step !== 2 || timer <= 0) return;
+  
+    const interval = setTimeout(() => {
+      setTimer((prev) => {
+        const next = prev - 1;
+        if (next === 0) setIsResendEnabled(true);
+        return next;
+      });
+    }, 1000);
+  
+    return () => clearTimeout(interval);
+  }, [timer, step]);
+  
+
+  const sendOtp = async () => {
+    try {
+      await axios.post(
+        'https://h7l1568kga.execute-api.ap-south-1.amazonaws.com/dev/sendVerifyOtpMsg91',
+        { command: 'sendVerifyOtpMsg91', user_phone_number: phoneNumber },
+        { headers: { 'x-api-key': 'k1xuty5IpZ2oHOEOjgMz57wHfdFT8UQ16DxCFkzk' } }
+      );
+      showToast("OTP Sent", 'success');
+    } catch {
+      showToast("Failed to send OTP", 'error');
+    }
+  };
+
+  const resendHandle = async () => {
+    try {
+      await axios.post(
+        'https://h7l1568kga.execute-api.ap-south-1.amazonaws.com/dev/resendOtpMsg91',
+        { command: 'resendOtpMsg91', user_phone_number: phoneNumber },
+        { headers: { 'x-api-key': 'k1xuty5IpZ2oHOEOjgMz57wHfdFT8UQ16DxCFkzk' } }
+      );
+      showToast("OTP resent", 'success');
+      setTimer(30);
+      setIsResendEnabled(false);
+    } catch {
+      showToast("Failed to resend OTP", 'error');
+    }
+  };
+
+  const handleVerifyOTP = async () => {
+    const enteredOTP = otpRef.current;
+    if (enteredOTP.length !== 6 || !/^\d{6}$/.test(enteredOTP)) {
+      showToast("Please enter a valid 6 digit OTP", 'error');
+      return;
+    }
+
+    try {
+      const res = await axios.post(
+        'https://h7l1568kga.execute-api.ap-south-1.amazonaws.com/dev/verifyOtpMsg91',
+        {
+          command: 'verifyOtpMsg91',
+          otp: enteredOTP,
+          user_phone_number: phoneNumber,
+        },
+        {
+          headers: {
+            'x-api-key': 'k1xuty5IpZ2oHOEOjgMz57wHfdFT8UQ16DxCFkzk',
+          },
+        }
+      );
+
+      if (res.data.type === 'success') {
+        await deleteAccount();
+      } else {
+        showToast("OTP doesn't match", 'error');
+      }
+    } catch {
+      showToast("Try again later", 'error');
+    }
+  };
+
+  const deleteAccount = async () => {
+    if (isDeleting) return;
+    setIsDeleting(true);
+
+    try {
+      const res = await axios.post(
+        'https://h7l1568kga.execute-api.ap-south-1.amazonaws.com/dev/deleteAccount',
+        {
+          command: 'deleteAccount',
+          user_phone_number: phoneNumber,
+        },
+        {
+          headers: { 'x-api-key': 'k1xuty5IpZ2oHOEOjgMz57wHfdFT8UQ16DxCFkzk' },
+        }
+      );
+
+      if (res.data.status === 'success') {
+        showToast("Account deleted successfully", 'success');
+        await AsyncStorage.removeItem('CompanyUserData');
+        await AsyncStorage.removeItem('CompanyUserlogintimeData');
+        RNRestart.Restart();
+      } else {
+        showToast("Account deletion failed", 'error');
+      }
+    } catch {
+      showToast("You don't have an internet connection", 'error');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleDeleteClick = () => {
+    setStep(1);
+    setOTP('');
+    otpRef.current = '';
+    setTimer(30);
+    setIsResendEnabled(false);
+    setIsModalVisible(true); // always at end
+  };
+  
+  useEffect(() => {
+    console.log("Modal visibility:", isModalVisible);
+  }, [isModalVisible]);
+  
+  const handleYesClick = () => {
+    setStep(2);
+    setOTP('');
+    otpRef.current = '';
+    setTimer(30);
+    setIsResendEnabled(false);
+    sendOtp();
+  };
+
+  const handleNoClick = () => {
+    setIsModalVisible(false);
+    setStep(1);
+    setOTP('');
+    otpRef.current = '';
+    setTimer(0); // <-- force reset to zero
+    setIsResendEnabled(false); // <--- clear the resend state
+  };
+  
+
+  const DeleteModal = () => (
+    <Modal
+      visible={isModalVisible}
+      onRequestClose={() => setIsModalVisible(false)}
+      transparent={true}
+      animationType="fade"
+    >
+      <View style={styles.modalBackground}>
+        <View style={styles.modalContainer1}>
+          <TouchableOpacity onPress={handleNoClick} style={styles.closeIconContainer}>
+            <Text style={styles.closeText}>✕</Text>
+          </TouchableOpacity>
+
+          {step === 1 ? (
+            <>
+              <View style={styles.warningContainer}>
+                <Ionicons name="warning" size={30} color="orange" />
+              </View>
+              <Text style={styles.modalTitle}>Confirm Deletion</Text>
+              <Text style={styles.deletionText}>
+                Are you sure you want to delete your account?{'\n\n'}By confirming, you will permanently lose all data
+                associated with this account within 5 business days. This action is irreversible. {'\n\n'}
+                <Text style={styles.deletionText1}>Do you wish to proceed?</Text>
+              </Text>
+              <View style={styles.buttonContainer}>
+                <TouchableOpacity style={styles.confirmButton} onPress={handleYesClick}>
+                  <Text style={styles.confirmButtonText}>Yes</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.cancelButton} onPress={handleNoClick}>
+                  <Text style={styles.cancelButtonText}>No</Text>
+                </TouchableOpacity>
+              </View>
+            </>
+          ) : (
+            <>
+              <View style={styles.scrollViewContainer}>
+                <Text style={styles.infoText}>Enter the OTP sent to: {phoneNumber}</Text>
+
+                <OtpInput
+                  numberOfDigits={6}
+                  focusColor="#075cab"
+                  autoFocus
+                  placeholder="•"
+                  type="numeric"
+                  secureTextEntry={false}
+                  focusStickBlinkingDuration={500}
+                  onTextChange={(text) => {
+                    setOTP(text);
+                    otpRef.current = text;
+                  }}
+                  onFilled={(text) => {
+                    setOTP(text);
+                    otpRef.current = text;
+                    handleVerifyOTP();
+                  }}
+                  theme={{
+                    containerStyle: styles.otpContainer,
+                    pinCodeContainerStyle: styles.pinCodeContainer,
+                    pinCodeTextStyle: styles.pinCodeText,
+                    focusStickStyle: styles.focusStick,
+                    focusedPinCodeContainerStyle: styles.activePinCodeContainer,
+                    placeholderTextStyle: styles.placeholderText,
+                    filledPinCodeContainerStyle: styles.filledPinCodeContainer,
+                    disabledPinCodeContainerStyle: styles.disabledPinCodeContainer,
+                  }}
+                />
+
+                <View style={styles.actionsRow}>
+                  {isResendEnabled ? (
+                    <TouchableOpacity onPress={resendHandle} style={styles.resendButton}>
+                      <Text style={styles.resendButtonText}>Resend OTP</Text>
+                    </TouchableOpacity>
+                  ) : (
+                    <Text style={styles.timerText}>Resend in {timer}s</Text>
+                  )}
+                  <TouchableOpacity onPress={handleVerifyOTP} style={styles.verifyButton}>
+                    <Text style={styles.resendButtonText}>Verify OTP</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </>
+          )}
+        </View>
+      </View>
+    </Modal>
+  );
+
+  return {
+    handleDeleteClick,
+    DeleteModal,
+  };
+};
+
+
+
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#ffffff',
+
+  },
+  headerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: 'white',
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+  },
+  noServicesText: {
+    textAlign: 'center',
+    padding: 20,
+    color: '#666',
+    fontSize: 16,
+  },
+
+  loaderContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+
+  },
+  noProductsText: {
+    textAlign: 'center',
+    marginTop: 20,
+    fontSize: 16,
+    color: 'black',
+    fontWeight: '500',
+    marginBottom: 100
+  },
+
+  backButton: {
+    alignSelf: 'flex-start',
+    padding: 10,
+
+  },
+
+  circle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    // paddingVertical: 10,
+    padding: 10,
+    // marginTop: 10,
+    borderRadius: 8,
+  },
+
+  shareText: {
+    color: '#075cab',
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 4,
+
+  },
+  pdfButton: {
+    backgroundColor: 'white',
+    borderRadius: 5,
+    marginTop: 15,
+    alignSelf: 'center',
+    borderWidth: 0.5,
+    borderColor: '#075cab',
+    width: "40%",
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  pdfButtonText: {
+    color: '#075cab',
+    textAlign: 'center',
+    fontSize: 13,
+    fontWeight: '500',
+  },
+
+
+  scrollViewContent: {
+    elevation: 1,
+    backgroundColor: 'white'
+  },
+  title: {
+    flex: 1,
+    justifyContent: 'space-between',
+    flexDirection: 'row',  // Align label and detail in a row
+    alignItems: 'center',  // Center the items vertically
+    marginVertical: 4,
+    paddingHorizontal: 5,
+    paddingVertical: 5,
+
+  },
+
+
+  label: {
+    flex: 1, // Take up available space
+    color: 'black',
+    fontWeight: '500',
+    fontSize: 15,
+    textAlign: 'left', // Align text to the left
+    alignSelf: 'flex-start',
+  },
+  detailsContainer: {
+    marginTop: 20,
+  },
+  title1: {
+    flex: 1,
+    justifyContent: 'space-between',
+    flexDirection: 'row',  // Align label and detail in a row
+    alignItems: 'center',  // Center the items vertically
+    backgroundColor: 'white',
+    shadowColor: '#0d6efd', // iOS shadow color
+    shadowOffset: { width: 0, height: 2 }, // iOS shadow offset
+    shadowOpacity: 0.2, // iOS shadow opacity
+    shadowRadius: 3, // iOS shadow radius
+    borderRadius: 10,
+    padding: 10,
+    marginVertical: 5,
+    marginHorizontal: 10
+  },
+  colon: {
+    width: 20, // Fixed width for the colon
+    textAlign: 'center', // Center the colon
+    color: 'black',
+    fontWeight: '500',
+    fontSize: 15,
+    alignSelf: 'flex-start',
+  },
+
+  value: {
+    flex: 2, // Take the remaining space
+    flexShrink: 1,
+    color: 'black',
+    fontWeight: '400',
+    fontSize: 15,
+    textAlign: 'left', // Align text to the left
+    alignSelf: 'flex-start',
+  },
+
+
+  addProductButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    marginTop: 10,
+    borderRadius: 8,
+    backgroundColor: '#f0f0f0',
+  },
+  addProductText: {
+    fontSize: 16,
+    color: '#075cab',
+    marginLeft: 8,
+  },
+
+  productImage: {
+    width: '100%',
+    height: 150,
+    borderRadius: 10,
+    marginTop: 10,
+
+  },
+  serviceImage: {
+    width: '100%',
+    height: 150,
+    borderRadius: 10,
+    marginTop: 10,
+
+  },
+
+  signOutButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+    justifyContent: "center",
+    alignItems: 'center',
+    flexDirection: 'row',
+    borderRadius: 5,
+    width: 'auto',
+    alignSelf: 'center',
+    minWidth: 120,
+    maxWidth: 200,
+  },
+
+  signOutButtonText: {
+    color: "#075cab",
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 5,
+    alignSelf: 'center'
+  },
+  deleteAccountButton: {
+    justifyContent: "center",
+    alignItems: 'center',
+    flexDirection: 'row',
+    borderRadius: 5,
+    marginTop: 10,
+    width: 'auto', // Ensure it doesn't take full width
+    alignSelf: 'center',
+    minWidth: 180, // Optional: ensures a minimum size for the button
+    maxWidth: 200,
+  },
+  deleteAccountButtonText: {
+    color: "red",
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 5,
+  },
+
+  modalContainerImage: { flex: 1, backgroundColor: 'black' },
+  modalContainerImage2: { flex: 1, backgroundColor: 'white' },
+  closeButton1: { position: 'absolute', top: 70, right: 20 },
+  modalImage: { width: '100%', height: '100%', resizeMode: 'contain' },
+
+  imageContainer: {
+    width: 140,
+    height: 140,
+    borderRadius: 80,
+    alignSelf: 'center',
+    marginTop: 20,
+  },
+  detailImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 80,
+    overflow: 'hidden',
+
+  },
+
+  rowContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginTop: 20,
+    marginBottom: 5,
+
+  },
+  tabButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 5,
+    backgroundColor: '#f9f9f9',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 0.5,
+    borderColor: '#075cab',
+  },
+
+  tabButtonText: {
+    color: '#075cab',
+    fontSize: 13,
+    fontWeight: '500',
+  },
+
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalContent: {
+    width: '85%',
+    backgroundColor: '#ffffff',
+    borderRadius: 10,
+    padding: 20,
+    elevation: 5,
+  },
+
+
+  dropdownItem: {
+    padding: 10,
+  },
+  dropdownItemText: {
+    fontSize: 15,
+    color: '#000',
+  },
+  selectedDetailsContainer: {
+    marginTop: 20,
+    padding: 10,
+    backgroundColor: '#ffffff',
+    borderRadius: 10,
+    elevation: 4, // Shadow for Android
+    shadowColor: '#000', // Shadow color for iOS
+    shadowOffset: { width: 0, height: 2 }, // Shadow offset for iOS
+    shadowOpacity: 0.2, // Shadow opacity for iOS
+    shadowRadius: 4, // Shadow radius for iOS
+  },
+
+  modalContainer1: {
+    width: '90%',
+    backgroundColor: 'white',
+    padding: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+
+  },
+  modalBackground: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  closeIconContainer: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    zIndex: 1,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    borderRadius: 20,
+    width: 25,
+    height: 25,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  closeText: {
+    color: 'white',
+    fontSize: 10,
+    fontWeight: 'bold',
+},
+  warningContainer: {
+    backgroundColor: 'white',
+    padding: 15,
+    borderRadius: 50,
+    marginBottom: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 5, // Add shadow for Android
+    shadowColor: '#000', // Shadow for iOS
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+  },
+  modalTitle: {
+    fontSize: 15,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 15,
+    textAlign: 'center',
+  },
+
+  deletionText: {
+    fontSize: 16,
+    color: 'black',
+    textAlign: 'justify',
+    lineHeight: 22,
+    marginBottom: 25,
+  },
+  deletionText1: {
+    fontSize: 16,
+    color: 'black',
+    textAlign: 'justify',
+    lineHeight: 22,
+    marginBottom: 25,
+    fontWeight: '500',
+  },
+
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    width: '100%',
+    paddingHorizontal: 20,
+    marginTop: 15,
+  },
+  confirmButton: {
+    // backgroundColor: '#e53935',
+    borderRadius: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 25,
+    marginHorizontal: 10,
+    //  ?
+
+  },
+  confirmButtonText: {
+    color: 'red',
+    fontSize: 16,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  cancelButton: {
+    // backgroundColor: '#ccc',
+    borderRadius: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 25,
+    marginHorizontal: 10,
+    // borderWidth: 1,
+    // borderColor: '#ccc',
+  },
+  cancelButtonText: {
+    color: 'green',
+    fontSize: 16,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+
+
+
+  otpContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+  },
+  pinCodeContainer: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 10,
+    width: 40,
+    height: 45,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginHorizontal: 5,
+  },
+  activePinCodeContainer: {
+    borderColor: '#075cab',
+  },
+  filledPinCodeContainer: {
+    backgroundColor: '#eaf4ff',
+    borderColor: '#075cab',
+  },
+  disabledPinCodeContainer: {
+    backgroundColor: '#f2f2f2',
+  },
+  pinCodeText: {
+    fontSize: 20,
+    color: '#000',
+    fontWeight: '400',
+  },
+  focusStick: {
+    width: 2,
+    height: 25,
+    backgroundColor: '#075cab',
+  },
+  placeholderText: {
+    color: '#aaa',
+  },
+  actionsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 20,
+    marginHorizontal: 15
+  },
+
+  resendButtonText: {
+    color: '#075cab',
+    fontSize: 16,
+    fontWeight: '500',
+    padding: 10,
+
+  },
+  timerText: {
+    color: '#999',
+    fontSize: 14,
+  },
+  verifyButton: {
+    alignSelf: 'flex-end',
+  },
+  resendButton: {
+    alignSelf: 'flex-end',
+  },
+  infoText: {
+    fontSize: 16,
+    textAlign: 'center',
+    marginBottom: 10,
+    color: '#333',
+    fontWeight: '500'
+  },
+  scrollViewContainer: {
+    flexGrow: 1,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 10,
+    justifyContent: 'flex-start',
+
+  },
+});
