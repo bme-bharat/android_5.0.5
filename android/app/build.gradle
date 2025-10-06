@@ -121,24 +121,24 @@ android {
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
         }
     }
-    packagingOptions {
-        jniLibs {
-            useLegacyPackaging = false
-        }
-    }
 
-    aaptOptions {
-        noCompress "so"
-    }
-
-    splits {
-        abi {
-            enable false
-            reset()
-            include 'armeabi-v7a', 'arm64-v8a', 'x86', 'x86_64'  // Target architectures
-            universalApk false  // Prevent large universal APK
+        packagingOptions {
+            jniLibs {
+                useLegacyPackaging = false
+                pickFirsts += ['**/*.so']  // include only first if duplicates exist
+                excludes += ['**/x86/*', '**/x86_64/*']  // remove emulator ABIs
+            }
         }
-    }
+
+    
+        splits {
+            abi {
+                enable true
+                reset()
+                include 'armeabi-v7a', 'arm64-v8a' // Target architectures
+                universalApk false  // Prevent large universal APK
+            }
+        }
 }
 
 dependencies {
@@ -152,7 +152,6 @@ dependencies {
 
     implementation platform('com.google.firebase:firebase-bom:32.3.0')
     implementation 'com.google.firebase:firebase-messaging'
-
     // Use Hermes
     implementation("com.facebook.react:hermes-android")
 }

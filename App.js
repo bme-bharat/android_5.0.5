@@ -635,6 +635,11 @@ const AppContent = () => {
 
         </GestureHandlerRootView>
       </Suspense>
+      <View style={{
+        flex: 0,
+        paddingBottom: safeAreaInsets.bottom,
+        backgroundColor: '#000'
+      }} />
 
       <UpdateModal
         modalVisible={modalVisible}
