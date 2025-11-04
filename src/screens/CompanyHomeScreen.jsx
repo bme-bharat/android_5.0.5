@@ -233,7 +233,7 @@ const CompanyHomeScreen = React.memo(() => {
                 </View>
               )}
 
-              <View style={styles.authorInfo}>
+          
                 <Text
                   style={styles.authorName}
                   numberOfLines={1}
@@ -243,7 +243,7 @@ const CompanyHomeScreen = React.memo(() => {
                 </Text>
                 <Text style={styles.badgeText}>{item.author_category || ''}</Text>
 
-              </View>
+             
             </View>
             <View >
               <Text style={styles.PostedLabel}>Posted on: <Text style={styles.articleTime}>{getTimeDisplayForum(item.posted_on)}</Text></Text>

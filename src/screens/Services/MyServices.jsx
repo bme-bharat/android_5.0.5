@@ -25,6 +25,7 @@ import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
 import Add from '../../assets/svgIcons/add.svg';
 
 import { colors, dimensions } from '../../assets/theme.jsx';
+import { commonStyles } from "../AppUtils/AppStyles.js";
 
 const BASE_API_URL = 'https://h7l1568kga.execute-api.ap-south-1.amazonaws.com/dev';
 const API_KEY = 'k1xuty5IpZ2oHOEOjgMz57wHfdFT8UQ16DxCFkzk';
@@ -314,7 +315,7 @@ const MyServices = () => {
                     </View>
 
                     <View style={styles.textContainer}>
-                        <Text numberOfLines={1} style={[styles.value,]}>{item.title || "N/A"}</Text>
+                        <Text numberOfLines={1} style={commonStyles.label}>{item.title || "N/A"}</Text>
                         <Text numberOfLines={1} style={styles.value1}>{item.category || "N/A"}</Text>
                         <Text numberOfLines={1} style={styles.value1}>{item.description || "N/A"}</Text>
                         {(item.price ?? '').toString().trim() !== '' ? (
@@ -328,7 +329,7 @@ const MyServices = () => {
                 </View>
 
                 <View style={styles.buttonContainer}>
-                    <TouchableOpacity onPress={() => handleEditProduct(item)} style={[styles.actionButton, { marginLeft: 10 }]} activeOpacity={1}>
+                    <TouchableOpacity onPress={() => handleEditProduct(item)} style={[styles.actionButton]} activeOpacity={1}>
                         <View style={styles.iconTextContainer}>
 
                             <Text style={styles.buttonText}>Edit</Text>
@@ -483,7 +484,7 @@ const styles = StyleSheet.create({
     },
     buttonContainer: {
         flexDirection: 'row',
-        // justifyContent: 'space-between',
+        justifyContent: 'flex-end',
         // backgroundColor:'red'
     },
 
@@ -655,7 +656,6 @@ const styles = StyleSheet.create({
         flex: 2, // Take the remaining space
         flexShrink: 1,
         color: '#777',
-
         fontSize: 15,
         textAlign: 'left', // Align text to the left
         alignSelf: 'flex-start',

@@ -46,7 +46,6 @@ const handleError = (message) => {
 /* ---------- Image Selection ---------- */
 export const handleImageSelection = async (asset, onMediaSelected, maxImageSizeMB = 5) => {
   try {
-    console.log('[handleImageSelection] Asset received:', asset);
 
     // Fallback for HEIC/HEIF
     let fileType = asset.type || 'image/jpeg';
@@ -58,8 +57,6 @@ export const handleImageSelection = async (asset, onMediaSelected, maxImageSizeM
     // Copy SAF URI to cache
     const originalFilePath = await copyContentUriToTempFile(asset.uri, fileName);
     const originalStats = await RNFS.stat(originalFilePath);
-    console.log('[handleImageSelection] Original file path:', originalFilePath);
-    console.log('[handleImageSelection] Original file size (bytes):', originalStats.size);
 
     // Safe width/height fallback
     const width = asset.width || 1280;
@@ -134,7 +131,6 @@ export const handleVideoSelection = async (asset, onMediaSelected, maxVideoSizeM
 
     const aspectRatio = calculateAspectRatio(asset.width, asset.height);
     setIsCompressing(true);
-    showToast("Processing video...", "info");
 
     const compressedUri = await compressVideo(asset);
     setIsCompressing(false);
@@ -214,16 +210,15 @@ const handleMediaSelection = async (type, fromCamera = false, fileTypes = null) 
         console.log('[Video] Raw response:', response);
 
         if (response.didCancel) {
-          console.log('[Video] User cancelled picker');
+
           return;
         }
 
         if (response.errorCode) {
-          console.log('[Video] ErrorCode:', response.errorCode, 'ErrorMessage:', response.errorMessage);
 
           if (response.errorCode === 'permission') {
             if (Platform.OS === 'ios') {
-              console.log('[Video] iOS permission error, showing alert');
+            
               Alert.alert(
                 'Permission Needed',
                 'Please allow access to camera/photos in Settings to continue.',
@@ -233,34 +228,32 @@ const handleMediaSelection = async (type, fromCamera = false, fileTypes = null) 
                 ],
               );
             } else {
-              console.log('[Video] Android permission denied');
+            
               showToast('Permission denied. Please enable it in settings.', 'error');
             }
             return;
           }
 
           if (response.errorCode === 'camera_unavailable') {
-            console.log('[Video] Camera unavailable on this device');
+           
             showToast('Camera is not available on this device.', 'error');
             return;
           }
 
-          console.log('[Video] Other error');
           showToast(`Media Picker failed: ${response.errorMessage || 'Unknown error'}`, 'error');
           return;
         }
 
         const asset = response.assets?.[0];
-        console.log('[Video] Selected asset:', asset);
-
+   
         if (!asset) {
-          console.log('[Video] No asset found in response');
+     
           showToast('No media file found.', 'error');
           return;
         }
 
         try {
-          console.log('[Video] Passing asset to handleVideoSelection');
+       
           await handleVideoSelection(
             asset,
             onMediaSelected,
@@ -269,7 +262,7 @@ const handleMediaSelection = async (type, fromCamera = false, fileTypes = null) 
             setIsCompressing,
             
           );
-          console.log('[Video] handleVideoSelection finished successfully');
+         
         } catch (innerError) {
           console.error('[Video] Error during video processing:', innerError);
           showToast(innerError.message || 'Failed to process selected video.', 'error');
@@ -278,9 +271,6 @@ const handleMediaSelection = async (type, fromCamera = false, fileTypes = null) 
 
       return; // 🚨 Prevents falling through to DocumentPicker
     }
-
-    // For images & documents → continue with DocumentPicker
-    console.log('[handleMediaSelection] Document/Image branch selected');
 
     let pickerTypes;
     switch (type) {
@@ -293,32 +283,26 @@ const handleMediaSelection = async (type, fromCamera = false, fileTypes = null) 
         break;
     }
 
-    console.log('[DocumentPicker] Opening with types:', pickerTypes);
-
     const pickedFiles = await DocumentPicker.pick({
       allowMultiple,
       type: pickerTypes,
     });
 
-    console.log('[DocumentPicker] Picked files:', pickedFiles);
-
     if (!pickedFiles || pickedFiles.length === 0) {
-      console.log('[DocumentPicker] No files selected');
+
       return;
     }
 
     for (let file of pickedFiles) {
-      console.log('[DocumentPicker] Processing file:', file);
-
+    
       const mimeType = file.mime || file.type || 'application/octet-stream';
-      console.log('[DocumentPicker] File mimeType:', mimeType);
-
+   
       if (mimeType.startsWith('image/')) {
-        console.log('[DocumentPicker] Detected image file, sending to handleImageSelection');
+      
         await handleImageSelection(file, onMediaSelected, maxImageSizeMB);
-        console.log('[DocumentPicker] handleImageSelection finished');
+      
       } else {
-        console.log('[DocumentPicker] Detected non-image file, preparing processedFile');
+     
         const processedFile = {
           id: file.id,
           uri: file.uri,
@@ -328,16 +312,16 @@ const handleMediaSelection = async (type, fromCamera = false, fileTypes = null) 
           source: file.source,
         };
         const meta = { mimeType, size: file.size };
-        console.log('[DocumentPicker] Calling onMediaSelected with processedFile + meta');
+      
         onMediaSelected(processedFile, meta);
       }
     }
   } catch (error) {
     if (DocumentPicker.isCancel(error)) {
-      console.log('[handleMediaSelection] User cancelled DocumentPicker');
+  
       return;
     }
-    console.error('[handleMediaSelection] Unexpected Media Selection Error:', error);
+  
     showToast(error.message || 'Something went wrong while selecting media', 'error');
   }
 };

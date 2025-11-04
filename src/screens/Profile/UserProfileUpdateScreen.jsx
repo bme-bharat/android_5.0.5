@@ -46,6 +46,7 @@ const UserProfileUpdateScreen = () => {
   const dispatch = useDispatch();
 
   const { profile, imageUrl } = route.params;
+  console.log('profile', profile)
   const [localImageUrl, setLocalImageUrl] = useState(imageUrl);
   const [dateOfBirth, setDateOfBirth] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -64,6 +65,9 @@ const UserProfileUpdateScreen = () => {
   const [availableCategories, setAvailableCategories] = useState([]);
   const [fileType, setFileType] = useState('');
   const [file, setFile] = useState(null);
+  const [verifiedEmail, setVerifiedEmail] = useState(() => {
+    return profile?.is_email_verified && postData?.user_email_id ? postData.user_email_id : '';
+  });
 
   useEffect(() => {
     if (selectedProfile) {
@@ -124,6 +128,7 @@ const UserProfileUpdateScreen = () => {
   const [postData, setPostData] = useState({
     user_phone_number: profile.user_phone_number || "",
     user_email_id: profile.user_email_id || "",
+    is_email_verified: profile.is_email_verified || false,
     first_name: profile.first_name || "",
     last_name: profile.last_name || "",
     city: profile.city || "",
@@ -145,6 +150,7 @@ const UserProfileUpdateScreen = () => {
       college: profile.college || '',
       gender: profile.gender || '',
       user_email_id: profile.user_email_id || '',
+      is_email_verified: profile.is_email_verified || false,
       city: profile.city || '',
       first_name: profile.first_name || '',
       last_name: profile.last_name || '',
@@ -506,7 +512,7 @@ const UserProfileUpdateScreen = () => {
   };
 
   const handleImageSelection = () => {
-    const hasImage = postData.fileKey && postData.fileKey.trim() !== '';
+    const hasImage = postData.fileKey && postData.fileKey.trim() !== '' || file;
     const options = ['Take Photo', 'Choose from Gallery'];
     if (hasImage) options.push('Remove Image');
 
@@ -517,10 +523,9 @@ const UserProfileUpdateScreen = () => {
         'Select Image',
         '',
         [
+          hasImage ? { text: 'Remove Image', onPress: handleRemoveImage, style: 'destructive' } : null,
           { text: 'Choose from Gallery', onPress: openGallery },
           { text: 'Take Photo', onPress: openCamera },
-          hasImage ? { text: 'Remove Image', onPress: handleRemoveImage, style: 'destructive' } : null,
-          { text: 'Cancel', style: 'cancel' },
         ].filter(Boolean),
         { cancelable: true }
       );
@@ -602,6 +607,16 @@ const UserProfileUpdateScreen = () => {
 
 
   const handleRemoveImage = async () => {
+    if (file && file.uri) {
+      setFile(null);
+      setFileUri(null);
+      setIsImageChanged(true);
+      setHasChanges(true);
+      // If you want to immediately reflect the removal in the UI
+      setImageUri(null);
+      return;
+    }
+
     if (!fileKey && !localImageUrl) {
       return;
     }
@@ -683,9 +698,6 @@ const UserProfileUpdateScreen = () => {
       showToast('Failed to pick or crop image', 'error');
     }
   };
-
-
-
 
   async function uriToBlob(uri) {
     const response = await fetch(uri);
@@ -778,7 +790,7 @@ const UserProfileUpdateScreen = () => {
       }
     } catch (error) {
       // console.error("Error in delete function:", error);
-      Alert.alert("Error", "Failed to delete image");
+
       throw error; // Re-throw to propagate the error
     }
   };
@@ -795,10 +807,8 @@ const UserProfileUpdateScreen = () => {
   const [isOtpSent, setIsOtpSent] = useState(false); // Track if OTP is sent
   const [modalVisibleemail, setModalVisibleemail] = useState(false); // Modal visibility for OTP verification
   const [otp1, setOtp1] = useState('');
-  const [isVerifyClicked, setIsVerifyClicked] = useState(false);
-  const [verifiedEmail, setVerifiedEmail] = useState(() => {
-    return profile?.is_email_verified && postData?.user_email_id ? postData.user_email_id : '';
-  });
+
+
 
   const intervalRef = useRef(null);
 
@@ -837,7 +847,6 @@ const UserProfileUpdateScreen = () => {
       return;
     }
 
-    setIsVerifyClicked(true);
     setOtpLoading(true);
 
     const otpResponse = await apiClient.post(
@@ -1072,7 +1081,7 @@ const UserProfileUpdateScreen = () => {
         user_id: profile.user_id,
         user_phone_number: postData.user_phone_number?.trimStart().trimEnd(),
         user_email_id: emailToSend?.trimStart().trimEnd(),
-        is_email_verified: postData.is_email_verified,
+        is_email_verified: verifiedEmail || profile?.is_email_verified,
         first_name: trimmedFirstName,
         last_name: trimmedLastName,
         city: selectedCity?.trimStart().trimEnd(),
@@ -1443,20 +1452,26 @@ const UserProfileUpdateScreen = () => {
                 value={postData.user_email_id || ''}
                 onChangeText={(value) => handleInputChange('user_email_id', value)}
                 placeholder="Email"
-                editable={!postData.is_email_verified}
 
               />
 
-              {!postData.is_email_verified && postData.user_email_id !== verifiedEmail && (
-                < TouchableOpacity style={styles.buttonemailmain} onPress={handleOtpEmail}>
-                  <Text style={styles.buttonTextemailtext}>{otpLoading ? 'Sending' : 'Verify'}</Text>
+              {profile.is_email_verified && postData.user_email_id === profile.user_email_id ? (
+                <Success
+                  width={dimensions.icon.small}
+                  height={dimensions.icon.small}
+                  color={colors.success}
+                />
+              ) : (
+                <TouchableOpacity
+                  style={styles.buttonemailmain}
+                  onPress={handleOtpEmail}
+                >
+                  <Text style={styles.buttonTextemailtext}>
+                    {otpLoading ? 'Sending' : 'Verify'}
+                  </Text>
                 </TouchableOpacity>
               )}
-              {/* Show "Verified" if the email is verified */}
-              {profile.is_email_verified && postData.user_email_id === verifiedEmail && (
-                <Success width={dimensions.icon.small} height={dimensions.icon.small} color={colors.success} />
 
-              )}
 
             </View>
           </View>
@@ -1654,7 +1669,7 @@ const styles = StyleSheet.create({
   closeButton: {
     position: 'absolute',
     top: 10,
-    left: 300,
+    right: 10,
     // padding: 15,
     // marginBottom:15,
     // backgroundColor: '#E0E0E0',

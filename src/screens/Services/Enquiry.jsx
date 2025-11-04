@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, TextInput, Button, Alert, StyleSheet, TouchableOpacity, ScrollView, NativeModules } from 'react-native';
 
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -29,16 +29,21 @@ const EnquiryForm = () => {
     const [file, setFile] = useState(null);
     const [fileType, setFileType] = useState(null);
 
+    const isSubmittingRef = useRef(false);
+
     const handleEnquire = async () => {
+        if (isSubmittingRef.current || loading) return;
+        isSubmittingRef.current = true;
+      
         if (!description.trim()) {
-            showToast("Description is mandatory", 'info');
-            return; // before loading set, so safe
+          showToast("Description is mandatory", 'info');
+          isSubmittingRef.current = false;
+          return;
         }
 
         setLoading(true);
 
         try {
-            console.log('📁 Attempting to upload file...');
             const uploadedFileKey = await handleUploadFile();
 
             const payload = {
@@ -66,7 +71,7 @@ const EnquiryForm = () => {
                 showToast(errorMessage, 'error');
 
                 if (errorMessage === "You already enquired this service.") {
-                    setTimeout(() => navigation.goBack(), 100);
+                    setTimeout(() => navigation.goBack());
                 }
 
                 throw new Error(errorMessage);
@@ -76,7 +81,7 @@ const EnquiryForm = () => {
             setDescription('');
             setSelectedPDF(null);
 
-            setTimeout(() => navigation.goBack(), 100);
+            navigation.goBack()
 
         } catch (error) {
             // error handling here, loading false in finally
@@ -92,7 +97,7 @@ const EnquiryForm = () => {
         setLoading(true);
 
         if (!file) {
-            showToast('No file selected.', 'error');
+       
             setLoading(false);
             return null;
         }
@@ -205,49 +210,7 @@ const EnquiryForm = () => {
         return await response.blob();
     };
 
-    const uploadFileToS3 = async (fileUri, fileType) => {
-        try {
-            const fileStat = await RNFS.stat(fileUri);
 
-            const res = await apiClient.post('/uploadFileToS3', {
-                command: 'uploadFileToS3',
-                headers: {
-                    'Content-Type': fileType,
-                    'Content-Length': fileStat.size,
-                },
-            });
-
-            if (res.data.status === 'success') {
-                const uploadUrl = res.data.url;
-                const fileKey = res.data.fileKey;
-
-                const fileBlob = await uriToBlob(fileUri);
-                const uploadRes = await fetch(uploadUrl, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': fileType },
-                    body: fileBlob,
-                });
-
-                if (uploadRes.status === 200) {
-
-                    return fileKey;
-                } else {
-                    throw new Error(`Failed to upload ${fileType} to S3`);
-                }
-            } else {
-                throw new Error(res.data.errorMessage || 'Failed to get upload URL');
-            }
-        } catch (error) {
-            showToast("Upload failed", 'error');
-
-            return null;
-        }
-    };
-
-    const removeMedia = (type, index) => {
-
-        if (type === 'document') setSelectedPDF(null); // No index needed for a single PDF
-    };
     return (
         <View style={styles.container}>
             <View style={styles.headerContainer}>
@@ -300,11 +263,9 @@ const EnquiryForm = () => {
                         AppStyles.PostbtnText,
                         (loading || !description.trim()) && styles.buttonDisabledText,
                     ]}>
-                        {loading ? 'Submitting' : 'Submit'}
+                      Submit
                     </Text>
                 </TouchableOpacity>
-
-
 
             </ScrollView>
         </View>
@@ -418,10 +379,3 @@ const styles = StyleSheet.create({
 
 
 export default EnquiryForm;
-
-
-
-
-
-
-

@@ -1,7 +1,7 @@
 
 
 import React, { useRef, useState, useEffect, useCallback, memo } from 'react';
-import { ScrollView, Animated, View, Linking, TextInput, StyleSheet, FlatList, Image, Alert, TouchableOpacity, Text, Dimensions, BackHandler, RefreshControl, Keyboard, ActivityIndicator } from 'react-native';
+import { ScrollView, Animated, View, Linking, TextInput, StyleSheet, FlatList, Image, Alert, TouchableOpacity, Text, Dimensions, BackHandler, RefreshControl, Keyboard, ActivityIndicator, requireNativeComponent } from 'react-native';
 
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useNavigation, useFocusEffect, useScrollToTop, useNavigationState } from '@react-navigation/native';
@@ -21,6 +21,8 @@ import { Image as FastImage } from 'react-native';
 import { generateAvatarFromName } from './helperComponents/useInitialsAvatar';
 import BottomNavigationBar from './AppUtils/BottomNavigationBar';
 import Banner01 from './Banners/homeBanner';
+import Banner02 from './Banners/homeBanner2';
+
 import Menu from '../assets/svgIcons/menu.svg';
 import Notification from '../assets/svgIcons/notification.svg';
 import Job from '../assets/svgIcons/jobs.svg';
@@ -33,8 +35,9 @@ import Description from '../assets/svgIcons/description.svg';
 import Company from '../assets/svgIcons/company.svg';
 import Money from '../assets/svgIcons/money.svg';
 
-
 import { colors, dimensions } from '../assets/theme';
+import LinearGradient from 'react-native-linear-gradient';
+
 
 const UserSettingScreen = React.lazy(() => import('./Profile/UserSettingScreen'));
 const ProductsList = React.lazy(() => import('./Products/ProductsList'));
@@ -88,32 +91,28 @@ const UserHomeScreen = React.memo(() => {
 
 
 
-  useEffect(() => {
-    const fetchUnreadCount = async () => {
-      try {
-        const response = await apiClient.post('getUnreadNotificationCount', {
-          command: 'getUnreadNotificationCount',
-          user_id: myId,
-        });
+  useFocusEffect(
+    useCallback(() => {
 
-        if (response.status === 200) {
+      const fetchUnreadCount = async () => {
+        try {
+          const response = await apiClient.post('getUnreadNotificationCount', {
+            command: 'getUnreadNotificationCount',
+            user_id: myId,
+          });
 
-          setUnreadCount(response.data.count);
-
+          if (response.status === 200) {
+            setUnreadCount(response.data.count);
+          }
+        } catch (error) {
+          console.error('Error fetching unread count:', error);
         }
-      } catch (error) {
+      };
 
-      }
-    };
-
-    fetchUnreadCount();
-
-    const intervalId = setInterval(() => {
       fetchUnreadCount();
-    }, 1000);
+    }, [myId])
+  );
 
-    return () => clearInterval(intervalId);
-  }, [myId]);
 
 
   const handleRefresh = async () => {
@@ -158,7 +157,7 @@ const UserHomeScreen = React.memo(() => {
   const renderJobCard = ({ item }) => {
     if (!item || item.isEmpty) return null;
 
-    const { post_id, job_title, experience_required, Package, job_post_created_on, companyAvatar } = item;
+    const { post_id, job_title, experience_required, Package, job_post_created_on, companyAvatar, working_location } = item;
     const imageUrl = jobImageUrls?.[item.post_id];
 
     return (
@@ -202,7 +201,11 @@ const UserHomeScreen = React.memo(() => {
           </Text>
 
           <Text numberOfLines={1} style={styles.eduSubText}>
-            <Text style={styles.label}>Posted: </Text>
+            <Text style={styles.label}>Location: </Text>
+            {working_location || 'Not disclosed'}
+          </Text>
+
+          <Text numberOfLines={1} style={[styles.eduSubText, { alignSelf: 'flex-end', fontSize: 11, fontWeight: '300', color: colors.text_secondary, }]}>
             {getTimeDisplayHome(job_post_created_on) || 'Not disclosed'}
           </Text>
 
@@ -223,9 +226,9 @@ const UserHomeScreen = React.memo(() => {
         style={styles.articleCard}
         onPress={() => navigation.navigate("Comment", { forum_id: item.forum_id })}
       >
-        <View style={styles.articleCardHeader}>
+        <View style={[styles.articleCardHeader, { backgroundColor: '#fff' }]}>
           {/* Vertical stack for badge, image, name */}
-          <View >
+          <View style={{ marginTop: 5 }}>
 
             <View style={[styles.authorRow]}>
               {item?.authorImage ? (
@@ -262,11 +265,8 @@ const UserHomeScreen = React.memo(() => {
                 </Text>
                 <Text style={styles.badgeText}>{item.author_category || ''}</Text>
 
+                <Text style={styles.articleTime}>{getTimeDisplayForum(item.posted_on)}</Text>
               </View>
-            </View>
-            <View >
-              <Text style={styles.PostedLabel}>Posted on: <Text style={styles.articleTime}>{getTimeDisplayForum(item.posted_on)}</Text></Text>
-
             </View>
 
           </View>
@@ -288,7 +288,6 @@ const UserHomeScreen = React.memo(() => {
           html={item.forum_body}
           forumId={item?.forum_id}
           numberOfLines={4}
-          textStyle={styles.articleExcerpt}
         />
       </TouchableOpacity>
 
@@ -518,32 +517,46 @@ const UserHomeScreen = React.memo(() => {
 
 
 
-  const [visibleBanners, setVisibleBanners] = useState({});
+
+  const [activeBannerId, setActiveBannerId] = useState(null);
 
   const onViewableItemsChanged = useRef(({ viewableItems }) => {
-    const newVisible = {};
-    viewableItems.forEach((item) => {
-      if (item.item.type?.startsWith("banner")) {
-        newVisible[item.item.type] = true;
-      }
-    });
-    setVisibleBanners(newVisible);
+    console.log('viewableItems', viewableItems.map(v => v.item.type));
+
+    // Find *any* visible banner in the currently viewable items
+    const visibleBanner = viewableItems.find(
+      v => v.item?.type?.includes('banner')
+    );
+
+    if (visibleBanner) {
+      setActiveBannerId(
+        visibleBanner.item.type === 'banner1'
+          ? 'ban01'
+          : visibleBanner.item.type === 'banner2'
+            ? 'adban01'
+            : visibleBanner.item.type === 'banner3'
+              ? 'adban02'
+              : null
+      );
+    } else {
+      setActiveBannerId(null);
+    }
   }).current;
-  
-  const viewabilityConfig = { itemVisiblePercentThreshold: 50 };
-  
+
+
+
+  const viewabilityConfig = { viewAreaCoveragePercentThreshold: 50 };
+
 
 
   return (
     <View style={{ backgroundColor: 'whitesmoke', flex: 1 }}>
 
       <View style={styles.headerContainer}>
-
-        <TouchableOpacity onPress={handleMenuPress} >
+        <TouchableOpacity onPress={handleMenuPress} style={AppStyles.menuContainer}>
           <Menu width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.secondary} />
 
         </TouchableOpacity>
-
         <View style={styles.rightContainer}>
           <TouchableOpacity
             style={styles.notificationContainer}
@@ -559,7 +572,7 @@ const UserHomeScreen = React.memo(() => {
           </TouchableOpacity>
 
           <TouchableOpacity onPress={handleProfile} style={styles.profileContainer} activeOpacity={0.8}>
-            <View style={styles.detailImageWrapper}>
+        
               {profile?.imageUrl ? (
                 <FastImage
                   source={{ uri: profile?.imageUrl, }}
@@ -575,7 +588,7 @@ const UserHomeScreen = React.memo(() => {
                   </Text>
                 </View>
               )}
-            </View>
+          
           </TouchableOpacity>
 
         </View>
@@ -590,7 +603,7 @@ const UserHomeScreen = React.memo(() => {
         onViewableItemsChanged={onViewableItemsChanged}
         viewabilityConfig={viewabilityConfig}
         onScrollBeginDrag={() => Keyboard.dismiss()}
-        contentContainerStyle={{ paddingBottom: '20%', backgroundColor: 'whitesmoke' }}
+        contentContainerStyle={{ paddingBottom: '20%', backgroundColor: colors.app_background, }}
         refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />}
         data={[
           { type: 'banner1' },
@@ -602,171 +615,169 @@ const UserHomeScreen = React.memo(() => {
           { type: 'products', data: products },
           { type: 'services', data: services },
         ]}
-
-
+        keyExtractor={(item, index) => `${item.type || 'unknown'}-${index}`}
+        removeClippedSubviews={false}
         renderItem={({ item }) => {
           switch (item.type) {
-
             case 'banner1':
-              return <Banner01 bannerId="ban01" isVisible={!!visibleBanners.banner1} />;
+              return (
+                <LinearGradient
+                  colors={['#3093cc', '#e7ebfc']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 0, y: 1 }}
+                  style={{ flex: 1, paddingBottom:10 }}
+                >
+                  <View>
+                    {/* <Banner01 bannerId="ban01" activeBannerId={activeBannerId} /> */}
+                  </View>
+                </LinearGradient>
+              );
+              
 
             case 'jobs':
-              // if (!item.data || item.data.length === 0) return null;
               return (
-                <TouchableOpacity activeOpacity={1} style={styles.cards}>
-                  <>
-                    <View style={styles.headingContainer}>
-                      <Text style={styles.heading}>
-                        Jobs <Job width={dimensions.icon.small} height={dimensions.icon.small} color={colors.primary} /> </Text>
-                      <TouchableOpacity onPress={allJobs}>
-                        <Text style={styles.seeAllText}>see more ...</Text>
-                      </TouchableOpacity>
+                <View style={[styles.cards,]}>
+                  <View style={styles.headingContainer}>
+                    <View style={styles.headingWrapper}>
+                      <Text style={styles.headingText}>Jobs</Text>
+                      <Job
+                        width={dimensions.icon.small}
+                        height={dimensions.icon.small}
+                        color={colors.primary}
+                      />
                     </View>
 
+                    <TouchableOpacity onPress={allJobs}>
+                      <Text style={styles.seeAllText}>see more ...</Text>
+                    </TouchableOpacity>
+                  </View>
 
-                    <FlatList
-                      data={item.data} // ✅ use item.data
-                      renderItem={({ item }) => renderJobCard({ item })}
-                      keyExtractor={(item) => `job-${item.post_id}`}
-                      ListFooterComponent={
-                        (!item.data || item.data.length === 0) && (
-                          <View>
-                            {[...Array(4)].map((_, index) => (
-                              <View key={index} style={styles.eduCard}>
-                                <View style={styles.eduCardLeft} />
-                                <View style={styles.eduCardRight}>
-                                  <Text numberOfLines={1} style={styles.eduTitle}></Text>
-                                  <Text numberOfLines={1} style={styles.eduSubText}></Text>
-                                  <Text numberOfLines={1} style={styles.eduSubText}></Text>
-                                </View>
+                  <FlatList
+                    data={item.data}
+                    renderItem={({ item }) => renderJobCard({ item })}
+                    keyExtractor={(job) => `job-${job.post_id}`}
+                    scrollEnabled={false} // parent handles scrolling
+                    nestedScrollEnabled
+                    ListFooterComponent={
+                      (!item.data || item.data.length === 0) && (
+                        <View>
+                          {[...Array(4)].map((_, index) => (
+                            <View key={index} style={styles.eduCard}>
+                              <View style={styles.eduCardLeft} />
+                              <View style={styles.eduCardRight}>
+                                <Text numberOfLines={1} style={styles.eduTitle}></Text>
+                                <Text numberOfLines={1} style={styles.eduSubText}></Text>
+                                <Text numberOfLines={1} style={styles.eduSubText}></Text>
                               </View>
-                            ))}
-                          </View>
-                        )
-                      }
-                    />
+                            </View>
+                          ))}
+                        </View>
+                      )
+                    }
 
-                  </>
-                </TouchableOpacity>
+                  />
+                </View>
               );
 
             case 'banner2':
-              return <Banner01 bannerId="adban01" isVisible={!!visibleBanners.banner2} />;
+              // return <Banner02 bannerId="adban01" activeBannerId={activeBannerId} />
+
 
             case 'trendingPosts':
-              if (!item.data || item.data.length === 0) return null;
-              return (
-                <TouchableOpacity activeOpacity={1} style={styles.cards}>
-                  <>
-                    <View style={styles.headingContainer}>
-                      <Text style={styles.heading}>
-                        Trending posts <Fire width={dimensions.icon.small} height={dimensions.icon.small} color={colors.primary} />
-                      </Text>
-                      <TouchableOpacity onPress={goToTrending}>
-                        <Text style={styles.seeAllText}>see more ...</Text>
-                      </TouchableOpacity>
-                    </View>
-
-                    <FlatList
-                      key={'trending-columns'}
-                      data={item.data}
-                      extraData={authorImageUrls}
-                      renderItem={({ item }) => renderForumCard({ item })}
-                      keyExtractor={(item, index) => item.forum_id?.toString() || item.post_id?.toString() || `fallback-${index}`}
-                      showsVerticalScrollIndicator={false}
-                    />
-                  </>
-                </TouchableOpacity>
-              );
-
             case 'latestPosts':
               if (!item.data || item.data.length === 0) return null;
+              const isTrending = item.type === 'trendingPosts';
               return (
-                <TouchableOpacity activeOpacity={1} style={styles.cards}>
-                  <>
-                    <View style={styles.headingContainer}>
-                      <Text style={styles.heading}>
-                        Latest posts <Latest width={dimensions.icon.small} height={dimensions.icon.small} color={colors.primary} />
-                      </Text>
-                      <TouchableOpacity onPress={goToLatest}>
-                        <Text style={styles.seeAllText}>see more ...</Text>
-                      </TouchableOpacity>
+                <View style={styles.cards}>
+                  <View style={styles.headingContainer}>
+                    <View style={styles.headingWrapper}>
+                      <Text style={styles.headingText}>{isTrending ? 'Trending posts ' : 'Latest posts '}</Text>
+                      {isTrending ? (
+                        <Fire
+                          width={dimensions.icon.small}
+                          height={dimensions.icon.small}
+                          color={colors.primary}
+                        />
+                      ) : (
+                        <Latest
+                          width={dimensions.icon.small}
+                          height={dimensions.icon.small}
+                          color={colors.primary}
+                        />
+                      )}
                     </View>
-                    <FlatList
-                      key={'latest-columns'}
-                      data={item.data}
-                      extraData={authorImageUrls}
-                      renderItem={({ item }) => renderForumCard({ item })}
-                      keyExtractor={(item, index) => item.forum_id?.toString() || item.post_id?.toString() || `latest-${index}`}
-                      showsVerticalScrollIndicator={false}
-                    />
-                  </>
-                </TouchableOpacity>
+                    <TouchableOpacity onPress={isTrending ? goToTrending : goToLatest}>
+                      <Text style={styles.seeAllText}>see more ...</Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  <FlatList
+                    data={item.data}
+                    renderItem={({ item }) => renderForumCard({ item })}
+                    keyExtractor={(forum, index) =>
+                      forum.forum_id?.toString() || forum.post_id?.toString() || `fallback-${index}`
+                    }
+                    scrollEnabled={false}
+                    nestedScrollEnabled
+
+                  />
+                </View>
               );
 
             case 'banner3':
-              return <Banner01 bannerId="adban02" isVisible={!!visibleBanners.banner3} />;
+              // return <Banner02 bannerId="adban02" activeBannerId={activeBannerId} />;
 
             case 'products':
-              if (!item.data || item.data.length === 0) return null;
-              return (
-                <TouchableOpacity activeOpacity={1} style={styles.cards}>
-                  <>
-                    <View style={styles.headingContainer}>
-                      <Text style={styles.heading}>
-                        Products <Product width={dimensions.icon.small} height={dimensions.icon.small} color={colors.primary} />
-                      </Text>
-                      <TouchableOpacity onPress={allProducts}>
-                        <Text style={styles.seeAllText}>see more ...</Text>
-                      </TouchableOpacity>
-                    </View>
-
-                    <FlatList
-                      data={item.data}
-                      renderItem={({ item }) => renderProductCard({ item })}
-                      keyExtractor={(item) => `product-${item.product_id}`}
-                      numColumns={2}
-                      contentContainerStyle={styles.flatListContainer}
-                      columnWrapperStyle={styles.columnWrapper}
-                    />
-                  </>
-                </TouchableOpacity>
-              );
-
             case 'services':
               if (!item.data || item.data.length === 0) return null;
+              const isProduct = item.type === 'products';
               return (
-                <TouchableOpacity activeOpacity={1} style={styles.cards}>
-                  <>
-                    <View style={styles.headingContainer}>
-                      <Text style={styles.heading}>
-                        Services <Service width={dimensions.icon.small} height={dimensions.icon.small} color={colors.primary} />
-                      </Text>
-                      <TouchableOpacity onPress={allServices}>
-                        <Text style={styles.seeAllText}>see more ...</Text>
-                      </TouchableOpacity>
-                    </View>
+                <View style={styles.cards}>
+                  <View style={styles.headingContainer}>
 
-                    <FlatList
-                      data={item.data}
-                      renderItem={({ item }) => renderServiceCard({ item })}
-                      keyExtractor={(item) => `service-${item.service_id}`}
-                      numColumns={2}
-                      contentContainerStyle={styles.flatListContainer}
-                      columnWrapperStyle={styles.columnWrapper}
-                    />
-                  </>
-                </TouchableOpacity>
+                    <View style={styles.headingWrapper}>
+                      <Text style={styles.headingText}>{isProduct ? 'Products' : 'Services'}</Text>
+                      {isProduct ? (
+                        <Product
+                          width={dimensions.icon.small}
+                          height={dimensions.icon.small}
+                          color={colors.primary}
+                        />
+                      ) : (
+                        <Service
+                          width={dimensions.icon.small}
+                          height={dimensions.icon.small}
+                          color={colors.primary}
+                        />
+                      )}
+                    </View>
+                    <TouchableOpacity onPress={isProduct ? allProducts : allServices}>
+                      <Text style={styles.seeAllText}>see more ...</Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  <FlatList
+                    data={item.data}
+                    renderItem={({ item }) =>
+                      isProduct ? renderProductCard({ item }) : renderServiceCard({ item })
+                    }
+                    keyExtractor={(d) => (isProduct ? `product-${d.product_id}` : `service-${d.service_id}`)}
+                    numColumns={2}
+                    contentContainerStyle={styles.flatListContainer}
+                    columnWrapperStyle={styles.columnWrapper}
+                    scrollEnabled={false}
+                    nestedScrollEnabled
+
+                  />
+                </View>
               );
 
             default:
               return null;
           }
         }}
-
-        keyExtractor={(item, index) => `${item.type || 'unknown'}-${index}`}
-
       />
+
       <BottomNavigationBar
         tabs={tabConfig}
         currentRouteName={currentRouteName}

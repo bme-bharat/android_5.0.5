@@ -418,20 +418,11 @@ const ServiceDetails = () => {
     : [];
 
 
-  let isNavigating = false;
-
   const handleAddProduct = (product) => {
-    if (isNavigating) return;
-    isNavigating = true;
 
-    navigation.navigate('RelatedServicesDetails', { service_id: product.service_id, company_id: product.company_id });
+    navigation.push('ServiceDetails', { service_id: product.service_id, company_id: product.company_id });
 
-    setTimeout(() => {
-      isNavigating = false;
-    }, 300);
   };
-
-
 
   const handleNavigate = (company_id) => {
     // console.log('Navigating to CompanyDetailsPage with company_id:', company_id);
@@ -610,8 +601,13 @@ const ServiceDetails = () => {
               </TouchableOpacity>
 
               <View style={styles.priceRow}>
-                {typeof product.price === 'string' && product.price.trim() && (
-                  <Text style={styles.price}>₹ {product.price.trim()}</Text>
+                {product?.price?.trim() && (
+                  // <Text style={styles.price}>₹ {product?.price}</Text>
+                  <View style={styles.priceItem}>
+                    <Text style={styles.priceLabel}>Price   :    ₹ {product?.price}</Text>
+                    {/* <Text style={styles.pricevalue}>₹ {product?.price}</Text> */}
+
+                  </View>
                 )}
               </View>
 

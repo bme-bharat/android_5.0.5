@@ -31,7 +31,15 @@ export const MediaPreview = ({
   const effectiveType = mime || type; 
   const isImage = effectiveType?.startsWith('image/');
   const isVideo = effectiveType?.startsWith('video/');
-  const isDocument = !isImage && !isVideo;
+  // detect if it's a known document (based on file extension)
+  const ext = name?.split('.').pop()?.toLowerCase();
+  const isDocument = !isImage && !isVideo && ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt'].includes(ext);
+
+  // if it's not image, video, or document, don't render anything
+  if (!isImage && !isVideo && !isDocument) {
+    console.warn('[MediaPreview] Unsupported file type, nothing to preview', { uri, mime, type, name });
+    return null;
+  }
 
   let source = null;
   if (isImage) {
@@ -46,7 +54,7 @@ export const MediaPreview = ({
 
 
   const renderDocumentIcon = () => {
-    if (!name) return <Icon name="file-document-outline" size={50} color="#555" />;
+    if (!name) return ;
 
     const ext = name.split('.').pop()?.toLowerCase();
     switch (ext) {

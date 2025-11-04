@@ -1,38 +1,32 @@
-// HomeBanner.js
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View,
-  StyleSheet,
-  Dimensions,
-  Animated,
   FlatList,
+  Dimensions,
+  ActivityIndicator,
   TouchableOpacity,
-  Image,
-  Linking,
 } from 'react-native';
-import Video from 'react-native-video';
-import { useIsFocused, useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import apiClient from '../ApiClient';
+import BMEVideoPlayer from '../BMEVideoPlayer';
 
-const { width: windowWidth } = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 
-const AUTO_SLIDE_INTERVAL = 4000; // ms for images
-
-const HomeBanner = ({ bannerId, isVisible }) => {
+const HomeBanner = () => {
   const [banners, setBanners] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [isPlaying, setIsPlaying] = useState({});
-  const videoRefs = useRef({});
+  const videoRefs = useRef([]);
   const flatListRef = useRef(null);
-  const slideInterval = useRef(null);
-  const isFocused = useIsFocused();
   const navigation = useNavigation();
+  const [videoLoading, setVideoLoading] = useState({});
+  const timerRef = useRef(null); // ⏱️ fallback timer
 
+  // 🔹 Fetch video banners
   const fetchBanners = useCallback(async () => {
     try {
       const response = await apiClient.post('/getBannerImages', {
         command: 'getBannerImages',
-        banners_id: bannerId,
+        banners_id: 'ban01',
       });
 
       if (response.data.status === 'success') {
@@ -42,221 +36,196 @@ const HomeBanner = ({ bannerId, isVisible }) => {
         for (const banner of bannerData) {
           if (banner.files?.length > 0) {
             for (const file of banner.files) {
-              try {
-                const res = await apiClient.post('/getObjectSignedUrl', {
-                  command: 'getObjectSignedUrl',
-                  bucket_name: 'bme-app-admin-data',
-                  key: file.fileKey,
-                });
-
-                if (res.data) {
-                  const type = file.fileKey.endsWith('.mp4') ? 'video' : 'image';
-                  mediaUrls.push({
-                    url: res.data,
-                    type,
-                    redirect: file.redirect,
+              if (file.fileKey.endsWith('.mp4')) {
+                try {
+                  const res = await apiClient.post('/getObjectSignedUrl', {
+                    command: 'getObjectSignedUrl',
+                    bucket_name: 'bme-app-admin-data',
+                    key: file.fileKey,
                   });
+                  if (res.data) {
+                    mediaUrls.push({
+                      url: res.data,
+                      id: banner.company_id,
+                      redirect: file.redirect,
+                    });
+                  }
+                } catch (err) {
+                  console.log('Signed URL fetch error:', err);
                 }
-              } catch (err) {
-                console.log('Signed URL fetch error:', err);
               }
             }
           }
         }
 
-        if (mediaUrls.length > 0) {
-          // Duplicate first item at end for smooth infinite scroll
-          setBanners([...mediaUrls, mediaUrls[0]]);
-        }
+        setBanners(mediaUrls);
       }
     } catch (err) {
       console.error('Banner fetch failed:', err);
     }
-  }, [bannerId]);
+  }, []);
 
-
-
-  /** Auto-slide for images */
-  const startAutoSlide = () => {
-    stopAutoSlide();
-    slideInterval.current = setInterval(() => {
-      let nextIndex = (currentIndex + 1) % banners.length;
-      setCurrentIndex(nextIndex);
-      flatListRef.current?.scrollToIndex({ index: nextIndex, animated: true });
-    }, AUTO_SLIDE_INTERVAL);
-  };
-
-  const stopAutoSlide = () => {
-    if (slideInterval.current) {
-      clearInterval(slideInterval.current);
-      slideInterval.current = null;
-    }
-  };
-
-  /** When banners load, start first video autoplay if needed */
   useEffect(() => {
     fetchBanners();
   }, [fetchBanners]);
 
-  useEffect(() => {
-    if (banners.length === 0) return;
-    if (banners[0].type === 'video') {
-      setIsPlaying({ 0: true });
-    } else {
-      startAutoSlide();
-    }
-    setCurrentIndex(0);
-  }, [banners]);
-
-  /** Pause videos if screen not focused or hidden */
-  useEffect(() => {
-   
-      setIsPlaying({});
-      stopAutoSlide();
-    
-  }, []);
-
-  /** Handle current index change */
-  useEffect(() => {
-    if (banners.length === 0) return;
-    const current = banners[currentIndex];
-
-    if (current.type === 'image') {
-      startAutoSlide();
-    } else if (current.type === 'video') {
-      stopAutoSlide();
-      setIsPlaying((prev) => ({ ...prev, [currentIndex]: true }));
-    }
-  }, [currentIndex, banners]);
-
-  const handleRedirect = useCallback((url) => {
-    if (!url) return;
-    const safeUrl = url.startsWith('http') ? url : `https://${url}`;
-    Linking.openURL(safeUrl).catch((err) =>
-      console.warn('Failed to open URL:', err)
-    );
-  }, []);
-  
-  /** Render item */
-  const renderItem = ({ item, index }) => {
-   
-    const onPressBanner = () => {
+  // 🔹 Navigate on banner press
+  const onPressBanner = useCallback(
+    (item) => {
       if (item.id) {
-        // Direct navigation if item.id exists
         navigation.navigate('CompanyDetails', { userId: item.id });
       } else if (item.redirect?.target_url) {
-        // Extract last segment as ID
         const url = item.redirect.target_url;
         try {
-          const pathname = new URL(url).pathname; // "/company/469b6a48-b756-413d-b459-8bd9e8d81c08"
+          const pathname = new URL(url).pathname;
           const segments = pathname.split('/').filter(Boolean);
           const companyId = segments[segments.length - 1];
           if (companyId) {
             navigation.navigate('CompanyDetails', { userId: companyId });
-          } else if (item.redirect?.backup_url) {
-            handleRedirect(item.redirect.backup_url);
           }
         } catch (err) {
-          console.warn('Invalid URL, fallback to backup_url', err);
-          if (item.redirect?.backup_url) handleRedirect(item.redirect.backup_url);
+          console.warn('Invalid URL:', err);
         }
-      } else if (item.redirect?.backup_url) {
-        handleRedirect(item.redirect.backup_url);
       }
-    };
-    
+    },
+    [navigation]
+  );
 
-    if (item.type === 'image') {
-      return (
-        <TouchableOpacity
-          style={styles.mediaWrapper}
-          onPress={onPressBanner}
-          activeOpacity={0.8}
-        >
-          <Image source={{ uri: item.url }} style={styles.media} resizeMode="cover" />
-        </TouchableOpacity>
-      );
+  // 🔹 Move to next video manually or after video ends
+  const moveToNext = useCallback(() => {
+    if (!banners.length) return;
+    const next = (currentIndex + 1) % banners.length;
+    flatListRef.current?.scrollToIndex({ index: next, animated: true });
+    setCurrentIndex(next);
+  }, [currentIndex, banners.length]);
+
+  const handleVideoEnd = useCallback(() => {
+    moveToNext();
+  }, [moveToNext]);
+
+  // 🔹 Handle view changes (manual scroll)
+  const onViewableItemsChanged = useRef(({ viewableItems }) => {
+    if (viewableItems.length > 0) {
+      const index = viewableItems[0].index;
+      if (index !== null && index !== undefined) {
+        setCurrentIndex(index);
+      }
+    }
+  }).current;
+
+  const viewConfigRef = useRef({ viewAreaCoveragePercentThreshold: 80 });
+
+  // 🔹 Control playback per visible item
+  useEffect(() => {
+    // Clear previous timer
+    if (timerRef.current) clearTimeout(timerRef.current);
+
+    // Play current video
+    const ref = videoRefs.current[currentIndex];
+    if (ref && typeof ref.play === 'function') {
+      ref.seekTo?.(0);
+      ref.play();
     }
 
-    return (
-      <View style={styles.mediaWrapper}>
-        <Video
-          ref={(ref) => (videoRefs.current[index] = ref)}
-          source={{ uri: item.url }}
-          style={styles.media}
-          resizeMode="cover"
-          paused={!isPlaying[index]}
-          muted
-          onEnd={() => {
-            setIsPlaying((prev) => ({ ...prev, [index]: false }));
-            videoRefs.current[index]?.seek(0);
+    // Pause others
+    videoRefs.current.forEach((v, i) => {
+      if (i !== currentIndex && v?.pause) v.pause();
+    });
 
-            let nextIndex = (index + 1) % banners.length;
-            setCurrentIndex(nextIndex);
-            flatListRef.current?.scrollToIndex({ index: nextIndex, animated: true });
+    // ⏱️ Default 15-second fallback
+    timerRef.current = setTimeout(() => {
+      moveToNext();
+    }, 15000);
 
-            if (banners[nextIndex]?.type === 'image') startAutoSlide();
-          }}
-        />
-        <TouchableOpacity
-          style={styles.overlayButton}
-          onPress={onPressBanner}
-          activeOpacity={0.8}
-        />
-      </View>
-    );
-  };
+    // Cleanup timer when index changes
+    return () => clearTimeout(timerRef.current);
+  }, [currentIndex, moveToNext]);
 
+  // 🔹 Cleanup on unmount
+  useEffect(() => {
+    return () => clearTimeout(timerRef.current);
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      // 🔹 When screen is focused again, play the current video
+      const ref = videoRefs.current[currentIndex];
+      if (ref && typeof ref.play === 'function') {
+        ref.seekTo?.(0); // optional: restart from beginning
+        ref.play();
+      }
+  
+      // 🔹 Optional: pause all when leaving the screen
+      return () => {
+        videoRefs.current.forEach(v => v?.pause && v.pause());
+      };
+    }, [currentIndex])
+  );
+  
   return (
-    <View style={styles.carouselContainer}>
+    <View style={{ alignItems: 'center' }}>
       <FlatList
         ref={flatListRef}
         data={banners}
+        keyExtractor={(_, i) => i.toString()}
         horizontal
         pagingEnabled
+        snapToInterval={width} // 👈 account for margin
+        decelerationRate="fast"
         showsHorizontalScrollIndicator={false}
-        keyExtractor={(_, idx) => idx.toString()}
-        initialNumToRender={1}
-        windowSize={2}
-        onMomentumScrollEnd={(ev) => {
-          let index = Math.round(ev.nativeEvent.contentOffset.x / windowWidth);
-          if (index === banners.length - 1) index = 0; // loop back smoothly
-          setCurrentIndex(index);
-        }}
-        renderItem={renderItem}
+        onViewableItemsChanged={onViewableItemsChanged}
+        viewabilityConfig={viewConfigRef.current}
+        renderItem={({ item, index }) => (
+          <TouchableOpacity
+            activeOpacity={0.9}
+            onPress={() => onPressBanner(item)}
+            style={{
+              width,
+              height: width * 0.5,
+              overflow: 'hidden',
+              
+            }} >
+            <BMEVideoPlayer
+              ref={(ref) => (videoRefs.current[index] = ref)}
+              source={item.url}
+              paused={currentIndex !== index}
+              muted={true}
+              showProgressBar={true}  
+              resizeMode="cover"
+              style={{ width: '100%', height: '100%' }}
+              repeat={false}
+              onEndReached={handleVideoEnd}
+              onPlaybackStatus={(status) => {
+                switch (status.status) {
+                  case 'loading':
+                  case 'buffering':
+                    setVideoLoading((prev) => ({ ...prev, [index]: true }));
+                    break;
+                  case 'loaded':
+                  case 'playing':
+                  case 'ended':
+                    setVideoLoading((prev) => ({ ...prev, [index]: false }));
+                    break;
+                }
+              }}
+            />
+
+            {videoLoading[index] && (
+              <ActivityIndicator
+                size="small"
+                color="#fff"
+                style={{
+                  position: 'absolute',
+                  top: '45%',
+                  left: '45%',
+                }}
+              />
+            )}
+          </TouchableOpacity>
+        )}
       />
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  carouselContainer: {
-    flex: 1,
-    overflow: 'hidden',
-  },
-  mediaWrapper: {
-    width: windowWidth - 10,
-    marginHorizontal: 5,
-    aspectRatio: 16 / 9,
-    borderRadius: 12,
-    overflow: 'hidden',
-    backgroundColor: '#f0f0f0',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  media: {
-    width: '100%',
-    height: '100%',
-    backgroundColor:'#fff'
-  },
-  overlayButton: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 1,
-  },
-});
 
 export default HomeBanner;

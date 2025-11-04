@@ -473,8 +473,7 @@ useEffect(() => {
     try {
       const trimmedTitle = postData.title?.trim();
       const rawBodyHtml = postData.body?.trim();
-      console.log('📝 Title:', trimmedTitle);
-      console.log('📝 Raw body:', rawBodyHtml);
+      const currentTimestampInSeconds = Math.floor(Date.now() / 1000);
 
       if (!trimmedTitle || !rawBodyHtml) {
         showToast("Title and body are required", 'info');
@@ -500,6 +499,7 @@ useEffect(() => {
         user_id: myId,
         title: trimmedTitle,
         resource_body: cleanedBody,
+        posted_on: currentTimestampInSeconds,
         ...(fileKey && { fileKey }),
         ...(fileKey && thumbnailFileKey && { thumbnail_fileKey: thumbnailFileKey }),
         ...(fileKey && mediaMeta && Object.keys(mediaMeta).length > 0 && { extraData: mediaMeta }),
@@ -513,7 +513,7 @@ useEffect(() => {
         const enrichedPost = {
           ...postPayload,
           resource_id: res.data.resource_details?.resource_id,
-
+          
         };
         setHasChanges(false)
         EventRegister.emit('onResourcePostCreated', { newPost: enrichedPost });

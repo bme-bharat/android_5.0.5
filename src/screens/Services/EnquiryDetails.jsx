@@ -19,6 +19,8 @@ import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
 import Pdf from '../../assets/svgIcons/pdf.svg';
 
 import { colors, dimensions } from '../../assets/theme.jsx';
+import { useSelector } from 'react-redux';
+import { commonStyles } from '../AppUtils/AppStyles.js';
 
 const EnquiryDetails = () => {
     const route = useRoute();
@@ -31,8 +33,7 @@ const EnquiryDetails = () => {
     const [isVideoPlaying, setIsVideoPlaying] = useState(false);
     const [thumbnailUrl, setThumbnailUrl] = useState(null);
     const { myId, myData } = useNetwork();
-
-    console.log('postData', postData)
+    const profile = useSelector(state => state.CompanyProfile.profile);
 
     const [expandedPosts, setExpandedPosts] = useState({});
 
@@ -226,24 +227,26 @@ const EnquiryDetails = () => {
 
             {postData && Object.keys(postData).length > 0 ? (
                 <ScrollView
-                    contentContainerStyle={{ paddingBottom: "20%", paddingHorizontal: 10 }}
+                    contentContainerStyle={{ paddingBottom: "20%" }}
                     showsVerticalScrollIndicator={false}
                 >
                     <View style={styles.container}>
                         {/* Author section */}
                         <View style={styles.authorContainer}>
-                            {authorImageUrl ? (
+                            {profile?.imageUrl ? (
                                 <FastImage
-                                    source={{ uri: authorImageUrl }}
+                                    source={{ uri: profile?.imageUrl, }}
+
                                     style={styles.authorImage}
-                                    resizeMode="cover"
+                                    resizeMode='contain'
+                                    onError={() => { }}
                                 />
                             ) : (
-                                <FastImage
-                                    source={authorImage}
-                                    style={styles.authorImage}
-                                    resizeMode="cover"
-                                />
+                                <View style={[styles.authorImage, { backgroundColor: profile?.companyAvatar?.backgroundColor }]}>
+                                    <Text style={[styles.avatarText, { color: profile?.companyAvatar?.textColor }]}>
+                                        {profile?.companyAvatar?.initials}
+                                    </Text>
+                                </View>
                             )}
                             <View style={styles.authorInfo}>
                                 <View style={styles.authorNameRow}>
@@ -258,32 +261,9 @@ const EnquiryDetails = () => {
                         </View>
 
                         {/* Content section */}
-                        <Text style={styles.title}>{postData?.service_title}</Text>
+                        <Text style={commonStyles.label}>{postData?.service_title}</Text>
 
-                        <Text style={styles.title}>{postData?.enquiry_description}</Text>
-
-                        <TouchableOpacity onPress={() => toggleFullText(postData?.enquiry_id)} activeOpacity={1} style={styles.textContainer}>
-                            <Text style={styles.body}>
-                                <ParsedText
-                                    style={{ color: 'black' }}
-                                    parse={[
-                                        {
-                                            pattern: /(?:https?:\/\/[^\s/$.?#].[^\s]*|www\.[^\s]+)/g,
-                                            style: { color: '#075cab', textDecorationLine: 'underline' },
-                                            onPress: handleUrlPress,
-                                            renderText: (matchingString) =>
-                                                matchingString.startsWith(' ') ? matchingString : ` ${matchingString}`,
-                                        },
-                                    ]}
-                                >
-                                    {getText1((postData?.resource_body || '').trimStart().trimEnd(), postData?.enquiry_id)}
-                                </ParsedText>
-                                {postData?.resource_body?.length > 200 && !expandedPosts[postData?.enquiry_id] && (
-                                    <Text style={styles.readMore}> Read More</Text>
-                                )}
-                            </Text>
-                        </TouchableOpacity>
-
+                        <Text style={[commonStyles.value,{marginTop:10}]}>{postData?.enquiry_description}</Text>
 
 
                         {loadingMedia ? (
@@ -372,10 +352,17 @@ const styles = StyleSheet.create({
         // marginVertical: 10,
     },
     authorImage: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
+        width: 50,
+        height: 50,
+        borderRadius: 25,
         marginRight: 5,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    avatarText: {
+        fontSize: 22,
+        fontWeight: 'bold',
+       
     },
     authorPlaceholder: {
         backgroundColor: '#f0f0f0',
@@ -392,19 +379,18 @@ const styles = StyleSheet.create({
     },
     authorName: {
         fontSize: 16,
-        color: 'black',
-        fontWeight: '500',
+        color: colors.text_primary,
+        fontWeight: '600',
         maxWidth: '70%'
     },
     authorCategory: {
         fontSize: 13,
-        color: 'black',
+        color: colors.text_secondary,
         fontWeight: '300',
     },
     timeText: {
         fontSize: 12,
-        color: '#999',
-        marginTop: 2,
+        color: colors.text_secondary,
     },
     title: {
         fontSize: 15,
@@ -419,7 +405,7 @@ const styles = StyleSheet.create({
         marginBottom: 10,
         fontWeight: '400',
         alignItems: 'center',
-        lineHeight: 23,
+        lineHeight: 20,
     },
 
     readMore: {
@@ -430,7 +416,7 @@ const styles = StyleSheet.create({
     fileContainer: {
         marginTop: 10,
         overflow: 'hidden',
-        
+
     },
     resourceImage: {
         width: '100%',

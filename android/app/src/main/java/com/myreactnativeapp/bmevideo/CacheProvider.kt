@@ -60,14 +60,19 @@ object CacheProvider {
       // .setBufferSize(...) // optional: use default unless you have special needs
 
     // Configure CacheDataSource.Factory to use upstream and to write via sink.
-    val cacheDataSourceFactory = CacheDataSource.Factory()
+          val cacheDataSourceFactory = CacheDataSource.Factory()
       .setCache(cache)
       .setUpstreamDataSourceFactory(upstreamFactory)
       .setCacheWriteDataSinkFactory(cacheDataSinkFactory)
-      // block on cache if key locked and ignore cache on error fallback to network:
       .setFlags(CacheDataSource.FLAG_BLOCK_ON_CACHE or CacheDataSource.FLAG_IGNORE_CACHE_ON_ERROR)
 
+    android.util.Log.d(
+      "CacheProvider",
+      "✅ CacheDataSourceFactory attached — cache dir: ${File(context.cacheDir, CACHE_DIR_NAME).absolutePath}"
+    )
+
     return cacheDataSourceFactory
+
   }
 
   /** Release the in-memory DB & file handles (call when app terminating or for tests). */

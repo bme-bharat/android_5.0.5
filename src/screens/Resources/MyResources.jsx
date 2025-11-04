@@ -36,7 +36,7 @@ const YourResourcesList = ({ navigation, route }) => {
   const { myId, myData } = useNetwork();
 
   const [allForumPost, setAllForumPost] = useState([]);
-
+console.log('allForumPost',allForumPost)
   const [imageUrls, setImageUrls] = useState({});
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [postToDelete, setPostToDelete] = useState(null);
@@ -292,6 +292,9 @@ const YourResourcesList = ({ navigation, route }) => {
       ? Object.values(rawFileUrl)[0]   // take first value
       : rawFileUrl || item.fileUrl || item.imageUrl || defaultLogo;
 
+    const isDefaultImage =
+      fileUrl === defaultLogo || fileUrl?.includes('image.jpg');
+
     const formattedDate = new Date(item.posted_on * 1000)
       .toLocaleDateString("en-GB", {
         day: "2-digit",
@@ -308,7 +311,7 @@ const YourResourcesList = ({ navigation, route }) => {
         }
       >
         <View style={styles.postContainer}>
-          <View style={styles.mediaContainer}>
+          <View style={styles.imageContainer}>
             {item?.extraData?.type?.startsWith("image/") ? (
               <Image
                 source={{ uri: fileUrl }}
@@ -361,7 +364,7 @@ const YourResourcesList = ({ navigation, route }) => {
             <View style={styles.buttonContainer}>
               <TouchableOpacity
                 style={[styles.editButton, { marginRight: 10 }]}
-                onPress={() => handleEditPress(item, fileUrl)}
+                onPress={() => handleEditPress(item, isDefaultImage ? undefined : fileUrl)}
               >
 
                 <Text style={styles.editButtonText}>Edit</Text>
@@ -510,8 +513,14 @@ const styles = StyleSheet.create({
     borderWidth: 0.5,
     borderColor: '#ddd',
     shadowColor: '#000',
-    top: 10,
-
+    top: 10
+  },
+  imageContainer: {
+    flex: 1,
+    justifyContent: 'flex-start',
+    // backgroundColor:'red',
+    alignItems: 'center',
+    padding: 10,
   },
   noPostsText: {
     color: 'black',
@@ -570,16 +579,9 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
-
     backgroundColor: "#075cab"
   },
-  imageContainer: {
-    flex: 1,
-    justifyContent: 'flex-start',
-    // backgroundColor:'red',
-    alignItems: 'center',
-    marginTop: 10
-  },
+
 
   image: {
     width: 100,

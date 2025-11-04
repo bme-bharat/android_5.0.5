@@ -144,7 +144,7 @@ const TrendingPosts = () => {
                     />
                 </InputAccessoryView>
             </View>,
-            -screenHeight 
+            -screenHeight
         );
     };
 
@@ -333,8 +333,8 @@ const TrendingPosts = () => {
                                 style={AppStyles.searchInput}
                                 placeholder="Search"
                                 placeholderTextColor="gray"
-                                value={searchQuery}
-                                onChangeText={handleDebouncedTextChange}
+                                onChangeText={setSearchQuery}      // <--- Add this
+                                onSubmitEditing={() => handleSearch(searchQuery)}
                             />
 
 

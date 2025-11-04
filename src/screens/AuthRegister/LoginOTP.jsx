@@ -5,7 +5,8 @@ import {
   View, Text, TextInput, TouchableOpacity,
   StyleSheet, Alert, ScrollView, Keyboard,
   Platform,
-  StatusBar
+  StatusBar,
+  ActivityIndicator
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import axios from 'axios';
@@ -20,18 +21,20 @@ import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
 import ArrowRight from '../../assets/svgIcons/arrow-right-circle.svg';
 
 import { colors, dimensions } from '../../assets/theme.jsx';
+import { addSmsListener, startSmsListener, useOtpRetriever } from '../SmsRetriever.js';
 
 const LoginVerifyOTPScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const { fullPhoneNumber, userid, phone } = route.params;
-  const [otp, setOTP] = useState('');
-  const otpRef = useRef('');
-  const otpInputs = useRef([]);
+
+  const [OTP, setOTP] = useState('');
   const [timer, setTimer] = useState(30);
   const [isResendEnabled, setIsResendEnabled] = useState(false);
-  const isProcessing = useRef(false);
+console.log('OTP',OTP)
   const { fcmToken, refreshFcmToken } = useFcmToken();
+  const [otpMode, setOtpMode] = useState("user");
+  const [isProcessing, setIsProcessing] = useState(false);
 
 
   useEffect(() => {
@@ -43,24 +46,32 @@ const LoginVerifyOTPScreen = () => {
     }
   }, [timer]);
 
-  useEffect(() => {
 
-    if (otpInputs.current[0]) {
-      otpInputs.current[0].focus();
+
+  useOtpRetriever((receivedOtp) => {
+    if (receivedOtp && /^\d{6}$/.test(receivedOtp)) {
+      setOtpMode("auto"); // disable manual typing
+      setOTP(receivedOtp); // triggers verification via useEffect
     }
-  }, []);
+  });
 
-  const handleVerifyOTP = async () => {
-    if (isProcessing.current) return;
 
-    const enteredOTP = otpRef.current;
+  useEffect(() => {
+    if (OTP.length === 6 && !isProcessing) {
+      setOtpMode("auto"); // show overlay
+      handleVerifyOTP(OTP);
+    }
+  }, [OTP]);
+  
 
-    if (enteredOTP.length !== 6 || !/^\d{6}$/.test(enteredOTP)) {
-      showToast("Please enter a valid 6 digit OTP", 'error');
+  const handleVerifyOTP = async (otpValue) => {
+    if (isProcessing) return;
+    if (!otpValue || otpValue.length !== 6) {
+      showToast("Please enter a valid 6 digit OTP", "error");
       return;
     }
 
-    isProcessing.current = true;
+    setIsProcessing(true);
 
     try {
       let response = null;
@@ -68,13 +79,13 @@ const LoginVerifyOTPScreen = () => {
       if (fullPhoneNumber) {
         response = await apiClient.post('/verifyOtpMsg91', {
           command: 'verifyOtpMsg91',
-          otp: enteredOTP,
+          otp: otpValue,
           user_phone_number: fullPhoneNumber,
         });
       } else if (phone) {
         response = await apiClient.post('/verifyEmailOtp', {
           command: 'verifyEmailOtp',
-          otp: enteredOTP,
+          otp: otpValue,
           email: phone,
         });
       } else {
@@ -98,11 +109,12 @@ const LoginVerifyOTPScreen = () => {
         "Something went wrong. Please try again.";
       showToast(errorMessage, 'error');
     } finally {
+      setTimeout(() => setOtpMode("user"), 400);
+      setIsProcessing(false);
+      setOtpMode("user"); // re-enable manual input
 
-      isProcessing.current = false;
     }
   };
-
 
 
   const createUserSession = async (userId) => {
@@ -112,20 +124,22 @@ const LoginVerifyOTPScreen = () => {
     }
 
     const finalFcmToken = fcmToken || "FCM_NOT_AVAILABLE";
-
-    const deviceModel = await DeviceInfo.getModel(); // your existing usage
+    const [deviceName, model, userAgent, ipAddress] = await Promise.allSettled([
+      DeviceInfo.getDeviceName(),
+      DeviceInfo.getModel(),
+      DeviceInfo.getUserAgent(),
+      DeviceInfo.getIpAddress(),
+    ]);
 
     const deviceInfo = {
       os: Platform.OS,
-      // osVersion: DeviceInfo.getSystemVersion(),
-      deviceName: await DeviceInfo.getDeviceName(),
-      model: deviceModel,
-      // brand: DeviceInfo.getBrand(),
+      deviceName: deviceName.status === 'fulfilled' ? deviceName.value : 'Unknown',
+      model: model.status === 'fulfilled' ? model.value : 'Unknown',
       appVersion: DeviceInfo.getVersion(),
-      // buildNumber: DeviceInfo.getBuildNumber(),
-      userAgent: await DeviceInfo.getUserAgent(),
-      ipAddress: await DeviceInfo.getIpAddress(),
+      userAgent: userAgent.status === 'fulfilled' ? userAgent.value : 'Unknown',
+      ipAddress: ipAddress.status === 'fulfilled' ? ipAddress.value : '0.0.0.0',
     };
+
 
     const payload = {
       command: "createUserSession",
@@ -134,15 +148,13 @@ const LoginVerifyOTPScreen = () => {
       deviceInfo: deviceInfo,
     };
 
-    console.log("📦 [Payload Sent to API]:", payload);
-
     try {
       const response = await apiClient.post('/createUserSession', payload);
 
       if (response?.data?.status === "success") {
         const sessionId = response.data.data.session_id;
         await AsyncStorage.setItem("userSession", JSON.stringify({ sessionId }));
-        // console.log("✅ [User Session Created Successfully]:", response.data);
+
       } else {
 
       }
@@ -162,7 +174,6 @@ const LoginVerifyOTPScreen = () => {
       );
 
       const fetchedUserData = userResponse.data.status_message;
-      // console.log("fetchedUserData", fetchedUserData);
 
       const currentTime = Math.floor(Date.now() / 1000);
 
@@ -293,9 +304,9 @@ const LoginVerifyOTPScreen = () => {
 
 
   const resendHandle = async () => {
-    if (isProcessing.current) return;  // Prevent duplicate clicks
+    if (isProcessing) return;
+    setIsProcessing(true);
 
-    isProcessing.current = true;
     try {
       const response = await axios.post(
         'https://h7l1568kga.execute-api.ap-south-1.amazonaws.com/dev/resendOtpMsg91',
@@ -318,8 +329,9 @@ const LoginVerifyOTPScreen = () => {
       showToast("Unable to resend\nTry again later", 'error');
 
     } finally {
+      setTimeout(() => setOtpMode("user"), 400);
+      setIsProcessing(false);
 
-      isProcessing.current = false;
     }
   };
 
@@ -332,7 +344,7 @@ const LoginVerifyOTPScreen = () => {
 
   return (
     <View style={styles.container}>
-   <StatusBar backgroundColor="#075cab" barStyle="default" />
+      <StatusBar backgroundColor="#075cab" barStyle="default" />
 
       <View style={styles.headerContainer}>
 
@@ -348,46 +360,25 @@ const LoginVerifyOTPScreen = () => {
         </Text>
 
         <View style={styles.inputContainer}>
+
           <OtpInput
             numberOfDigits={6}
             focusColor="#075cab"
-            autoFocus={true}
-            // hideStick={true}
             placeholder="•"
-            // blurOnFilled={true}
-            disabled={false}
             type="numeric"
-            secureTextEntry={false}
-            focusStickBlinkingDuration={500}
+            value={OTP}
+            editable={otpMode === "user"}
             onTextChange={(text) => {
-              setOTP(text);
-              otpRef.current = text; // ✅ latest OTP
-            }}
-            onFilled={(text) => {
-              setOTP(text);
-              otpRef.current = text;
-              handleVerifyOTP();
-            }}
-
-            textInputProps={{
-              accessibilityLabel: "One-Time Password",
-            }}
-            textProps={{
-              accessibilityRole: "text",
-              accessibilityLabel: "OTP digit",
-              allowFontScaling: false,
+              if (otpMode === "user") setOTP(text);
             }}
             theme={{
               containerStyle: styles.otpContainer,
               pinCodeContainerStyle: styles.pinCodeContainer,
               pinCodeTextStyle: styles.pinCodeText,
-              focusStickStyle: styles.focusStick,
               focusedPinCodeContainerStyle: styles.activePinCodeContainer,
-              placeholderTextStyle: styles.placeholderText,
-              filledPinCodeContainerStyle: styles.filledPinCodeContainer,
-              disabledPinCodeContainerStyle: styles.disabledPinCodeContainer,
             }}
           />
+
         </View>
 
         <View style={styles.actionsRow}>
@@ -399,13 +390,20 @@ const LoginVerifyOTPScreen = () => {
             <Text style={styles.timerText}>Resend in {timer}s</Text>
           )}
 
-          <TouchableOpacity onPress={handleVerifyOTP} style={styles.verifyButton}>
-          <ArrowRight width={dimensions.icon.xl} height={dimensions.icon.xl} color={colors.primary} />
+          <TouchableOpacity onPress={() => handleVerifyOTP(OTP)} style={styles.verifyButton}>
+            <ArrowRight width={dimensions.icon.xl} height={dimensions.icon.xl} color={colors.primary} />
 
           </TouchableOpacity>
         </View>
       </View>
-
+      {(otpMode === "loading" || otpMode === "auto") && (
+        <View style={styles.overlay}>
+          <ActivityIndicator size="large" color="#fff" />
+          <Text style={styles.overlayText}>
+            {otpMode === "loading" ? "Reading OTP..." : "Verifying..."}
+          </Text>
+        </View>
+      )}
     </View>
   );
 };
@@ -511,6 +509,19 @@ const styles = StyleSheet.create({
   verifyButton: {
     alignSelf: 'flex-end',
   },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.6)",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 99,
+  },
+  overlayText: {
+    color: "#fff",
+    fontSize: 16,
+    marginTop: 10,
+  },
+
 });
 
 export default LoginVerifyOTPScreen;

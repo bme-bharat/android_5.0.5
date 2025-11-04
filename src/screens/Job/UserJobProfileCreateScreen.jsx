@@ -693,8 +693,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     paddingHorizontal: 15,
     borderRadius: 8,
-    fontSize: 16,
-    color: '#222',
+    color: colors.text_secondary,
+    fontWeight: '500',
+    fontSize: 13,
     shadowColor: '#000',
     shadowOpacity: 0.05,
     shadowOffset: { width: 0, height: 2 },
@@ -798,8 +799,9 @@ const styles = StyleSheet.create({
     borderColor: '#ddd'
   },
   dropdownButtonText: {
-    fontSize: 16,
-    color: '#333',
+    color: colors.text_secondary,
+    fontWeight: '500',
+    fontSize: 13,
     flex: 1,
   },
   dropdownItem: {
@@ -814,9 +816,9 @@ const styles = StyleSheet.create({
   },
   label: {
     marginBottom: 10,
-    fontSize: 15,
-    fontWeight: "500",
-    color: 'black',
+    color: colors.text_primary,
+    fontWeight: '500',
+    fontSize: 13,
     paddingHorizontal: 10
   },
   inputContainer: {

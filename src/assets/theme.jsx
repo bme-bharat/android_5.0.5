@@ -1,19 +1,27 @@
+// colors.js
 export const colors = {
   primary: '#075cab',
-  secondary: '#000000',
-  danger: '#E53935',     // instead of "red"
+  secondary: '#757575',
+  danger: '#E53935',
   success: '#4CAF50',
   warning: '#FB8C00',
   background: '#FFFFFF',
   text: '#212121',
-  gray: '#9E9E9E',       // added gray
+  gray: '#9E9E9E',
+
+  text_primary: '#212121',
+  text_secondary: '#757575',
+  text_accent: '#FF4081',
+  text_white: '#FFFFFF',
+  app_background: "#e9e6df"
 };
+
 
 
 export const dimensions = {
   icon: {
     small: 16,
-    medium: 24,
+    medium: 20,
     ml: 28,
     large: 32,
     xl:40

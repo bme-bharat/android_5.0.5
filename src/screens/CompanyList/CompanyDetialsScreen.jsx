@@ -21,6 +21,7 @@ import { openLink } from '../AppUtils/openLinks';
 import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
 import ShareIcon from '../../assets/svgIcons/share.svg';
 import { colors, dimensions } from '../../assets/theme.jsx';
+import { commonStyles } from '../AppUtils/AppStyles.js';
 
 const CompanyDetailsScreen = ({ route }) => {
   const { myId, myData } = useNetwork();
@@ -353,8 +354,7 @@ const CompanyDetailsScreen = ({ route }) => {
 
 
       <ScrollView showsVerticalScrollIndicator={false} >
-        <TouchableOpacity activeOpacity={1} style={{ paddingHorizontal: 15, }}>
-
+ 
           <TouchableOpacity
             onPress={() => {
               if (typeof imageUrl === 'string' && imageUrl.trim() !== '') {
@@ -385,7 +385,7 @@ const CompanyDetailsScreen = ({ route }) => {
               >
                 <Text
                   style={[
-                    styles.avatarText,
+                    commonStyles.avatarText,
                     { color: profile?.companyAvatar?.textColor || '#000' },
                   ]}
                 >
@@ -399,44 +399,44 @@ const CompanyDetailsScreen = ({ route }) => {
 
           <View style={[styles.detailsContainer]}>
 
-            <View style={styles.title1}>
-              <Text style={styles.label}>Company     </Text>
-              <Text style={styles.colon}>:</Text>
-              <Text style={styles.value}>{(profile?.company_name || "").trimStart().trimEnd()}</Text>
+            <View style={commonStyles.labValContainer}>
+              <Text style={commonStyles.label}>Company     </Text>
+              <Text style={commonStyles.colon}>:</Text>
+              <Text style={commonStyles.value}>{(profile?.company_name || "").trimStart().trimEnd()}</Text>
             </View>
 
-            <View style={styles.title1}>
-              <Text style={styles.label}>Category      </Text>
-              <Text style={styles.colon}>:</Text>
+            <View style={commonStyles.labValContainer}>
+              <Text style={commonStyles.label}>Category      </Text>
+              <Text style={commonStyles.colon}>:</Text>
 
-              <Text style={styles.value}>{profile?.category || ""}</Text>
+              <Text style={commonStyles.value}>{profile?.category || ""}</Text>
             </View>
-            <View style={styles.title1}>
-              <Text style={styles.label}>City              </Text>
-              <Text style={styles.colon}>:</Text>
+            <View style={commonStyles.labValContainer}>
+              <Text style={commonStyles.label}>City              </Text>
+              <Text style={commonStyles.colon}>:</Text>
 
-              <Text style={styles.value}>{profile?.company_located_city || ""}</Text>
+              <Text style={commonStyles.value}>{profile?.company_located_city || ""}</Text>
             </View>
-            <View style={styles.title1}>
-              <Text style={styles.label}>State            </Text>
-              <Text style={styles.colon}>:</Text>
+            <View style={commonStyles.labValContainer}>
+              <Text style={commonStyles.label}>State            </Text>
+              <Text style={commonStyles.colon}>:</Text>
 
-              <Text style={styles.value}>{profile?.company_located_state || ""}</Text>
+              <Text style={commonStyles.value}>{profile?.company_located_state || ""}</Text>
             </View>
             {profile?.company_address?.trimStart().trimEnd() ? (
-              <View style={styles.title1}>
-                <Text style={styles.label}>Address</Text>
-                <Text style={styles.colon}>:</Text>
-                <Text style={styles.value}>{profile.company_address.trim()}</Text>
+              <View style={commonStyles.labValContainer}>
+                <Text style={commonStyles.label}>Address</Text>
+                <Text style={commonStyles.colon}>:</Text>
+                <Text style={commonStyles.value}>{profile.company_address.trim()}</Text>
               </View>
             ) : null}
             {profile?.Website?.trimStart().trimEnd() ? (
-              <View style={styles.title1}>
-                <Text style={styles.label}>Website</Text>
-                <Text style={styles.colon}>:</Text>
-                <Text style={styles.value}>
+              <View style={commonStyles.labValContainer}>
+                <Text style={commonStyles.label}>Website</Text>
+                <Text style={commonStyles.colon}>:</Text>
+                <Text style={commonStyles.value}>
                   <TouchableOpacity onPress={() => openLink(profile.Website)}>
-                    <Text style={[styles.value, { color: "#075cab", textDecorationLine: "underline" }]}>
+                    <Text style={[commonStyles.value, { color: "#075cab", textDecorationLine: "underline" }]}>
                       {profile.Website.trim()}
                     </Text>
                   </TouchableOpacity>
@@ -445,10 +445,10 @@ const CompanyDetailsScreen = ({ route }) => {
             ) : null}
 
             {profile?.company_description?.trimStart().trimEnd() ? (
-              <View style={[styles.title1, { textAlign: 'justify' }]}>
-                <Text style={styles.label}>Description</Text>
-                <Text style={styles.colon}>:</Text>
-                <Text style={[styles.value, { textAlign: 'justify' }]}>{profile.company_description.trim()}</Text>
+              <View style={[commonStyles.labValContainer, { textAlign: 'justify' }]}>
+                <Text style={commonStyles.label}>Description</Text>
+                <Text style={commonStyles.colon}>:</Text>
+                <Text style={[commonStyles.value, { textAlign: 'justify' }]}>{profile.company_description.trim()}</Text>
               </View>
             ) : null}
 
@@ -579,7 +579,7 @@ const CompanyDetailsScreen = ({ route }) => {
               />
             </>
           )}
-        </TouchableOpacity>
+  
       </ScrollView>
 
     </View>

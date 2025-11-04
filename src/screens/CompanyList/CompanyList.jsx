@@ -14,7 +14,7 @@ import apiClient from '../ApiClient';
 import { useNetwork } from '../AppUtils/IdProvider';
 import { useConnection } from '../AppUtils/ConnectionProvider';
 import { getSignedUrl, highlightMatch, useLazySignedUrls } from '../helperComponents/signedUrls';
-import AppStyles from '../AppUtils/AppStyles';
+import AppStyles, { commonStyles } from '../AppUtils/AppStyles';
 import { generateAvatarFromName } from '../helperComponents/useInitialsAvatar';
 import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
 import ShareIcon from '../../assets/svgIcons/share.svg';
@@ -276,7 +276,7 @@ const CompanyListScreen = () => {
 
       <TouchableOpacity style={styles.card} activeOpacity={1} onPress={() => navigateToDetails(item)} >
 
-        <TouchableOpacity style={AppStyles.cardImage1} onPress={() => navigateToDetails(item)} activeOpacity={0.8} >
+        <View style={AppStyles.cardImage1} >
 
           {imageUrl ? (
             <FastImage
@@ -288,24 +288,24 @@ const CompanyListScreen = () => {
             />
           ) : (
             <View style={[AppStyles.avatarContainer, { backgroundColor: item.companyAvatar?.backgroundColor }]}>
-              <Text style={[AppStyles.avatarText, { color: item.companyAvatar?.textColor }]}>
+              <Text style={[commonStyles.avatarText, { color: item.companyAvatar?.textColor }]}>
                 {item.companyAvatar?.initials}
               </Text>
             </View>
           )}
 
-        </TouchableOpacity>
+        </View>
         <View style={styles.textContainer}>
 
           <View style={styles.row}>
             <View style={styles.labelAndIconContainer}>
               <Company width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.secondary} />
 
-              <Text style={styles.label}> Company </Text>
+              <Text style={commonStyles.label}> Company </Text>
             </View>
-            <Text style={styles.colon}>:</Text>
+            <Text style={commonStyles.colon}>:</Text>
 
-            <Text style={styles.value}>
+            <Text style={commonStyles.value}>
               <Text numberOfLines={1} style={styles.companyName}>{highlightMatch(item?.company_name || '', searchQuery)}</Text>
 
             </Text>
@@ -314,11 +314,11 @@ const CompanyListScreen = () => {
             <View style={styles.labelAndIconContainer}>
               <Category width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.secondary} />
 
-              <Text style={styles.label}> Category </Text>
+              <Text style={commonStyles.label}> Category </Text>
             </View>
-            <Text style={styles.colon}>:</Text>
+            <Text style={commonStyles.colon}>:</Text>
 
-            <Text numberOfLines={1} style={styles.value}>
+            <Text numberOfLines={1} style={commonStyles.value}>
               {highlightMatch(item?.category || '', searchQuery)}
             </Text>
           </View>
@@ -326,11 +326,11 @@ const CompanyListScreen = () => {
             <View style={styles.labelAndIconContainer}>
               <Location width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.secondary} />
 
-              <Text style={styles.label}> City          </Text>
+              <Text style={commonStyles.label}> City          </Text>
             </View>
-            <Text style={styles.colon}>:</Text>
+            <Text style={commonStyles.colon}>:</Text>
 
-            <Text style={styles.value}>
+            <Text style={commonStyles.value}>
               {highlightMatch(item?.company_located_city || '', searchQuery)}
             </Text>
           </View>
@@ -338,11 +338,11 @@ const CompanyListScreen = () => {
             <View style={styles.labelAndIconContainer}>
               <Location width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.secondary} />
 
-              <Text style={styles.label}> State       </Text>
+              <Text style={commonStyles.label}> State       </Text>
             </View>
-            <Text style={styles.colon}>:</Text>
+            <Text style={commonStyles.colon}>:</Text>
 
-            <Text style={styles.value}>
+            <Text style={commonStyles.value}>
               {highlightMatch(item?.company_located_state || '', searchQuery)}
             </Text>
           </View>

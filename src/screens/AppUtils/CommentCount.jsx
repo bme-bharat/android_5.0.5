@@ -20,13 +20,11 @@ export const fetchCommentCount = async (forum_id) => {
   if (!forum_id) return 0;
 
   try {
-    const res = await withTimeout(
+    const res = await 
       apiClient.post('/getForumCommentsCount', {
         command: 'getForumCommentsCount',
         forum_id, // ✅ singular, not plural
-      }),
-      10000
-    );
+      });
 
     return res?.data?.count ?? 0;
   } catch (error) {

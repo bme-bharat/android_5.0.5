@@ -48,7 +48,7 @@ const CommentInputBar = ({
   const [selectedComment, setSelectedComment] = useState(null);
   const profile = useSelector(state => state.CompanyProfile.profile);
 const safeAreaInsets = useSafeAreaInsets();
-console.log('safeAreaInsets',safeAreaInsets)
+
   useEffect(() => {
     const editListener = EventRegister.addEventListener('onEditComment', (comment) => {
       setSelectedComment(comment);

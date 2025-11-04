@@ -13,7 +13,7 @@ import { useSelector } from 'react-redux';
 import { useNetwork } from '../AppUtils/IdProvider';
 import { showToast } from '../AppUtils/CustomToast';
 import { useConnection } from '../AppUtils/ConnectionProvider';
-import AppStyles from '../AppUtils/AppStyles';
+import AppStyles, { commonStyles } from '../AppUtils/AppStyles';
 import { getSignedUrl, highlightMatch, useLazySignedUrls } from '../helperComponents/signedUrls';
 import buliding from '../../images/homepage/buliding.jpg';
 import { EventRegister } from 'react-native-event-listeners';
@@ -545,7 +545,7 @@ const JobListScreen = () => {
               onError={() => { }}
             />
           ) : (
-            <View style={[AppStyles.avatarContainer, { backgroundColor: job.companyAvatar?.backgroundColor }]}>
+            <View style={[AppStyles.cardImage1, { backgroundColor: job.companyAvatar?.backgroundColor }]}>
               <Text style={[AppStyles.avatarText, { color: job.companyAvatar?.textColor }]}>
                 {job.companyAvatar?.initials}
               </Text>
@@ -562,36 +562,36 @@ const JobListScreen = () => {
 
           <View style={styles.detailContainer}>
             <View style={styles.lableIconContainer}>
-              <Company width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.secondary} />
+              <Company width={dimensions.icon.small} height={dimensions.icon.small} color={colors.secondary} />
 
-              <Text style={styles.label}> Company</Text>
+              <Text style={commonStyles.label}> Company</Text>
             </View>
-            <Text style={styles.colon}>:</Text>
+            <Text style={commonStyles.colon}>:</Text>
 
-            <Text numberOfLines={1} style={styles.value}>{highlightMatch(job.company_name || '', searchQuery)}</Text>
+            <Text numberOfLines={1} style={commonStyles.value}>{highlightMatch(job.company_name || '', searchQuery)}</Text>
 
 
           </View>
 
           <View style={styles.detailContainer}>
             <View style={styles.lableIconContainer}>
-              <Money width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.secondary} />
+              <Money width={dimensions.icon.small} height={dimensions.icon.small} color={colors.secondary} />
 
-              <Text style={styles.label}> Package</Text>
+              <Text style={commonStyles.label}> Package</Text>
             </View>
-            <Text style={styles.colon}>:</Text>
-            <Text numberOfLines={1} style={styles.value}>{highlightMatch(job.Package || "", searchQuery)}</Text>
+            <Text style={commonStyles.colon}>:</Text>
+            <Text numberOfLines={1} style={commonStyles.value}>{highlightMatch(job.Package || "", searchQuery)}</Text>
           </View>
 
           <View style={styles.detailContainer}>
             <View style={styles.lableIconContainer}>
-              <Location width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.secondary} />
+              <Location width={dimensions.icon.small} height={dimensions.icon.small} color={colors.secondary} />
 
-              <Text style={styles.label}> Location</Text>
+              <Text style={commonStyles.label}> Location</Text>
 
             </View>
-            <Text style={styles.colon}>:</Text>
-            <Text numberOfLines={1} style={styles.value}>
+            <Text style={commonStyles.colon}>:</Text>
+            <Text numberOfLines={1} style={commonStyles.value}>
               {highlightMatch(
                 `${job.company_located_state || ""}, ${job.company_located_city || ""}`,
                 searchQuery,
@@ -603,12 +603,10 @@ const JobListScreen = () => {
 
           <View style={styles.buttonContainer}>
             <TouchableOpacity style={styles.viewMoreButton} onPress={() => navigateToDetails(job)}>
-              <Text style={styles.viewMore}> See more...</Text>
+              <Text style={styles.viewMore}>See more...</Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={() => shareJob(job)} style={styles.shareButton}>
               <ShareIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-
-
             </TouchableOpacity>
           </View>
         </View>
@@ -838,7 +836,6 @@ const styles = StyleSheet.create({
   },
 
   shareButton: {
-    marginTop: 10,
     alignSelf: 'flex-end',
   },
 
@@ -850,8 +847,8 @@ const styles = StyleSheet.create({
 
   card: {
     backgroundColor: "white",
-    borderRadius: 10,
-    marginHorizontal: 10,
+    
+    
     marginBottom: 5,
     borderWidth: 0.5,
     borderColor: '#ddd',
@@ -865,9 +862,9 @@ const styles = StyleSheet.create({
 
   },
   title1: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: "black",
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.text_primary,
     marginBottom: 8,
     // textAlign: 'justify',
   },
@@ -880,30 +877,24 @@ const styles = StyleSheet.create({
     lineHeight: 24,
   },
   viewMoreButton: {
-    marginTop: 10,
     backgroundColor: COLORS.primary,
     borderRadius: 4,
   },
-  viewMoreText: {
-    color: "#075cab",
-    fontSize: 16,
-    fontWeight: '700',
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-  },
+
   buttonContainer: {
     display: 'flex',
     flexDirection: 'row',        // Align buttons in a row
     justifyContent: 'space-between',  // Spread buttons across the row
     // marginTop: 10,               // Add top margin for some space
     alignItems: 'center',        // Vertically center buttons
+    
   },
   viewMore: {
     // padding: 20,
     color: "#075cab",
     textAlign: 'left',
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: 15,
+    fontWeight: '500',
   },
   createPostButton: {
     position: 'absolute',
@@ -952,9 +943,9 @@ const styles = StyleSheet.create({
   },
   label: {
     flex: 1, // Take up available space
-    color: 'black',
+    color: colors.text_primary,
     fontWeight: '500',
-    fontSize: 15,
+    fontSize: 13,
     textAlign: 'left', // Align text to the left
     alignSelf: 'flex-start',
   },
@@ -965,9 +956,9 @@ const styles = StyleSheet.create({
   colon: {
     width: 20, // Fixed width for the colon
     textAlign: 'center', // Center the colon
-    color: 'black',
-    fontWeight: '500',
-    fontSize: 15,
+    color: colors.text_primary,
+    fontWeight: '400',
+    fontSize: 13,
     alignSelf: 'flex-start',
 
   },
@@ -975,8 +966,9 @@ const styles = StyleSheet.create({
     flex: 2, // Take the remaining space
     flexShrink: 1,
     color: 'black',
-    fontWeight: '400',
-    fontSize: 15,
+    fontWeight: '500',
+    fontSize: 13,
+    color: colors.text_secondary,
     textAlign: 'left', // Align text to the left
     alignSelf: 'flex-start',
   },

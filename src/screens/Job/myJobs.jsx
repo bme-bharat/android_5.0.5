@@ -47,43 +47,43 @@ const YourComapanyPostedJob = () => {
     const onJobCreated = async (data) => {
       const { newPost } = data;
       console.log('newPost', newPost);
-  
+
       // Insert or replace (upsert), newest at the top
       setPosts(prevJobs => {
         const filtered = prevJobs.filter(job => job.post_id !== newPost.post_id);
         return [newPost, ...filtered];
       });
     };
-  
+
     const onJobUpdated = async (data) => {
       const { updatedPost } = data;
-  
+
       setPosts(prevJobs =>
         prevJobs.map(job =>
           job.post_id === updatedPost.post_id ? updatedPost : job
         )
       );
     };
-  
+
     const onJobDeleted = (data) => {
       const { postId } = data;
-  
+
       setPosts(prevJobs =>
         prevJobs.filter(job => job.post_id !== postId)
       );
     };
-  
+
     const createdListener = EventRegister.addEventListener('onJobPostCreated', onJobCreated);
     const updatedListener = EventRegister.addEventListener('onJobUpdated', onJobUpdated);
     const deletedListener = EventRegister.addEventListener('onJobDeleted', onJobDeleted);
-  
+
     return () => {
       EventRegister.removeEventListener(createdListener);
       EventRegister.removeEventListener(updatedListener);
       EventRegister.removeEventListener(deletedListener);
     };
   }, []);
-  
+
 
   const fetchCompanyJobPosts = async (lastEvaluatedKey = null) => {
     if (loading || loadingMore) return;
@@ -205,20 +205,20 @@ const YourComapanyPostedJob = () => {
 
   const handleDelete = async () => {
     if (!postToDelete) return;
-  
+
     try {
       const response = await apiClient.post('/deleteJobPost', {
         command: "deleteJobPost",
         company_id: postToDelete.company_id,
         post_id: postToDelete.post_id,
       });
-  
+
       if (response.data.status === 'success') {
         // ✅ Emit deletion event
         EventRegister.emit('onJobDeleted', {
           postId: postToDelete.post_id,
         });
-  
+
         showToast("Job deleted successfully", 'success');
       } else {
         showToast("Something went wrong", 'error');
@@ -229,7 +229,7 @@ const YourComapanyPostedJob = () => {
       setDeleteAlertVisible(false);
     }
   };
-  
+
 
 
   const renderJob = ({ item: post }) => (
@@ -258,22 +258,35 @@ const YourComapanyPostedJob = () => {
               <Text style={styles.value}>{(post.Package || '').trimStart().trimEnd()}</Text>
             </View>
           </View>
-          <View style={styles.textContainer1}>
-            <View style={{ alignSelf: 'center', }}>
-              <TouchableOpacity onPress={() => navigation.navigate("CompanyAppliedJob", { post })} style={styles.iconContainer}>
-                <Text style={styles.applyButton}>View Applications</Text>
-              </TouchableOpacity>
-            </View>
-            <View style={styles.iconContainer}>
-              <TouchableOpacity style={{ alignSelf: 'flex-start', padding: 10 }} onPress={() => handleEdit(post)}>
-               <Text style={styles.buttonText}>Edit</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={{ alignSelf: 'flex-start', padding: 10 }} onPress={() => confirmDelete(post)}>
-              <Text style={styles.deleteButtonText}>Delete</Text>
-              </TouchableOpacity>
-            </View>
+
+
+
+
+          <View style={styles.iconContainer}>
+
+            <TouchableOpacity style={[styles.actionButton,]} onPress={() => handleEdit(post)}>
+              <View style={styles.iconTextContainer}>
+
+                <Text style={styles.buttonText}>Edit</Text>
+              </View>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.actionButton]} onPress={() => confirmDelete(post)}>
+              <View style={styles.iconTextContainer}>
+
+                <Text style={styles.deleteButtonText}>Delete</Text>
+              </View>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => navigation.navigate("CompanyAppliedJob", { post })} style={[styles.actionButton, { marginLeft: 10 }]}>
+              <View style={styles.iconTextContainer}>
+                <Text style={styles.buttonText}>View Applications</Text>
+              </View>
+            </TouchableOpacity>
+
           </View>
+
+
         </View>
+
       </TouchableOpacity>
     </TouchableOpacity>
   );
@@ -285,14 +298,14 @@ const YourComapanyPostedJob = () => {
         <View style={styles.headerContainer}>
 
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                                  <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-          
+            <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
+
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.circle}
             onPress={() => navigation.navigate("CompanyJobPost")} activeOpacity={0.8}>
-                                  <Add width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-          
+            <Add width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
+
             <Text style={styles.shareText}>Post a job</Text>
           </TouchableOpacity>
 
@@ -306,17 +319,17 @@ const YourComapanyPostedJob = () => {
 
   return (
     <View style={styles.container}>
-      <TouchableOpacity activeOpacity={1} style={{flex:1,}}>
+      <TouchableOpacity activeOpacity={1} style={{ flex: 1, }}>
         <View style={styles.headerContainer}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                                  <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-          
+            <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
+
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.circle}
             onPress={() => navigation.navigate("CompanyJobPost")} activeOpacity={0.8}>
-                                 <Add width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-         
+            <Add width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
+
             <Text style={styles.shareText}>Post a job</Text>
           </TouchableOpacity>
         </View>
@@ -412,7 +425,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderColor: '#f0f0f0'
   },
-  
+
   searchContainer: {
     flex: 1,
     padding: 10,
@@ -534,26 +547,41 @@ const styles = StyleSheet.create({
   },
   iconContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    justifyContent: 'flex-end',
+  },
+
+  actionButton: {
+    padding: 8,
+    borderRadius: 5,
 
   },
   deleteButtonText: {
     color: "#FF0000",
-    fontSize: 12
-},
-buttonText: {
-  marginLeft: 5,
-  fontSize: 15,
-  fontWeight: '500',
-  color: "#075cab",
-},
+    fontSize: 15
+  },
+  buttonText: {
+    marginLeft: 5,
+    fontSize: 15,
+    fontWeight: '500',
+    color: "#075cab",
+  },
+  iconTextContainer: {
+    flexDirection: 'row',
+    // alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 8,
+    borderRadius: 5,
+    backgroundColor: '#fff',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 1 },
+  },
   applyButton: {
-    // marginTop: 8,
     color: '#075cab',
     fontWeight: '500',
     fontSize: 15,
-    paddingVertical: 10
     // textDecorationLine: 'underline',
   },
   createPostButton: {

@@ -1,198 +1,190 @@
-import { useNavigation } from "@react-navigation/native";
-import React, { useState, useEffect, useRef, useCallback } from "react";
-import { View, Image, Dimensions, StyleSheet, TouchableOpacity } from "react-native";
-import Carousel from "react-native-reanimated-carousel";
-import Video from "react-native-video";
-import apiClient from "../ApiClient";
+import React, { useCallback, useEffect, useState, useRef } from 'react';
+import {
+  View,
+  ActivityIndicator,
+  Dimensions,
+  TouchableOpacity,
+  Image,
+} from 'react-native';
+import Carousel from 'react-native-reanimated-carousel';
+import { useNavigation } from '@react-navigation/native';
+import apiClient from '../ApiClient';
+import BMEVideoPlayer from '../BMEVideoPlayer';
+import { colors } from '../../assets/theme';
 
-const { width } = Dimensions.get("window");
+const { width } = Dimensions.get('window');
 
-const AUTO_PLAY_INTERVAL = 3000; // ms for images
-const BANNER_WIDTH = width - 16;
-const BANNER_HEIGHT = BANNER_WIDTH * 9 / 16; // maintain 16:9 ratio
-
-const HomeBanner = ({ bannerId }) => {
-  const navigation = useNavigation();
-  const carouselRef = useRef(null);
-  const [activeIndex, setActiveIndex] = useState(0);
-  const timerRef = useRef(null);
-  const [banners, setBanners] = useState([]);
+const HomeBanner = ({bannerId}) => {
   const [loading, setLoading] = useState(true);
-console.log('banners',banners)
+  const [banners, setBanners] = useState([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const carouselRef = useRef(null);
+  const navigation = useNavigation();
+  const videoRefs = useRef([]);
+
+  // Handle banner press (navigate or redirect)
+  const onPressBanner = useCallback(
+    (item) => {
+      if (item.id) {
+        navigation.navigate('CompanyDetails', { userId: item.id });
+      } else if (item.redirect?.target_url) {
+        const url = item.redirect.target_url;
+        try {
+          const pathname = new URL(url).pathname;
+          const segments = pathname.split('/').filter(Boolean);
+          const companyId = segments[segments.length - 1];
+          if (companyId) {
+            navigation.navigate('CompanyDetails', { userId: companyId });
+          }
+        } catch (err) {
+          console.warn('Invalid URL:', err);
+        }
+      }
+    },
+    [navigation]
+  );
+
+  // Fetch only video banners
   const fetchBanners = useCallback(async () => {
     try {
-      setLoading(true);
-      const { data } = await apiClient.post("/getBannerImages", {
-        command: "getBannerImages",
-        banners_id: 'adban01',
+      const response = await apiClient.post('/getBannerImages', {
+        command: 'getBannerImages',
+        banners_id: bannerId,
       });
-      if (data?.status !== "success") return setLoading(false);
 
-      const files = (data.response || []).flatMap((banner) =>
-        (banner.files || []).map((file) => ({
-          ...file,
-          redirect: banner.redirect || file.redirect || null,
-        }))
-      );
-      const results = await Promise.all(
-        files.map(async (file) => {
-          try {
-            const { data: signedUrl } = await apiClient.post("/getObjectSignedUrl", {
-              command: "getObjectSignedUrl",
-              bucket_name: "bme-app-admin-data",
-              key: file.fileKey,
-            });
-            if (!signedUrl) return null;
+      if (response.data.status === 'success') {
+        const bannerData = response.data.response;
+        const mediaUrls = [];
 
-            const type = file.fileKey?.toLowerCase().endsWith(".mp4") ? "video" : "image";
-            let id = null;
-            const match = (file.redirect?.target_url || "").match(/\/company\/([a-f0-9-]+)$/i);
-            if (match?.[1]) id = match[1];
+        for (const banner of bannerData) {
+          if (banner.files?.length > 0) {
+            for (const file of banner.files) {
+              if (file.fileKey.endsWith('.mp4')) continue;
+              try {
+                const res = await apiClient.post('/getObjectSignedUrl', {
+                  command: 'getObjectSignedUrl',
+                  bucket_name: 'bme-app-admin-data',
+                  key: file.fileKey,
+                });
+                if (res.data) {
+                  mediaUrls.push({
+                    url: res.data,
+                    id: banner.company_id,
+                    redirect: file.redirect,
+                  });
+                }
+              } catch (err) {
+                console.log('Signed URL fetch error:', err);
+              }
 
-            return { url: signedUrl, type, redirect: file.redirect || null, id, fileKey: file.fileKey };
-          } catch (err) {
-            console.warn("Signed URL fetch failed:", file.fileKey, err?.message || err);
-            return null;
+            }
           }
-        })
-      );
+        }
 
-      setBanners(results.filter(Boolean));
-      setLoading(false);
+        setBanners(mediaUrls);
+      }
     } catch (err) {
-      console.error("Failed to fetch banners:", err);
-      setLoading(false);
+      console.error('Banner fetch failed:', err);
     }
-  }, );
-
+  }, []);
 
   useEffect(() => {
     fetchBanners();
   }, [fetchBanners]);
 
-  const handleRedirect = useCallback((url) => {
-    if (!url) return;
-    const safeUrl = url.startsWith('http') ? url : `https://${url}`;
-    Linking.openURL(safeUrl).catch((err) =>
-      console.warn('Failed to open URL:', err)
-    );
-  }, []);
 
-  const clearTimer = () => {
-    if (timerRef.current) {
-      clearTimeout(timerRef.current);
-      timerRef.current = null;
-    }
-  };
 
+  // Start the first video when banners are ready
   useEffect(() => {
-    if (banners.length === 1 && banners[0].type === "video") {
-      // force play immediately
-      setTimeout(() => {
-        if (carouselRef.current) {
-          carouselRef.current.snapToItem(0); // trigger activation
-        }
-      }, 100);
+    if (banners.length > 0) {
+      // Give React a short delay to mount the native views
+      const timer = setTimeout(() => setCurrentIndex(0), 400);
+      return () => clearTimeout(timer);
     }
   }, [banners]);
-  
-  const scheduleNext = useCallback((duration = AUTO_PLAY_INTERVAL) => {
-    clearTimer();
-    timerRef.current = setTimeout(() => {
-      if (carouselRef.current) {
-        carouselRef.current.next();
-      }
-    }, duration);
-  }, []);
 
-  useEffect(() => {
-    const current = banners[activeIndex];
-    if (!current) return;
-  
-    if (current.type === "image") {
-      scheduleNext(AUTO_PLAY_INTERVAL);
-    }
-  
-    return clearTimer;
-  }, [activeIndex, banners, scheduleNext]);
-  
-
-  const renderItem = ({ item, index }) => {
-
-    const onPressBanner = () => {
-      if (item.id) {
-        navigation.navigate('CompanyDetails', { userId: item.id });
-      } else if (item.redirect?.target_url) {
-        handleRedirect(item.redirect.target_url);
-      }
-    };
-
-    if (item.type === "image") {
-      return (
-        <TouchableOpacity onPress={onPressBanner} activeOpacity={0.8}>
-          <Image
-            source={{ uri: item.url }}
-            style={styles.banner}
-            resizeMode="cover"
-          />
-        </TouchableOpacity>
-
-      );
-    }
-
-    if (item.type === "video") {
-      const isActive = index === activeIndex;
-      return (
-        <TouchableOpacity onPress={onPressBanner} activeOpacity={1}>
-          <Video
-            key={`${index}-${isActive}`}
-            source={{ uri: item.url }}
-            style={styles.banner}
-            resizeMode="cover"
-            paused={!isActive}
-            repeat={banners.length === 1}
-            onEnd={() => {
-              if (carouselRef.current) {
-                carouselRef.current.next();
-              }
-            }}
-            controls
-          />
-        </TouchableOpacity>
-      );
-    }
-
-    return null;
-  };
 
   return (
-    <View style={styles.bannerWrapper}>
+    <View style={{ alignItems: 'center' }}>
       <Carousel
         ref={carouselRef}
-        width={BANNER_WIDTH}
-        height={BANNER_HEIGHT}
+        width={width}
+        height={width * 0.4}
         data={banners}
         loop
-        onSnapToItem={setActiveIndex}
-        renderItem={renderItem}
+        windowSize={3}
+        autoPlay={true} // handled manually by video end
+        scrollAnimationDuration={1000}
+        autoPlayInterval={3000}
+        onProgressChange={(_, absoluteProgress) => {
+          const index = Math.round(absoluteProgress);
+          setCurrentIndex(index);
+        }}
+        mode="parallax"
+        modeConfig={{
+          parallaxScrollingScale: 0.95,
+          parallaxScrollingOffset: 20,
+        }}
+        renderItem={({ item, index }) => (
+
+          <TouchableOpacity
+            activeOpacity={0.9}
+            onPress={() => onPressBanner(item)}
+            style={{
+              flex: 1,
+              borderRadius: 16,
+              overflow: 'hidden',
+              elevation: 3,
+              backgroundColor: '#fff',
+            }}
+          >
+            <Image
+              source={{ uri: item.url }}
+              style={{ width: '100%', height: '100%' }}
+              resizeMode="cover"
+              onLoadStart={() => setLoading(true)}
+              onLoadEnd={() => setLoading(false)}
+            />
+            {loading && (
+              <ActivityIndicator
+                size="small"
+                color={colors.primary || '#fff'}
+                style={{ position: 'absolute', top: '45%', left: '45%' }}
+              />
+            )}
+          </TouchableOpacity>
+
+        )}
       />
+      <View
+                style={{
+                  position: 'absolute',
+                  bottom:10, // move higher or lower as needed
+                  left: 0,
+                  right: 0,
+                  flexDirection: 'row',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                }}
+              >
+                {banners.map((_, index) => (
+                  <View
+                    key={index}
+                    style={{
+                      width: 6,
+                      height: 6,
+                      borderRadius: 20,
+                      marginHorizontal: 4,
+                      backgroundColor:
+                        currentIndex === index
+                          ? colors.primary || '#075cab'
+                          : '#ccc', // soft white overlay
+                    }}
+                  />
+                ))}
+              </View>
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  bannerWrapper: {
-    width: BANNER_WIDTH,
-    height: BANNER_HEIGHT,
-    marginHorizontal: 8,
-    borderRadius: 12,
-    overflow: "hidden",
-    backgroundColor: "#eee",
-  },
-  banner: {
-    width: "100%",
-    height: "100%",
-  },
-});
 
 export default HomeBanner;

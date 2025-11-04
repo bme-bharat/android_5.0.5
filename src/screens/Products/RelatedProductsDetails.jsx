@@ -383,11 +383,7 @@ const RelatedProductDetails = () => {
     : [];
 
 
-  let isNavigating = false;
-
   const handleAddProduct = (product) => {
-    if (isNavigating) return;
-    isNavigating = true;
     navigation.push('RelatedProductDetails', { product_id: product.product_id, company_id: product.company_id });
 
   };

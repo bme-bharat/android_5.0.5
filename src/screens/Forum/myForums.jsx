@@ -21,6 +21,8 @@ import Add from '../../assets/svgIcons/add.svg';
 
 import { colors, dimensions } from '../../assets/theme.jsx';
 
+const defaultLogo = Image.resolveAssetSource(defaultImage).uri;
+
 const videoExtensions = [
   '.mp4', '.mov', '.avi', '.mkv', '.flv', '.wmv', '.webm',
   '.m4v', '.3gp', '.3g2', '.f4v', '.f4p', '.f4a', '.f4b', '.qt', '.quicktime'
@@ -32,13 +34,11 @@ const YourForumListScreen = ({ navigation, route }) => {
   const { myId, myData } = useNetwork();
 
   const [allForumPost, setAllForumPost] = useState([]);
-  const [imageUrls, setImageUrls] = useState([]);
-
+console.log('allForumPost',allForumPost)
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [postToDelete, setPostToDelete] = useState(null);
   const scrollViewRef = useRef(null)
   const [fileKeyToDelete, setFileKeyToDelete] = useState(null);
-  const defaultLogo = Image.resolveAssetSource(defaultImage).uri;
 
 
   useEffect(() => {
@@ -253,20 +253,8 @@ const YourForumListScreen = ({ navigation, route }) => {
 
   const RenderPostItem = ({ item }) => {
 
-    const rawHtml = (item.forum_body || '').trim();
-    const hasHtmlTags = /<\/?[a-z][\s\S]*>/i.test(rawHtml);
-    const forumBodyHtml = hasHtmlTags ? rawHtml : `<p>${rawHtml}</p>`;
 
-    const imageUri = item.thumbnailUrl
-      || imageUrls[item.forum_id]
-      || item.imageUrl
-      || item.signedUrl;
-
-    // Add cache busting parameter based on posted_on timestamp
-    const cacheBustedUri = imageUri
-      ? `${imageUri.split('?')[0]}?t=${item.posted_on}`
-      : null;
-    const hasImage = !!imageUri;
+    const imageUri = item.signedUrl || item.thumbnailUrl || item.imageUrl || defaultLogo;
 
     const formattedDate = item.posted_on
       ? new Date(item.posted_on * 1000).toLocaleDateString('en-GB', {
@@ -275,25 +263,22 @@ const YourForumListScreen = ({ navigation, route }) => {
         year: 'numeric',
       }).replace(/\//g, '-')
       : 'No date';
+      const cleanUri = (uri) => uri?.split('?')[0];
 
-
+      const isDefaultImage = cleanUri(imageUri) === cleanUri(defaultLogo);
+      
     return (
       <TouchableOpacity activeOpacity={1} onPress={() => {
-        forumDetails(item.forum_id, imageUri);
-      }}>
+        forumDetails(item.forum_id, isDefaultImage ? undefined : imageUri);
+      }} >
         <View style={styles.postContainer}>
           <View style={styles.imageContainer}>
-            {hasImage && (
-              <Image
-                source={{ uri: cacheBustedUri }}
-                style={styles.image}
-                resizeMode="contain"
-                onError={() => console.log('Image load error')}
-              />
-
-
-            )}
-
+            <Image
+              source={{ uri: imageUri }}
+              style={styles.image}
+              resizeMode="contain"
+              onError={() => console.log('Image load error')}
+            />
 
           </View>
 
@@ -308,7 +293,7 @@ const YourForumListScreen = ({ navigation, route }) => {
             <View style={styles.buttonContainer}>
               <TouchableOpacity
                 style={styles.editButton}
-                onPress={() => handleEditPress(item, imageUri)}
+                onPress={() => handleEditPress(item, isDefaultImage ? undefined : imageUri)}
               >
                 <Text style={styles.editButtonText}>Edit</Text>
               </TouchableOpacity>

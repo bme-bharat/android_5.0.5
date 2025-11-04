@@ -16,7 +16,6 @@ import { useSelector } from 'react-redux';
 import { showToast } from '../AppUtils/CustomToast';
 import apiClient from '../ApiClient';
 import { useNetwork } from '../AppUtils/IdProvider';
-import useLastActivityTracker from '../AppUtils/LastSeenProvider';
 import { updateLastSeen } from '../AppUtils/LastSeen';
 import { OtpInput } from "react-native-otp-entry";
 import { openMediaViewer } from '../helperComponents/mediaViewer';
@@ -29,6 +28,7 @@ import Account from '../../assets/svgIcons/account.svg';
 import Sucess from '../../assets/svgIcons/success.svg';
 
 import { colors, dimensions } from '../../assets/theme.jsx';
+import { commonStyles } from '../AppUtils/AppStyles.js';
 
 
 const UserProfileScreen = () => {
@@ -317,8 +317,8 @@ const UserProfileScreen = () => {
               onError={() => { }}
             />
           ) : (
-            <View style={[styles.avatarContainer, { backgroundColor: profile?.companyAvatar?.backgroundColor }]}>
-              <Text style={[styles.avatarText, { color: profile?.companyAvatar?.textColor }]}>
+            <View style={[commonStyles.avatarContainer, { backgroundColor: profile?.companyAvatar?.backgroundColor }]}>
+              <Text style={[commonStyles.avatarText, { color: profile?.companyAvatar?.textColor }]}>
                 {profile?.companyAvatar?.initials}
               </Text>
             </View>
@@ -328,16 +328,16 @@ const UserProfileScreen = () => {
 
         <View style={styles.profileBox}>
 
-          <Text style={[styles.title1, { textAlign: 'center', marginBottom: 20 }]}>
+          <Text style={[commonStyles.title, { textAlign: 'center', marginBottom: 20 }]}>
             {`${(profile?.first_name || '').trim()} ${(profile?.last_name || '').trim()}`}
           </Text>
 
           <View style={styles.textContainer}>
-            <View style={styles.title}>
-              <Text style={styles.label}>Email ID   </Text>
-              <Text style={styles.colon}>:</Text>
+            <View style={commonStyles.labValContainer}>
+              <Text style={commonStyles.label}>Email ID   </Text>
+              <Text style={commonStyles.colon}>:</Text>
 
-              <Text style={styles.value}>{(profile?.user_email_id || "").trimStart().trimEnd()}
+              <Text style={commonStyles.value}>{(profile?.user_email_id || "").trimStart().trimEnd()}
                 <Text>{profile.is_email_verified && (
                   <Sucess width={dimensions.icon.small} height={dimensions.icon.small} color={colors.success} />
 
@@ -346,54 +346,54 @@ const UserProfileScreen = () => {
 
             </View>
 
-            <View style={styles.title}>
-              <Text style={styles.label}>Phone no.        </Text>
-              <Text style={styles.colon}>:</Text>
+            <View style={commonStyles.labValContainer}>
+              <Text style={commonStyles.label}>Phone no.        </Text>
+              <Text style={commonStyles.colon}>:</Text>
 
-              <Text style={styles.value}>{profile?.user_phone_number || ""}</Text>
+              <Text style={commonStyles.value}>{profile?.user_phone_number || ""}</Text>
             </View>
 
-            <View style={styles.title}>
-              <Text style={styles.label}>Profile           </Text>
-              <Text style={styles.colon}>:</Text>
+            <View style={commonStyles.labValContainer}>
+              <Text style={commonStyles.label}>Profile</Text>
+              <Text style={commonStyles.colon}>:</Text>
 
-              <Text style={styles.value}>{profile?.select_your_profile || ""}</Text>
+              <Text style={commonStyles.value}>{profile?.select_your_profile || ""}</Text>
             </View>
-            <View style={styles.title}>
-              <Text style={styles.label}>Category         </Text>
-              <Text style={styles.colon}>:</Text>
+            <View style={commonStyles.labValContainer}>
+              <Text style={commonStyles.label}>Category         </Text>
+              <Text style={commonStyles.colon}>:</Text>
 
-              <Text style={styles.value}>{profile?.category || ""}</Text>
+              <Text style={commonStyles.value}>{profile?.category || ""}</Text>
             </View>
-            <View style={styles.title}>
-              <Text style={styles.label}>State               </Text>
-              <Text style={styles.colon}>:</Text>
+            <View style={commonStyles.labValContainer}>
+              <Text style={commonStyles.label}>State               </Text>
+              <Text style={commonStyles.colon}>:</Text>
 
-              <Text style={styles.value}>{profile?.state || ""}</Text>
+              <Text style={commonStyles.value}>{profile?.state || ""}</Text>
             </View>
-            <View style={styles.title}>
-              <Text style={styles.label}>City          </Text>
-              <Text style={styles.colon}>:</Text>
+            <View style={commonStyles.labValContainer}>
+              <Text style={commonStyles.label}>City          </Text>
+              <Text style={commonStyles.colon}>:</Text>
 
-              <Text style={styles.value}>{profile?.city || ""}</Text>
+              <Text style={commonStyles.value}>{profile?.city || ""}</Text>
             </View>
-            <View style={styles.title}>
-              <Text style={styles.label}>Gender</Text>
-              <Text style={styles.colon}>:</Text>
-              <Text style={styles.value}>{profile?.gender || ""}</Text>
+            <View style={commonStyles.labValContainer}>
+              <Text style={commonStyles.label}>Gender</Text>
+              <Text style={commonStyles.colon}>:</Text>
+              <Text style={commonStyles.value}>{profile?.gender || ""}</Text>
             </View>
 
-            <View style={styles.title}>
-              <Text style={styles.label}>Date of birth </Text>
-              <Text style={styles.colon}>:</Text>
-              <Text style={styles.value}>{profile?.date_of_birth ? (profile?.date_of_birth) : ""}</Text>
+            <View style={commonStyles.labValContainer}>
+              <Text style={commonStyles.label}>Date of birth </Text>
+              <Text style={commonStyles.colon}>:</Text>
+              <Text style={commonStyles.value}>{profile?.date_of_birth ? (profile?.date_of_birth) : ""}</Text>
             </View>
 
             {(profile?.college?.trimStart().trimEnd()) ? (
-              <View style={styles.title}>
-                <Text style={styles.label}>Institute / Company</Text>
-                <Text style={styles.colon}>:</Text>
-                <Text style={styles.value}>{profile?.college.trimStart().trimEnd()}</Text>
+              <View style={commonStyles.labValContainer}>
+                <Text style={commonStyles.label}>Institute / Company</Text>
+                <Text style={commonStyles.colon}>:</Text>
+                <Text style={commonStyles.value}>{profile?.college.trimStart().trimEnd()}</Text>
               </View>
             ) : null}
 
@@ -595,7 +595,7 @@ const styles = StyleSheet.create({
   profileBox: {
     justifyContent: 'flex-start',
     backgroundColor: 'white',
-    paddingHorizontal: 5
+
   },
   imageContainer: {
     width: 140,
@@ -614,65 +614,12 @@ const styles = StyleSheet.create({
     borderRadius: 80,
 
   },
-  title1: {
-    flexDirection: 'row',
-    fontSize: 15,
-    fontWeight: '500',
-    color: 'black',
-    marginBottom: 5,
-  },
+
   textContainer: {
     flex: 1,
     justifyContent: 'space-between',
     // marginLeft:0,
 
-  },
-
-  title: {
-    flex: 1,
-    justifyContent: 'space-between',
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'white',
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
-    borderRadius: 10,
-    padding: 10,
-    marginVertical: 5,
-    marginHorizontal: 10
-  },
-  label: {
-    flex: 1,
-    color: 'black',
-    fontWeight: '500',
-    fontSize: 15,
-    textAlign: 'left',
-    alignSelf: 'flex-start',
-
-  },
-
-  colon: {
-    width: 20,
-    textAlign: 'center',
-    color: 'black',
-    fontWeight: '500',
-    fontSize: 15,
-    alignSelf: 'flex-start',
-
-  },
-
-
-  value: {
-    flex: 2, // Take the remaining space
-    flexShrink: 1,
-    color: 'black',
-    fontWeight: '400',
-    fontSize: 15,
-    textAlign: 'left', // Align text to the left
-    alignSelf: 'flex-start',
   },
 
   createPostButton: {

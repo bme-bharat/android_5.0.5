@@ -24,7 +24,8 @@ import Search from '../../assets/svgIcons/search.svg';
 import Close from '../../assets/svgIcons/close.svg';
 import Filter from '../../assets/svgIcons/filter.svg';
 import Check from '../../assets/svgIcons/check-fill.svg';
-
+import HomeBanner from '../Banners/homeBanner3.jsx';
+import Company from '../../assets/svgIcons/company.svg';
 
 import { colors, dimensions } from '../../assets/theme.jsx';
 
@@ -133,7 +134,6 @@ const ProductsList = () => {
 
         setSelectedCategories({});
         setTempSelectedCategories({});
-        setIsFilterOpen(false);
 
         if (hadFilters) {
             setSearchResults([]);
@@ -437,28 +437,23 @@ const ProductsList = () => {
                     </View>
 
                     <View style={styles.cardContent}>
-                        <View>
-                            {/* <Text numberOfLines={1} style={styles.title}>{item.title || ' '}</Text>
+
+                        {/* <Text numberOfLines={1} style={styles.title}>{item.title || ' '}</Text>
                         <Text numberOfLines={1} style={styles.category}>{item.specifications.model_name || ' '}</Text>
                         <Text numberOfLines={1} style={styles.description}>{item.description || ' '}</Text> */}
-                            <Text numberOfLines={1} style={styles.title}>{highlightMatch(item.title || '', searchQuery)}</Text>
-                            <Text numberOfLines={1} style={styles.category}>{highlightMatch(item.specifications.model_name || '', searchQuery)}</Text>
-                            <Text numberOfLines={1} style={styles.description}>{highlightMatch(item.description || '', searchQuery)}</Text>
-                            <Text numberOfLines={1} style={styles.companyName}>{highlightMatch(item.company_name || '', searchQuery)}</Text>
-                            {/* <Text numberOfLines={1} style={styles.companyName}>{highlightMatch(job.company_name || '', searchQuery)}</Text> */}
-
-                            <View style={styles.priceRow}>
-                                <Text numberOfLines={1} style={styles.price}>
-                                    ₹ {item.price !== undefined && item.price !== null && item.price !== '' ? item.price : "Undefined"}
-                                </Text>
-                            </View>
-
-
-                        </View>
-
-                        <TouchableOpacity style={styles.productDetailsContainer} onPress={() => handleAddProduct(item)} activeOpacity={1}>
-                            <Text numberOfLines={1} style={styles.productDetailsText}>View details</Text>
+                        <Text numberOfLines={1} style={styles.title}>{highlightMatch(item.title || '', searchQuery)}</Text>
+                        <Text numberOfLines={1} style={styles.category}>{highlightMatch(item.specifications.model_name || '', searchQuery)}</Text>
+                        <Text numberOfLines={2} style={styles.description}>{highlightMatch(item.description || '', searchQuery)}</Text>
+                        {/* <Text numberOfLines={1} style={styles.companyName}>{highlightMatch(job.company_name || '', searchQuery)}</Text> */}
+                        <TouchableOpacity activeOpacity={0.8} style={styles.headerRow} >
+                            <Company width={dimensions.icon.small} height={dimensions.icon.small} color={colors.secondary} /><Text style={styles.companyName} > {highlightMatch(item.company_name || '', searchQuery)}</Text>
                         </TouchableOpacity>
+
+                        <Text numberOfLines={1} style={styles.price}>
+                            ₹ {item.price !== undefined && item.price !== null && item.price !== '' ? item.price : "N/A"}
+                        </Text>
+                        <Text numberOfLines={1} style={styles.productDetailsText}>View details</Text>
+
                     </View>
                 </View>
             </TouchableOpacity>
@@ -471,7 +466,7 @@ const ProductsList = () => {
 
 
     return (
-      
+
         <View style={styles.container} >
             <Animated.View style={[AppStyles.headerContainer, headerStyle]}>
                 {/* <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
@@ -560,6 +555,7 @@ const ProductsList = () => {
                     }
                     ListHeaderComponent={
                         <View>
+                            <HomeBanner bannerId="productAd01" />
                             {searchTriggered && (
                                 <>
                                     <Text style={styles.companyCount}>
@@ -578,6 +574,7 @@ const ProductsList = () => {
                             )}
                         </View>
                     }
+
                     ListFooterComponent={
                         loadingMore ? (
                             <View style={{ paddingVertical: 20 }}>
@@ -604,15 +601,17 @@ const ProductsList = () => {
                     <View style={styles.filterContainer}>
                         {/* Filter content */}
                         <View style={styles.buttonWrapper}>
-                            <TouchableOpacity onPress={clearFilters} style={styles.clearButton}>
-                                <Text style={styles.clearButtonText}>Clear</Text>
-                            </TouchableOpacity>
                             <TouchableOpacity onPress={applyFilters} style={styles.applyButton}>
                                 <Text style={styles.applyButtonText}>Apply</Text>
                             </TouchableOpacity>
+
+                            <TouchableOpacity onPress={clearFilters} style={styles.clearButton}>
+                                <Text style={styles.clearButtonText}>Clear</Text>
+                            </TouchableOpacity>
                         </View>
 
-                        <Text style={{ color: 'gray', paddingHorizontal: 15 }}>Select Category:</Text>
+
+                        <Text style={{ fontSize: 15, fontWeight: '500', color: colors.text_primary, paddingHorizontal: 15, marginVertical: 15 }}>Select Category </Text>
                         <View style={styles.divider} />
 
                         <FlatList
@@ -623,20 +622,33 @@ const ProductsList = () => {
                                     onPress={() => toggleCheckbox(item)}
                                     style={styles.checkboxContainer}
                                 >
-                                    <View style={[
-                                        styles.checkbox,
-                                        tempSelectedCategories[item] && styles.checkboxChecked,
-                                    ]}>
+                                    <View
+                                        style={[
+                                            styles.checkbox,
+                                            tempSelectedCategories[item] && styles.checkboxChecked,
+                                        ]}
+                                    >
                                         {tempSelectedCategories[item] && (
-                                            <Check width={dimensions.icon.small} height={dimensions.icon.small} color={colors.secondary} />
-
+                                            <Check
+                                                width={dimensions.icon.small}
+                                                height={dimensions.icon.small}
+                                                color={colors.text_secondary}
+                                            />
                                         )}
                                     </View>
 
-                                    <Text style={styles.checkboxLabel}>{item}</Text>
+                                    <Text
+                                        style={[
+                                            styles.checkboxLabel,
+                                            tempSelectedCategories[item] && { color: colors.text_primary },
+                                        ]}
+                                    >
+                                        {item}
+                                    </Text>
                                 </TouchableOpacity>
+
                             )}
-                            contentContainerStyle={{ paddingBottom: '20%', padding: 15 }}
+                            contentContainerStyle={{ paddingBottom: '20%', paddingHorizontal: 15 }}
                             showsVerticalScrollIndicator={false}
                         />
                     </View>
@@ -704,15 +716,6 @@ const styles = StyleSheet.create({
         backgroundColor: 'whitesmoke',
     },
 
-
-    company: {
-        fontSize: 12,
-        fontWeight: '400',
-        color: '#555',
-        textAlign: 'center',
-        marginTop: 2,
-        alignSelf: 'flex-start',
-    },
     companyCount: {
         fontSize: 14,
         fontWeight: '400',
@@ -721,22 +724,13 @@ const styles = StyleSheet.create({
         paddingHorizontal: 15,
     },
 
-    categorycontact: {
-
-
-        fontSize: 15,
-
-        color: '#000',
-        fontWeight: '500',
-
-    },
 
     category: {
-        fontSize: 15,
+        color: colors.text_primary,
+        fontWeight: '500',
+        fontSize: 13,
+        marginBottom: 5
 
-        color: '#777',
-
-        marginTop: 2,
     },
 
     discountPrice: {
@@ -787,70 +781,76 @@ const styles = StyleSheet.create({
     card: {
         flexDirection: 'row',
         backgroundColor: '#fff',
-        borderRadius: 8,
         marginBottom: 5,
         borderWidth: 1,
         borderColor: '#ddd',
-        marginHorizontal: 10,
     },
 
     productImageContainer: {
-        flex: 1.2, // Shares space equally with cardContent
+        flex: 1, // Shares space equally with cardContent
         maxWidth: 140, // Restricts width to avoid overflow
-        alignSelf: 'center',
+        justifyContent: 'center',
+        alignItems: 'center',
+
+        borderRightWidth: 0.5,
+        borderColor: '#eee',
 
     },
 
     productImage: {
-        width: 120,
-        height: 140, // Ensures it fills the container
-        backgroundColor: '#fafafa',
+        width: 110,
+        height: 110, // Ensures it fills the container
         resizeMode: 'contain',
-        borderTopLeftRadius: 8,
-        borderBottomLeftRadius: 8,
-        alignSelf: 'center',
 
     },
 
     cardContent: {
-        flex: 1,
+        flex: 2,
         justifyContent: 'space-between',
-        padding: 10,
-        marginVertical: 5,
+        paddingHorizontal: 10,
+        paddingTop: 15,
         alignItems: 'flex-start',
 
     },
 
     title: {
+        color: colors.text_primary,
+        fontWeight: '600',
         fontSize: 15,
-        fontWeight: '500',
-        color: '#000',
-
+        
     },
 
     description: {
-        fontSize: 15,
+        color: colors.text_primary,
+        fontWeight: '400',
+        fontSize: 13,
+        marginBottom: 5
 
-        color: '#777',
-        marginTop: 4,
     },
 
     companyName: {
-        fontSize: 15,
+        color: colors.text_primary,
+        fontWeight: '500',
+        fontSize: 13,
+    
 
-        color: '#000',
-        fontWeight: '500'
+    },
+    headerRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        alignItems: 'flex-start',
+        
+
     },
     priceRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginTop: 2,
     },
     price: {
+        color: colors.text_primary,
+        fontWeight: '500',
         fontSize: 15,
 
-        color: '#000',
-        fontWeight: '500'
     },
     separator: {
 
@@ -860,15 +860,13 @@ const styles = StyleSheet.create({
         borderColor: '#ddd',
     },
 
-    productDetailsContainer: {
-        marginTop: 5,
 
-    },
 
     productDetailsText: {
         fontSize: 14,
         color: '#075cab',
-        fontWeight: '600',
+        fontWeight: '400',
+        alignSelf: 'flex-end',
     },
     filterContainer: {
         position: 'absolute',
@@ -888,67 +886,60 @@ const styles = StyleSheet.create({
 
 
     buttonWrapper: {
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
         flexDirection: 'row',
-        justifyContent: 'space-between',
-        marginBottom: 10,
-        paddingHorizontal: 15,
-        paddingTop: 15
+        backgroundColor: '#f1f6ff',
+        zIndex: 10,
+        elevation: 3,
     },
 
     applyButton: {
-        width: 80,
-        paddingVertical: 6,
-        borderRadius: 20,
+        flex: 1, // take half the width
+        paddingVertical: 15,
         alignItems: 'center',
         justifyContent: 'center',
-        borderColor: '#075cab',
-        // borderWidth: 1,
-        // backgroundColor: '#075cab',
-        // elevation: 2,
-        // shadowColor: '#000',
-        // shadowOpacity: 0.1,
-        // shadowRadius: 6,
-        // shadowOffset: { width: 0, height: 3 },
+        borderRightWidth: 1,
+        borderColor: '#eee',
+        backgroundColor: '#fff',
+        // borderTopLeftRadius: 10,
     },
 
     applyButtonText: {
-        color: '#075cab',
+        color: colors.primary,
         fontWeight: '600',
-        fontSize: 14,
+        fontSize: 16,
     },
 
     clearButton: {
-        width: 80,
-        paddingVertical: 6,
-        borderRadius: 20,
+        flex: 1, // take half the width
+        paddingVertical: 15,
         alignItems: 'center',
         justifyContent: 'center',
-        borderColor: '#FF3B30',
-        // borderWidth: 1,
-        // backgroundColor: 'white',
-        // elevation: 2,
-        // shadowColor: '#000',
-        // shadowOpacity: 0.1,
-        // shadowRadius: 6,
-        // shadowOffset: { width: 0, height: 3 },
+        backgroundColor: '#fff',
+        // borderTopRightRadius: 10,
     },
 
     clearButtonText: {
-        color: '#FF0000',
+        color: colors.danger,
         fontWeight: '600',
-        fontSize: 14,
+        fontSize: 16,
     },
+
 
     divider: {
         borderBottomWidth: 0.5,
         borderBottomColor: "#ccc",
-        marginVertical: 10,
+
+
     },
 
     checkboxContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingVertical: 10,
+        paddingVertical: 6,
     },
 
     checkbox: {
@@ -956,7 +947,7 @@ const styles = StyleSheet.create({
         height: 13,
         // borderRadius: 6,
         borderWidth: 1,
-        borderColor: '#000',
+        borderColor: colors.text_secondary,
         alignItems: 'center',
         justifyContent: 'center',
         marginRight: 10,
@@ -967,8 +958,9 @@ const styles = StyleSheet.create({
     },
 
     checkboxLabel: {
-        fontSize: 12,
-        color: '#333',
+        color: colors.text_secondary,
+        fontWeight: '500',
+        fontSize: 13,
     },
 
 

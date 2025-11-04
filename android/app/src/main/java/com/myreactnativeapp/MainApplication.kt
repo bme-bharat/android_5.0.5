@@ -11,6 +11,8 @@ import com.facebook.react.defaults.DefaultReactHost.getDefaultReactHost
 import com.facebook.react.defaults.DefaultReactNativeHost
 import com.bmebharat.newapp.bmevideoplayer.BMEVideoPlayerPackage  // 👈 import your package
 import com.bmeUday.documentpicker.DocumentPickerPackage  // 👈 import here
+import com.bmebharat.newapp.sms.SmsRetrieverPackage  // ✅ import our new package
+import com.bmebharat.newapp.phonehint.PhoneHintPackage
 
 class MainApplication : Application(), ReactApplication {
 
@@ -22,6 +24,9 @@ class MainApplication : Application(), ReactApplication {
               // add(MyReactNativePackage())
               add(BMEVideoPlayerPackage())
               add(DocumentPickerPackage())
+            add(SmsRetrieverPackage())
+            add(PhoneHintPackage())
+
             }
 
         override fun getJSMainModuleName(): String = "index"

@@ -8,6 +8,7 @@ import ResumeModal from '../helperComponents/resumeModal';
 import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
 
 import { colors, dimensions } from '../../assets/theme.jsx';
+import { commonStyles } from '../AppUtils/AppStyles.js';
 
 const CompanyGetJobCandidatesScreen = () => {
   const route = useRoute();
@@ -57,7 +58,7 @@ const CompanyGetJobCandidatesScreen = () => {
             >
               <Text
                 style={[
-                  styles.avatarText,
+                  commonStyles.avatarText,
                   { color: imageUrl?.textColor || '#000' },
                 ]}
               >
@@ -70,88 +71,88 @@ const CompanyGetJobCandidatesScreen = () => {
 
 
         <View style={styles.textContainer}>
-          <Text style={styles.name}>{`${posts.first_name || ""} ${posts.last_name || ""}`}
+          <Text style={commonStyles.title}>{`${posts.first_name || ""} ${posts.last_name || ""}`}
           </Text>
-          <View style={styles.detail}>
-            <Text style={styles.label}>Gender</Text>
-            <Text style={styles.colon}>:</Text>
+          <View style={commoncommonStyles.valContainer}>
+            <Text style={commonStyles.label}>Gender</Text>
+            <Text style={commonStyles.colon}>:</Text>
 
-            <Text style={styles.value}>{posts.gender || ""}</Text>
+            <Text style={commonStyles.value}>{posts.gender || ""}</Text>
           </View>
-          <View style={styles.detail}>
-            <Text style={styles.label}>Work experience</Text>
-            <Text style={styles.colon}>:</Text>
+          <View style={commoncommonStyles.valContainer}>
+            <Text style={commonStyles.label}>Work experience</Text>
+            <Text style={commonStyles.colon}>:</Text>
 
-            <Text style={styles.value}>{(posts.work_experience || "").trimStart().trimEnd()}</Text>
+            <Text style={commonStyles.value}>{(posts.work_experience || "").trimStart().trimEnd()}</Text>
           </View>
           {posts.college?.trim() ? (
-            <View style={styles.detail}>
-              <Text style={styles.label}>College</Text>
-              <Text style={styles.colon}>:</Text>
-              <Text style={styles.value}>{posts.college.trim()}</Text>
+            <View style={commoncommonStyles.valContainer}>
+              <Text style={commonStyles.label}>College</Text>
+              <Text style={commonStyles.colon}>:</Text>
+              <Text style={commonStyles.value}>{posts.college.trim()}</Text>
             </View>
           ) : null}
 
           {posts.education_qualifications?.trim() && (
-            <View style={styles.detail}>
-              <Text style={styles.label}>Educational qualification</Text>
-              <Text style={styles.colon}>:</Text>
-              <Text style={styles.value}>{posts.education_qualifications.trim()}</Text>
+            <View style={commoncommonStyles.valContainer}>
+              <Text style={commonStyles.label}>Educational qualification</Text>
+              <Text style={commonStyles.colon}>:</Text>
+              <Text style={commonStyles.value}>{posts.education_qualifications.trim()}</Text>
             </View>
           )}
 
-          <View style={styles.detail}>
-            <Text style={styles.label}>Expert in</Text>
-            <Text style={styles.colon}>:</Text>
+          <View style={commoncommonStyles.valContainer}>
+            <Text style={commonStyles.label}>Expert in</Text>
+            <Text style={commonStyles.colon}>:</Text>
 
             <View style={{ flexDirection: "column", flex: 2 }}>
               {posts.expert_in
                 .split(",")
                 .map((language, index) => (
-                  <Text key={index} style={styles.value}>
+                  <Text key={index} style={commonStyles.value}>
                     {language.trim()},
                   </Text>
                 ))}
             </View>
           </View>
-          <View style={styles.detail}>
-            <Text style={styles.label}>City</Text>
-            <Text style={styles.colon}>:</Text>
+          <View style={commoncommonStyles.valContainer}>
+            <Text style={commonStyles.label}>City</Text>
+            <Text style={commonStyles.colon}>:</Text>
 
-            <Text style={styles.value}>{posts.city || ""}</Text>
+            <Text style={commonStyles.value}>{posts.city || ""}</Text>
           </View>
-          <View style={styles.detail}>
-            <Text style={styles.label}>State</Text>
-            <Text style={styles.colon}>:</Text>
+          <View style={commoncommonStyles.valContainer}>
+            <Text style={commonStyles.label}>State</Text>
+            <Text style={commonStyles.colon}>:</Text>
 
-            <Text style={styles.value}>{posts.state || ""}</Text>
+            <Text style={commonStyles.value}>{posts.state || ""}</Text>
           </View>
 
-          <View style={styles.detail}>
-            <Text style={styles.label}>Domain strength</Text>
-            <Text style={styles.colon}>:</Text>
+          <View style={commoncommonStyles.valContainer}>
+            <Text style={commonStyles.label}>Domain strength</Text>
+            <Text style={commonStyles.colon}>:</Text>
 
-            <Text style={styles.value}>{posts.domain_strength || ""}</Text>
+            <Text style={commonStyles.value}>{posts.domain_strength || ""}</Text>
           </View>
           {posts?.industry_type?.trim() && (
-            <View style={styles.detail}>
-              <Text style={styles.label}>Industry type</Text>
-              <Text style={styles.colon}>:</Text>
+            <View style={commoncommonStyles.valContainer}>
+              <Text style={commonStyles.label}>Industry type</Text>
+              <Text style={commonStyles.colon}>:</Text>
 
-              <Text style={styles.value}>{posts.industry_type || ""}</Text>
+              <Text style={commonStyles.value}>{posts.industry_type || ""}</Text>
             </View>
           )}
 
           {posts.languages?.trim() && (
-            <View style={styles.detail}>
-              <Text style={styles.label}>Languages known</Text>
-              <Text style={styles.colon}>:</Text>
+            <View style={commoncommonStyles.valContainer}>
+              <Text style={commonStyles.label}>Languages known</Text>
+              <Text style={commonStyles.colon}>:</Text>
 
               <View style={{ flexDirection: "column", flex: 2 }}>
                 {posts.languages
                   .split(",")
                   .map((language, index) => (
-                    <Text key={index} style={styles.value}>
+                    <Text key={index} style={commonStyles.value}>
                       {language.trim()}
                     </Text>
                   ))}
@@ -160,15 +161,15 @@ const CompanyGetJobCandidatesScreen = () => {
           )}
 
           {posts.preferred_cities?.trim() && (
-            <View style={styles.detail}>
-              <Text style={styles.label}>Preferred cities</Text>
-              <Text style={styles.colon}>:</Text>
+            <View style={commoncommonStyles.valContainer}>
+              <Text style={commonStyles.label}>Preferred cities</Text>
+              <Text style={commonStyles.colon}>:</Text>
 
               <View style={{ flexDirection: "column", flex: 2 }}>
                 {posts.preferred_cities
                   .split(",")
                   .map((city, index) => (
-                    <Text key={index} style={styles.value}>
+                    <Text key={index} style={commonStyles.value}>
                       {city.trim()}
                     </Text>
                   ))}
@@ -177,10 +178,10 @@ const CompanyGetJobCandidatesScreen = () => {
           )}
 
           {posts.expected_salary?.trim() && (
-            <View style={styles.detail}>
-              <Text style={styles.label}>Expected salary</Text>
-              <Text style={styles.colon}>:</Text>
-              <Text style={styles.value}>{posts.expected_salary.trim()}</Text>
+            <View style={commoncommonStyles.valContainer}>
+              <Text style={commonStyles.label}>Expected salary</Text>
+              <Text style={commonStyles.colon}>:</Text>
+              <Text style={commonStyles.value}>{posts.expected_salary.trim()}</Text>
             </View>
           )}
 

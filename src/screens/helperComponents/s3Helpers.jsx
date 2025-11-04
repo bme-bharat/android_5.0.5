@@ -2,6 +2,7 @@ import apiClient from "../ApiClient";
 
 export const deleteS3KeyIfExists = async (key) => {
   if (!key) {
+    console.log("⚠️ [deleteS3KeyIfExists] No key provided, skipping deletion.");
     return;
   }
 
@@ -14,11 +15,11 @@ export const deleteS3KeyIfExists = async (key) => {
     const { statusCode, message } = res?.data || {};
 
     if (statusCode === 200) {
-      console.log(`✅ [deleteS3KeyIfExists] ${message}`);
+      console.log(`✅ [deleteS3KeyIfExists] Success: ${message}`);
     } else {
-
+      console.log(`❌ [deleteS3KeyIfExists] Failed with statusCode ${statusCode}: ${message}`);
     }
   } catch (err) {
-
+    console.error(`⚠️ [deleteS3KeyIfExists] Error deleting key "${key}":`, err);
   }
 };

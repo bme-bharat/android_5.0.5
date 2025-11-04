@@ -1,9 +1,9 @@
 import React, { useRef, useEffect } from 'react';
-import { Animated, StyleSheet, Dimensions } from 'react-native';
+import { Animated, StyleSheet, Dimensions, View } from 'react-native';
 
-const { width } = Dimensions.get('window');
-const MARGIN = 4;
-const ITEM_WIDTH = width - 2 * MARGIN;
+const { width: windowWidth } = Dimensions.get('window');
+const ITEM_WIDTH = windowWidth - 10; // same as HomeBanner
+const ASPECT_RATIO = 16 / 9; // same as HomeBanner
 
 const GlowPlaceholder = ({ style }) => {
   const glowAnim = useRef(new Animated.Value(0.5)).current;
@@ -12,34 +12,42 @@ const GlowPlaceholder = ({ style }) => {
     Animated.loop(
       Animated.sequence([
         Animated.timing(glowAnim, {
-          toValue: 1, // fully bright
+          toValue: 1,
           duration: 800,
           useNativeDriver: false,
         }),
         Animated.timing(glowAnim, {
-          toValue: 0.5, // dim
+          toValue: 0.5,
           duration: 800,
           useNativeDriver: false,
         }),
       ])
     ).start();
-  }, []);
+  }, [glowAnim]);
 
   const bgColor = glowAnim.interpolate({
     inputRange: [0.5, 1],
-    outputRange: ['#dcdcdc', '#f2f2f2']
-
+    outputRange: ['#dcdcdc', '#f2f2f2'],
   });
 
-  return <Animated.View style={[styles.placeholder, style, { backgroundColor: bgColor }]} />;
+  return (
+    <Animated.View
+      style={[
+        styles.placeholder,
+        style,
+        { backgroundColor: bgColor },
+      ]}
+    />
+  );
 };
 
 const styles = StyleSheet.create({
   placeholder: {
     width: ITEM_WIDTH,
-    height: 216,
-    marginHorizontal: MARGIN,
-    borderRadius: 14,
+    aspectRatio: ASPECT_RATIO,
+    marginHorizontal: 5,
+    borderRadius: 12,
+    backgroundColor: '#e0e0e0',
   },
 });
 

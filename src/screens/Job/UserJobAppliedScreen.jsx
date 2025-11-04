@@ -13,6 +13,7 @@ import { showToast } from '../AppUtils/CustomToast';
 import { useNetwork } from '../AppUtils/IdProvider';
 import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
 import { colors, dimensions } from '../../assets/theme.jsx';
+import { commonStyles } from '../AppUtils/AppStyles.js';
 
 const UserJobAppliedScreen = () => {
   const { myId, myData } = useNetwork();
@@ -23,16 +24,6 @@ const UserJobAppliedScreen = () => {
   const [showModal, setShowModal] = useState(false);
   const [selectedJobTitle, setSelectedJobTitle] = useState('');
   const [loading, setLoading] = useState(true);
-
-
-  useFocusEffect(
-    useCallback(() => {
-      if (scrollViewRef.current) {
-        scrollViewRef.current.scrollToOffset({ offset: 0, animated: false });
-      }
-
-    }, [])
-  );
 
   useFocusEffect(
 
@@ -158,34 +149,34 @@ const UserJobAppliedScreen = () => {
       {appliedJobs ? (
         <FlatList
           data={appliedJobs}
-          contentContainerStyle={{ paddingHorizontal: 10, paddingBottom: '20%', marginTop: 5, }}
+          contentContainerStyle={{ paddingHorizontal: 5, paddingBottom: '20%', marginTop: 5, }}
           showsVerticalScrollIndicator={false}
           renderItem={({ item }) => (
             <View style={styles.card}>
-              <View style={styles.Title}>
-                <Text style={styles.label}>Job Title</Text>
-                <Text style={styles.colon}>:</Text>
-                <Text style={styles.value}>{item?.job_title.trim()}</Text>
+              <View style={commonStyles.valContainer}>
+                <Text style={commonStyles.label}>Job Title</Text>
+                <Text style={commonStyles.colon}>:</Text>
+                <Text style={commonStyles.value}>{item?.job_title.trim()}</Text>
               </View>
-              <View style={styles.Title}>
-                <Text style={styles.label}>Company</Text>
-                <Text style={styles.colon}>:</Text>
-                <Text style={styles.value}>{item?.company_name.trim()}</Text>
+              <View style={commonStyles.valContainer}>
+                <Text style={commonStyles.label}>Company</Text>
+                <Text style={commonStyles.colon}>:</Text>
+                <Text style={commonStyles.value}>{item?.company_name.trim()}</Text>
               </View>
-              <View style={styles.Title}>
-                <Text style={styles.label}>Category</Text>
-                <Text style={styles.colon}>:</Text>
-                <Text style={styles.value}>{item?.company_category}</Text>
+              <View style={commonStyles.valContainer}>
+                <Text style={commonStyles.label}>Category</Text>
+                <Text style={commonStyles.colon}>:</Text>
+                <Text style={commonStyles.value}>{item?.company_category}</Text>
               </View>
-              <View style={styles.Title}>
-                <Text style={styles.label}>City</Text>
-                <Text style={styles.colon}>:</Text>
-                <Text style={styles.value}>{item?.company_located_city}</Text>
+              <View style={commonStyles.valContainer}>
+                <Text style={commonStyles.label}>City</Text>
+                <Text style={commonStyles.colon}>:</Text>
+                <Text style={commonStyles.value}>{item?.company_located_city}</Text>
               </View>
-              <View style={styles.Title}>
-                <Text style={styles.label}>Salary package</Text>
-                <Text style={styles.colon}>:</Text>
-                <Text style={styles.value}>{item.Package || "N/A"}</Text>
+              <View style={commonStyles.valContainer}>
+                <Text style={commonStyles.label}>Salary package</Text>
+                <Text style={commonStyles.colon}>:</Text>
+                <Text style={commonStyles.value}>{item.Package || "N/A"}</Text>
               </View>
 
               <View style={styles.buttonContainer}>

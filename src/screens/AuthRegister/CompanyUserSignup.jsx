@@ -438,8 +438,6 @@ const CompanyUserSignupScreen = () => {
     setLoading(true);
 
     if (!file) {
-      console.log('⚠️ No file selected');
-      showToast('No file selected.', 'error');
       setLoading(false);
       return null;
     }
@@ -518,6 +516,12 @@ const CompanyUserSignupScreen = () => {
   };
 
 
+  const handleRemoveImage = async () => {
+    if (imageUri) {
+      setImageUri(null);
+      return;
+    }
+  };
 
   const handleImageSelection = () => {
     if (Platform.OS === 'ios') {
@@ -528,8 +532,9 @@ const CompanyUserSignupScreen = () => {
         '',
         [
           { text: 'Choose from Gallery', onPress: openGallery },
-          { text: 'Cancel', style: 'cancel' }, // 👈 Cancel button
-        ]
+          imageUri ? { text: 'Remove Image', onPress: handleRemoveImage, style: 'destructive' } : null,
+
+        ], { cancelable: true }
       );
     }
   };
@@ -805,19 +810,22 @@ const CompanyUserSignupScreen = () => {
   const createUserSession = async (userId) => {
     try {
 
-      const deviceModel = await DeviceInfo.getModel(); // your existing usage
-
+      const [deviceName, model, userAgent, ipAddress] = await Promise.allSettled([
+        DeviceInfo.getDeviceName(),
+        DeviceInfo.getModel(),
+        DeviceInfo.getUserAgent(),
+        DeviceInfo.getIpAddress(),
+      ]);
+      
       const deviceInfo = {
         os: Platform.OS,
-        // osVersion: DeviceInfo.getSystemVersion(),
-        deviceName: await DeviceInfo.getDeviceName(),
-        model: deviceModel,
-        // brand: DeviceInfo.getBrand(),
+        deviceName: deviceName.status === 'fulfilled' ? deviceName.value : 'Unknown',
+        model: model.status === 'fulfilled' ? model.value : 'Unknown',
         appVersion: DeviceInfo.getVersion(),
-        // buildNumber: DeviceInfo.getBuildNumber(),
-        userAgent: await DeviceInfo.getUserAgent(),
-        ipAddress: await DeviceInfo.getIpAddress(),
+        userAgent: userAgent.status === 'fulfilled' ? userAgent.value : 'Unknown',
+        ipAddress: ipAddress.status === 'fulfilled' ? ipAddress.value : '0.0.0.0',
       };
+      
 
       const payload = {
         command: 'createUserSession',
@@ -977,6 +985,7 @@ const CompanyUserSignupScreen = () => {
                 keyboardType="numeric"
                 placeholderTextColor="gray"
                 maxLength={6}
+                editable={!emailVerify1}
               />
               <TouchableOpacity style={styles.buttonemail} onPress={verifyOtp}>
                 <Text style={styles.buttonTextemail}>Verify OTP</Text>

@@ -14,6 +14,7 @@ import School from '../../assets/svgIcons/school.svg';
 
 
 import { colors, dimensions } from '../../assets/theme.jsx';
+import { commonStyles } from '../AppUtils/AppStyles.js';
 
 
 const UserProfileCard = ({ profile, onEdit, onNavigate }) => {
@@ -35,8 +36,8 @@ const UserProfileCard = ({ profile, onEdit, onNavigate }) => {
             onError={() => { }}
           />
         ) : (
-          <View style={[styles.avatarContainer, { backgroundColor: profile?.companyAvatar?.backgroundColor }]}>
-            <Text style={[styles.avatarText, { color: profile?.companyAvatar?.textColor }]}>
+          <View style={[commonStyles.avatarContainer, { backgroundColor: profile?.companyAvatar?.backgroundColor }]}>
+            <Text style={[commonStyles.avatarText, { color: profile?.companyAvatar?.textColor }]}>
               {profile?.companyAvatar?.initials}
             </Text>
           </View>

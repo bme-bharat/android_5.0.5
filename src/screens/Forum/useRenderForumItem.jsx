@@ -240,7 +240,7 @@ export default function useRenderForumItem({
           <View style={styles.textContainer}>
             <View style={styles.title3}>
               <TouchableOpacity onPress={() => handleNavigate(item)} style={{ flexDirection: 'row', alignItems: 'center' }} activeOpacity={1}>
-                <Text style={{ flex: 1, alignSelf: 'flex-start', color: 'black', fontSize: 15, fontWeight: '500' }}>
+                <Text style={{ flex: 1, alignSelf: 'flex-start', color: 'black', fontSize: 15, fontWeight: '600', color:colors.text_primary }}>
                   {(item.author || '').trim()}
                 </Text>
 
@@ -268,14 +268,14 @@ export default function useRenderForumItem({
         </View>
 
         {/* Post content */}
-        <View style={{ paddingHorizontal: 10, marginBottom: 10 }}>
+      
           <ForumBody
             html={normalizeHtml(item?.forum_body, searchQuery)}
             forumId={item.forum_id}
             isExpanded={expandedTexts[item.forum_id]}
             toggleFullText={toggleFullText}
           />
-        </View>
+ 
 
         {/* <Markdown style={{ body: { fontSize: 15, lineHeight: 20 } }}>
           {item?.forum_body}
@@ -292,74 +292,45 @@ export default function useRenderForumItem({
             activeOpacity={1} >
             {item?.extraData?.type?.startsWith('video/') ? (
               <View style={{ position: 'relative' }}>
-
-                <Video
-                  ref={(ref) => {
-                    if (ref) {
-                      videoRefs[item.forum_id] = ref;
-                    } else {
-                      delete videoRefs[item.forum_id];
-                    }
-                  }}
-                  source={{ uri: item?.fileKeySignedUrl }}
-                  style={{
-                    width: '100%',
-                    height: height,
-                    backgroundColor: '#fff'
-                  }}
-                  controls
-                  paused={activeVideo !== item.forum_id || !isFocused}
-                  resizeMode="cover"
-                  poster={item?.thumbnailSignedUrl}
-                  posterResizeMode='cover'
+                <TouchableOpacity
+                  activeOpacity={0.9}
+                  onPress={() =>
+                    navigation.navigate("InlineVideo", {
+                      source: item?.fileKeySignedUrl,   // video url
+                      poster: item?.thumbnailSignedUrl,   // thumbnail
+                      videoHeight: item.extraData?.aspectRatio
+                    })
+                  }>
+                  <BMEVideoPlayer
+                    ref={(ref) => {
+                      if (ref) {
+                        videoRefs[item.forum_id] = ref;
+                      } else {
+                        delete videoRefs[item.forum_id];
+                      }
+                    }}
+                    source={item?.fileKeySignedUrl}
+                    style={{
+                      width: '100%',
+                      height: height,
+                      backgroundColor: '#fff'
+                    }}
+                    controls
+                    paused={activeVideo !== item.forum_id || !isFocused}
+                    resizeMode="cover"
+                    poster={item?.thumbnailSignedUrl}
+                    posterResizeMode='cover'
 
                   onEnd={() => {
-                    setVideoEndStates(prev => {
-                      // Only update if this is the currently active video
-                      if (activeVideo === item.forum_id) {
-                        return { ...prev, [item.forum_id]: true };
-                      }
-                      return prev;
-                    });
+                
                   }}
-                  onPlay={() => {
-                    setVideoEndStates(prev => {
-                      const newState = { ...prev };
-                      delete newState[item.forum_id];
-                      return newState;
-                    });
-                  }}
+                
 
-                />
+                  />
 
-                {videoEndStates[item.forum_id] && (
-                  <TouchableOpacity
-                    style={{
-                      position: 'absolute',
-                      top: 0,
-                      left: 0,
-                      right: 0,
-                      bottom: 0,
-                      justifyContent: 'center',
-                      alignItems: 'center',
-                      backgroundColor: 'rgba(0,0,0,0.5)'
-                    }}
-                    activeOpacity={0.7}
-                    onPress={() => {
-                      // Update the state to hide the retry icon immediately
-                      setVideoEndStates(prev => ({ ...prev, [item.forum_id]: false }));
 
-                      if (videoRefs[item.forum_id]) {
-                        videoRefs[item.forum_id].seek(0);
-                        videoRefs[item.forum_id].resume();
-                      }
-                    }}
-                  >
-                    <Reload width={dimensions.icon.xl} height={dimensions.icon.xl} color={colors.background} />
+                </TouchableOpacity>
 
-                    <Text style={{ fontWeight: 'bold', fontSize: 16, color: '#fff' }}>watch again</Text>
-                  </TouchableOpacity>
-                )}
 
               </View>
 
@@ -396,9 +367,9 @@ export default function useRenderForumItem({
                   <Text style={{ fontSize: 15 }}>
                     {reactionConfig.find(r => r.type === interactionData.userReaction)?.emoji || '👍'}
                   </Text>
-                  <Text style={{ fontSize: 12, color: '#777', marginLeft: 4 }}>
+                  {/* <Text style={{ fontSize: 12, color: '#777', marginLeft: 4 }}>
                     {reactionConfig.find(r => r.type === interactionData.userReaction)?.label || 'Like'}
-                  </Text>
+                  </Text> */}
                 </>
               ) : (
                 <View style={{ alignItems: 'center', flexDirection: 'row' }}>
@@ -475,7 +446,7 @@ export default function useRenderForumItem({
           </View>
           <View>
             <TouchableOpacity style={styles.iconButton} onPress={() => sharePost(item)}>
-              <ShareIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
+              <ShareIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} styles={{padding:10}}/>
 
               <Text style={styles.iconTextUnderlined}> Share</Text>
             </TouchableOpacity>
@@ -540,7 +511,7 @@ const styles = StyleSheet.create({
 
   title: {
     fontSize: 13,
-    color: '#666',
+    color: colors.text_secondary,
     // marginBottom: 5,
     fontWeight: '300',
     textAlign: 'justify',
@@ -581,7 +552,6 @@ const styles = StyleSheet.create({
   dpContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 10
 
   },
   dpContainer1: {

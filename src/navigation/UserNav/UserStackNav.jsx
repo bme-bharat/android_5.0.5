@@ -90,15 +90,14 @@ const screenOption = {
   title: null, // Removes the title
   headerBackTitleVisible: false,
   headerShown: false,
-
+ animation: 'none',
 };
 
 
 
 
 const UserStackNav = () => {
-  const Stack = createNativeStackNavigator();
-  const navigation = useNavigation();
+
   return (
     <Stack.Navigator screenOptions={screenOptionStyle}>
 

@@ -73,7 +73,8 @@ def enableProguardInReleaseBuilds = false
 def jscFlavor = 'io.github.react-native-community:jsc-android:2026004.+'
 
 project.ext.react = [
-    enableHermes: true  // <- must be true for Reanimated
+        enableHermes: true,
+        nodeExecutableAndArgs: ["/Users/shwetha/.nvm/versions/node/v20.19.5/bin/node"]
 ]
 
 android {
@@ -86,8 +87,8 @@ android {
         applicationId "com.bmebharat.newapp"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 40
-        versionName "5.0.6"
+        versionCode 42
+        versionName "5.0.8"
     }
     signingConfigs {
 
@@ -121,19 +122,17 @@ android {
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
         }
     }
-
-        packagingOptions {
-            jniLibs {
-                useLegacyPackaging = false
-                pickFirsts += ['**/*.so']  // include only first if duplicates exist
-                excludes += ['**/x86/*', '**/x86_64/*']  // remove emulator ABIs
-            }
+    
+    applicationVariants.all { variant ->
+        variant.outputs.all { output ->
+            def newName = "bme_v${variant.versionName}.apk"
+            output.outputFileName = newName
         }
-
+    }
     
         splits {
             abi {
-                enable true
+                enable false
                 reset()
                 include 'armeabi-v7a', 'arm64-v8a' // Target architectures
                 universalApk false  // Prevent large universal APK
@@ -143,6 +142,9 @@ android {
 
 dependencies {
     implementation("com.facebook.react:react-android")
+    implementation("androidx.core:core-splashscreen:1.0.0")
+    implementation 'androidx.cardview:cardview:1.0.0'
+    implementation 'com.google.android.gms:play-services-auth:21.4.0'
 
     implementation "androidx.media3:media3-exoplayer:1.3.1"
     implementation "androidx.media3:media3-ui:1.3.1"

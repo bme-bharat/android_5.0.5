@@ -9,15 +9,21 @@ import {
   AuthorizationStatus,
 } from '@react-native-firebase/messaging';
 
+let permissionChecked = false; // module-level variable
+
 export const useFcmToken = () => {
   const [fcmToken, setFcmToken] = useState(null);
 
   async function ensureNotificationPermission() {
+
+    if (permissionChecked) return true; // ✅ Skip if already checked
+    permissionChecked = true;
+
     if (Platform.OS === 'android' && Platform.Version >= 33) {
       const granted = await PermissionsAndroid.request(
         PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS
       );
-  
+
       return granted === PermissionsAndroid.RESULTS.GRANTED;
     }
     return true;
@@ -29,11 +35,11 @@ export const useFcmToken = () => {
       const messaging = getMessaging(app);
 
       let authStatus = await hasPermission(messaging);
-   
+
 
       if (authStatus === AuthorizationStatus.NOT_DETERMINED && askPermission) {
         authStatus = await requestPermission(messaging);
-       
+
       }
 
       const enabled =
@@ -41,23 +47,23 @@ export const useFcmToken = () => {
         authStatus === AuthorizationStatus.PROVISIONAL;
 
       if (!enabled) {
-    
+
         setFcmToken(null);
         return null;
       }
 
       const token = await getToken(messaging);
       if (!token) {
-   
+
         setFcmToken(null);
         return null;
       }
 
       setFcmToken(token);
- 
+
       return token;
     } catch (err) {
-   
+
       setFcmToken(null);
       return null;
     }
@@ -65,16 +71,21 @@ export const useFcmToken = () => {
 
   // Initial load
   useEffect(() => {
-    (async () => {
-      const ok = await ensureNotificationPermission();
-      if (ok) {
-        fetchFcmToken(true);
-      } else {
-        console.warn('User denied notification permission → no FCM token');
-      }
-    })();
+    const timer = setTimeout(() => {
+      (async () => {
+        const ok = await ensureNotificationPermission();
+        if (ok) {
+          fetchFcmToken(true);
+        } else {
+          console.warn('User denied notification permission → no FCM token');
+        }
+      })();
+    }, 1000); // 5 seconds delay
+
+    return () => clearTimeout(timer); // cleanup
   }, []);
-  
+
+
 
   // Refresh when app foregrounds
   useEffect(() => {

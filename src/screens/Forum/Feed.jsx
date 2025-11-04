@@ -310,7 +310,7 @@ const AllPosts = () => {
                 />
 
             </View>,
-            -screenHeight 
+            -screenHeight
         );
     };
 
@@ -460,7 +460,6 @@ const AllPosts = () => {
 
 
 
-
     const handleSearch = useCallback(async (text) => {
         setSearchQuery(text);
 
@@ -485,7 +484,7 @@ const AllPosts = () => {
 
     return (
 
-        <View style={{ flex: 1, backgroundColor: 'whitesmoke', }}>
+        <View style={{ flex: 1,  }}>
 
             <Animated.View style={[AppStyles.headerContainer, headerStyle]}>
                 <View style={AppStyles.searchContainer}>
@@ -496,7 +495,8 @@ const AllPosts = () => {
                             placeholder="Search"
                             placeholderTextColor="gray"
                             value={searchQuery}
-                            onChangeText={handleDebouncedTextChange}
+                            onChangeText={setSearchQuery}      // <--- Add this
+                            onSubmitEditing={() => handleSearch(searchQuery)}
                         />
 
 
@@ -587,7 +587,7 @@ const AllPosts = () => {
                 }
 
                 ListFooterComponent={
-                    loadingMore || loading ? (
+                     loadingMore || loading ? (
                         <View >
                             <ShimmerSkeleton />
                         </View>

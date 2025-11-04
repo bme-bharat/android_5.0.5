@@ -35,19 +35,30 @@ const ForumEditScreen = () => {
   const { myId, myData } = useNetwork();
 
   const { post, imageUrl } = route.params;
+
   const isDefaultLocalImage =
-    imageUrl && (imageUrl.includes('assets/') || imageUrl.includes('images/homepage'));
-  console.log('post', post)
+  imageUrl &&
+  !imageUrl.startsWith('http') && // means it's a local asset (not from network)
+  imageUrl.includes('image.jpg'); // optional: ensure it’s the specific placeholder
+
   const [image, setImage] = useState(isDefaultLocalImage ? null : imageUrl);
   const [isLoading, setIsLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
-  const [thumbnailUri, setThumbnailUri] = useState(null);
-  const [overlayUri, setOverlayUri] = useState(null);
   const [file, setFile] = useState(null);
   const [fileType, setFileType] = useState('');
   const [mediaMeta, setMediaMeta] = useState(null);
+
+  const [thumbnailUri, setThumbnailUri] = useState(mediaMeta?.previewThumbnail);
+
+  const [overlayUri, setOverlayUri] = useState(null);
+
+  useEffect(() => {
+    setThumbnailUri(mediaMeta?.previewThumbnail)
+  }, [mediaMeta])
+
   const [compressedImage, setCompressedImage] = useState(null);
   const { uploadFile, uploading } = useS3Uploader();
+
 
   const [postData, setPostData] = useState({
     forum_body: post.forum_body || '',
@@ -59,68 +70,30 @@ const ForumEditScreen = () => {
 
   const [hasChanges, setHasChanges] = useState(false);
 
-
-  const initialPostDataRef = useRef({
-    forum_body: post.forum_body || '',
-    fileKey: post.fileKey || '',
-    thumbnail_fileKey: post.thumbnail_fileKey || '',
-  });
-
-  // ✅ Track changes
-  useEffect(() => {
-    const initial = initialPostDataRef.current;
-    const changed =
-      postData.forum_body !== initial.forum_body ||
-      postData.fileKey !== initial.fileKey ||
-      postData.thumbnail_fileKey !== initial.thumbnail_fileKey;
-
-    setHasChanges(changed);
-  }, [postData]);
-
-  // ✅ Handle unsaved changes on navigation
-  useEffect(() => {
-    const unsubscribe = navigation.addListener('beforeRemove', (e) => {
-      if (!hasChanges) return;
-
-      e.preventDefault(); // Block default back
-      setPendingAction(e.data.action);
-      setShowModal(true);
-    });
-
-    return unsubscribe;
-  }, [hasChanges, navigation]);
-
-
-  const hasUnsavedChanges = Boolean(hasChanges);
-  const [pendingAction, setPendingAction] = React.useState(null);
-
-
-  React.useEffect(() => {
-    const unsubscribe = navigation.addListener('beforeRemove', (e) => {
-      if (!hasUnsavedChanges) return;
-
-      e.preventDefault();
-
-      setPendingAction(e.data.action);
-      setShowModal(true);
-    });
-
-    return unsubscribe;
-  }, [hasUnsavedChanges, navigation]);
-
   const handleLeave = () => {
+    // ✅ Temporarily disable the guard before navigating back
     setHasChanges(false);
-    setShowModal(false);
-
-    if (pendingAction) {
-      navigation.dispatch(pendingAction);
-      setPendingAction(null);
-    }
+  
+    // Give React time to update before navigation triggers
+    requestAnimationFrame(() => {
+      setShowModal(false);
+      navigation.goBack();
+    });
   };
+  
 
   const handleStay = () => {
     setShowModal(false);
   };
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('beforeRemove', (e) => {
+      if (!hasChanges) return;
+      e.preventDefault();
+      setShowModal(true);
+    });
+    return unsubscribe;
+  }, [navigation, hasChanges]);
+  
 
 
   const handleMediaPickerPress = () => {
@@ -148,7 +121,6 @@ const ForumEditScreen = () => {
       { cancelable: true }
     );
   };
-
 
   const openGallery = async () => {
     try {
@@ -219,6 +191,7 @@ const ForumEditScreen = () => {
 
   const {
     showMediaOptions,
+    pickVideo,
     isCompressing,
     overlayRef,
   } = useMediaPicker({
@@ -237,72 +210,6 @@ const ForumEditScreen = () => {
   });
 
 
-  const uploadSelectedMedia = async (media, thumbnailUri) => {
-    console.log('📥 Starting uploadSelectedMedia');
-
-    try {
-      if (!media?.uri || !media?.type) {
-        console.warn('⚠️ Invalid media object:', media);
-        return null;
-      }
-
-      const cleanedUri = media.uri.replace('file://', '');
-      const fileStat = await RNFS.stat(cleanedUri);
-      const fileSize = fileStat.size;
-
-      console.log(`📁 Media: ${media.type}, Size: ${fileSize} bytes`);
-
-      const isImage = media.type.startsWith('image/');
-      const isVideo = media.type.startsWith('video/');
-
-      if (isImage && fileSize > 5 * 1024 * 1024) {
-        showToast("Image size shouldn't exceed 5MB", 'error');
-        return null;
-      }
-
-      if (isVideo && fileSize > 10 * 1024 * 1024) {
-        showToast("Video size shouldn't exceed 10MB", 'error');
-        return null;
-      }
-
-      const { data } = await apiClient.post('/uploadFileToS3', {
-        command: 'uploadFileToS3',
-        headers: {
-          'Content-Type': media.type,
-          'Content-Length': fileSize,
-        },
-      });
-
-      if (data.status !== 'success') throw new Error('Failed to get upload URL');
-
-
-      await fetch(data.url, {
-        method: 'PUT',
-        headers: { 'Content-Type': media.type },
-        body: await uriToBlob(media.uri),
-      });
-
-      let thumbnailFileKey = null;
-
-      if (fileType.startsWith("video/")) {
-        const thumbnailToUpload = overlayUri;
-
-        if (thumbnailToUpload) {
-          thumbnailFileKey = await uploadFromBase64(thumbnailToUpload, data.fileKey);
-        }
-      }
-
-      return {
-        fileKey: data.fileKey,
-        thumbnailFileKey,
-      };
-    } catch (err) {
-      console.error('❌ Media upload failed', err);
-      showToast("Media upload failed", 'error');
-      return null;
-    }
-  };
-
 
   const handleRemoveMedia = () => {
     setFile(null);
@@ -310,16 +217,6 @@ const ForumEditScreen = () => {
     setMediaMeta(null);
     setImage(null)
   };
-
-
-  async function uriToBlob(uri) {
-    const response = await fetch(uri);
-    const blob = await response.blob();
-    return blob;
-  }
-
-
-
 
   const sanitizeHtmlBody = (html) => {
     const cleaned = cleanForumHtml(html); // your existing cleaner
@@ -345,7 +242,6 @@ const ForumEditScreen = () => {
     }
 
     setIsLoading(true);
-    setHasChanges(false);
 
     try {
       const currentTimestampInSeconds = Math.floor(Date.now() / 1000);
@@ -362,7 +258,7 @@ const ForumEditScreen = () => {
         if (uploaded) {
           fileKey = uploaded.fileKey;
           thumbnailFileKey = uploaded.thumbnailFileKey;
-        
+
         }
 
       } else if (!image) {
@@ -380,18 +276,18 @@ const ForumEditScreen = () => {
         thumbnailFileKey = post.thumbnail_fileKey || '';
       }
       const extraDataToSend =
-        (file || fileKey)
+        (fileKey)
           ? (mediaMeta || post.extraData || {})
           : {};
-
+      setHasChanges(false);
+      
       const postPayload = {
         command: 'updateForumPost',
         user_id: myId,
         forum_id: post.forum_id,
         forum_body: cleanedBody,
-        ...(fileKey ? { fileKey } : {}),
+        fileKey: fileKey, // always send, even if empty
         ...(thumbnailFileKey ? { thumbnail_fileKey: thumbnailFileKey } : {}),
-        posted_on: currentTimestampInSeconds,
         extraData: extraDataToSend
       };
 
@@ -406,8 +302,9 @@ const ForumEditScreen = () => {
         ...post,
         forum_body: cleanedBody,
         fileKey,
-        thumbnail_fileKey: thumbnailFileKey,
-        extraData: extraDataToSend
+        ...(thumbnailFileKey !== false ? { thumbnail_fileKey: thumbnailFileKey } : {}),
+        extraData: extraDataToSend,
+        posted_on: currentTimestampInSeconds,
       };
 
       EventRegister.emit('onForumPostUpdated', { updatedPost: updatedPostData });
@@ -421,7 +318,6 @@ const ForumEditScreen = () => {
       setThumbnailUri(null);
       setFileType('');
       setMediaMeta(null);
-      setHasChanges(false);
 
       showToast("Post updated successfully", 'success');
       setTimeout(() => navigation.goBack(), 100);
@@ -454,8 +350,9 @@ const ForumEditScreen = () => {
       ...prev,
       forum_body: sanitizedHtml,
     }));
-  };
+    setHasChanges(true); // ✅ mark form as dirty
 
+  };
 
 
 

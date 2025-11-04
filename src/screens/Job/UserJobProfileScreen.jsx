@@ -15,6 +15,7 @@ import Edit from '../../assets/svgIcons/edit.svg';
 import Add from '../../assets/svgIcons/add.svg';
 
 import { colors, dimensions } from '../../assets/theme.jsx';
+import { commonStyles } from '../AppUtils/AppStyles.js';
 
 const UserJobProfilescreen = () => {
   const { myId, myData } = useNetwork();
@@ -224,8 +225,8 @@ const UserJobProfilescreen = () => {
           style={profile ? styles.circle : styles.circle}
           onPress={profile ? handleUpdate : () => navigation.navigate('UserJobProfileCreate')}
         >
-          
-          
+
+
           <Edit width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
 
           <Text style={styles.shareText}> {profile ? "Update" : "Create"}</Text>
@@ -253,7 +254,7 @@ const UserJobProfilescreen = () => {
                     { backgroundColor: imageUrl?.backgroundColor || '#ccc' },
                   ]}
                 >
-                  <Text style={{ color: imageUrl?.textColor || '#000', fontSize: 50, fontWeight: 'bold' }}>
+                  <Text style={[commonStyles.avatarText, { color: imageUrl?.textColor || '#000' },]}>
                     {imageUrl?.initials}
                   </Text>
                 </View>
@@ -262,76 +263,76 @@ const UserJobProfilescreen = () => {
 
             <View style={styles.Heading}>
 
-              <Text style={styles.title}>
+              <Text style={commonStyles.title}>
                 {(profile?.first_name || '').trimStart().trimEnd()} {(profile?.last_name || '').trimStart().trimEnd()}
               </Text>
 
-              <View style={styles.textContainer}>
-                <Text style={styles.label}>Email ID  </Text>
-                <Text style={styles.colon}>:</Text>
-                <Text style={styles.value}>{(profile?.user_email_id || "").trimStart().trimEnd()}
+              <View style={commonStyles.labValContainer}>
+                <Text style={commonStyles.label}>Email ID  </Text>
+                <Text style={commonStyles.colon}>:</Text>
+                <Text style={commonStyles.value}>{(profile?.user_email_id || "").trimStart().trimEnd()}
                 </Text>
               </View>
 
-              <View style={styles.textContainer}>
-                <Text style={styles.label}>Phone no.     </Text>
-                <Text style={styles.colon}>:</Text>
-                <Text style={styles.value}>{profile?.user_phone_number || ""}
+              <View style={commonStyles.labValContainer}>
+                <Text style={commonStyles.label}>Phone no.     </Text>
+                <Text style={commonStyles.colon}>:</Text>
+                <Text style={commonStyles.value}>{profile?.user_phone_number || ""}
                 </Text>
               </View>
 
-              <View style={styles.textContainer}>
-                <Text style={styles.label}>Location         </Text>
-                <Text style={styles.colon}>:</Text>
+              <View style={commonStyles.labValContainer}>
+                <Text style={commonStyles.label}>Location         </Text>
+                <Text style={commonStyles.colon}>:</Text>
 
-                <Text style={styles.value}>{profile?.city}, {profile?.state || ""}
+                <Text style={commonStyles.value}>{profile?.city}, {profile?.state || ""}
                 </Text>
               </View>
               {(profile?.college?.trimStart().trimEnd()) ? (
-                <View style={styles.textContainer}>
-                  <Text style={styles.label}>College</Text>
-                  <Text style={styles.colon}>:</Text>
-                  <Text style={styles.value}>{profile?.college.trimStart().trimEnd()}</Text>
+                <View style={commonStyles.labValContainer}>
+                  <Text style={commonStyles.label}>College</Text>
+                  <Text style={commonStyles.colon}>:</Text>
+                  <Text style={commonStyles.value}>{profile?.college.trimStart().trimEnd()}</Text>
                 </View>
               ) : null}
 
-              <View style={styles.textContainer}>
-                <Text style={styles.label}>Educational qualification          </Text>
-                <Text style={styles.colon}>:</Text>
+              <View style={commonStyles.labValContainer}>
+                <Text style={commonStyles.label}>Educational qualification          </Text>
+                <Text style={commonStyles.colon}>:</Text>
 
-                <Text style={styles.value}>{(profile?.education_qualifications || "").trimStart().trimEnd()}
+                <Text style={commonStyles.value}>{(profile?.education_qualifications || "").trimStart().trimEnd()}
                 </Text>
               </View>
 
-              <View style={styles.textContainer}>
-                <Text style={styles.label}>Date of birth      </Text>
-                <Text style={styles.colon}>:</Text>
+              <View style={commonStyles.labValContainer}>
+                <Text style={commonStyles.label}>Date of birth      </Text>
+                <Text style={commonStyles.colon}>:</Text>
 
-                <Text style={styles.value}>{profile?.date_of_birth ? formatDate(profile?.date_of_birth) : "NULL"}</Text>
+                <Text style={commonStyles.value}>{profile?.date_of_birth ? formatDate(profile?.date_of_birth) : "NULL"}</Text>
               </View>
 
-              <View style={styles.textContainer}>
-                <Text style={styles.label}>Gender          </Text>
-                <Text style={styles.colon}>:</Text>
+              <View style={commonStyles.labValContainer}>
+                <Text style={commonStyles.label}>Gender          </Text>
+                <Text style={commonStyles.colon}>:</Text>
 
-                <Text style={styles.value}>{profile?.gender || ""}
+                <Text style={commonStyles.value}>{profile?.gender || ""}
                 </Text>
               </View>
 
-              <View style={styles.textContainer}>
-                <Text style={styles.label}>Industry type              </Text>
-                <Text style={styles.colon}>:</Text>
+              <View style={commonStyles.labValContainer}>
+                <Text style={commonStyles.label}>Industry type              </Text>
+                <Text style={commonStyles.colon}>:</Text>
 
-                <Text style={styles.value}>{(profile?.industry_type || "").trimStart().trimEnd()}
+                <Text style={commonStyles.value}>{(profile?.industry_type || "").trimStart().trimEnd()}
                 </Text>
               </View>
 
-              <View style={styles.textContainer}>
-                <Text style={styles.label}>Expert in              </Text>
-                <Text style={styles.colon}>:</Text>
+              <View style={commonStyles.labValContainer}>
+                <Text style={commonStyles.label}>Expert in              </Text>
+                <Text style={commonStyles.colon}>:</Text>
                 <View style={{ flex: 2 }}>
                   {profile.expert_in.split(",").map((skill, index) => (
-                    <Text key={index} style={styles.value}>
+                    <Text key={index} style={commonStyles.value}>
                       {skill.trim()},
                     </Text>
                   ))}
@@ -339,24 +340,24 @@ const UserJobProfilescreen = () => {
 
               </View>
 
-              <View style={styles.textContainer}>
-                <Text style={styles.label}>Experience             </Text>
-                <Text style={styles.colon}>:</Text>
+              <View style={commonStyles.labValContainer}>
+                <Text style={commonStyles.label}>Experience             </Text>
+                <Text style={commonStyles.colon}>:</Text>
 
-                <Text style={styles.value}>{profile?.work_experience || ""}
+                <Text style={commonStyles.value}>{profile?.work_experience || ""}
                 </Text>
               </View>
 
-              <View style={styles.textContainer}>
-                <Text style={styles.label}>Preferred cities    </Text>
-                <Text style={styles.colon}>:</Text>
+              <View style={commonStyles.labValContainer}>
+                <Text style={commonStyles.label}>Preferred cities    </Text>
+                <Text style={commonStyles.colon}>:</Text>
 
-                <Text style={[styles.value]}>
+                <Text style={[commonStyles.value]}>
                   <View style={{ flexDirection: "column", flex: 1 }}>
                     {profile.preferred_cities
                       .split(",")
                       .map((city, index) => (
-                        <Text key={index} style={styles.value}>
+                        <Text key={index} style={commonStyles.value}>
                           {city.trim()}
                         </Text>
                       ))}
@@ -364,29 +365,29 @@ const UserJobProfilescreen = () => {
                 </Text>
               </View>
 
-              <View style={styles.textContainer}>
-                <Text style={styles.label}>Expected salary    </Text>
-                <Text style={styles.colon}>:</Text>
+              <View style={commonStyles.labValContainer}>
+                <Text style={commonStyles.label}>Expected salary    </Text>
+                <Text style={commonStyles.colon}>:</Text>
 
-                <Text style={styles.value}>{profile?.expected_salary || ""}
+                <Text style={commonStyles.value}>{profile?.expected_salary || ""}
                 </Text>
               </View>
 
-              <View style={styles.textContainer}>
-                <Text style={styles.label}>Domain strength    </Text>
-                <Text style={styles.colon}>:</Text>
+              <View style={commonStyles.labValContainer}>
+                <Text style={commonStyles.label}>Domain strength    </Text>
+                <Text style={commonStyles.colon}>:</Text>
 
-                <Text style={styles.value}>{profile?.domain_strength || ""}
+                <Text style={commonStyles.value}>{profile?.domain_strength || ""}
                 </Text>
               </View>
 
               {profile?.languages && profile?.languages.trim().length > 0 && (
-                <View style={styles.textContainer}>
-                  <Text style={styles.label}>Languages known        </Text>
-                  <Text style={styles.colon}>:</Text>
+                <View style={commonStyles.labValContainer}>
+                  <Text style={commonStyles.label}>Languages known        </Text>
+                  <Text style={commonStyles.colon}>:</Text>
                   <View style={{ flex: 2 }}>
                     {profile.languages.split(",").map((language, index) => (
-                      <Text key={index} style={styles.value}>
+                      <Text key={index} style={commonStyles.value}>
                         {language.trim()}
                       </Text>
                     ))}
@@ -504,9 +505,9 @@ const styles = StyleSheet.create({
   value: {
     flex: 2, // Take the remaining space
     flexShrink: 1,
-    color: 'black',
-    fontWeight: '400',
-    fontSize: 15,
+    color: colors.text_secondary,
+    fontWeight: '500',
+    fontSize: 13,
     textAlign: 'left', // Align text to the left
     alignSelf: 'flex-start',
 
@@ -514,9 +515,9 @@ const styles = StyleSheet.create({
 
   label: {
     flex: 1, // Take up available space
-    color: 'black',
+    color: colors.text_primary,
     fontWeight: '500',
-    fontSize: 15,
+    fontSize: 13,
     textAlign: 'left', // Align text to the left
     alignSelf: 'flex-start',
 
@@ -530,12 +531,12 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   title: {
-    fontSize: 18,
+    color: colors.text_primary,
     fontWeight: '600',
-
+    fontSize: 16,
     textAlign: 'center',
     color: "black",
-    marginTop: 20,
+    marginBottom: 10
   },
 
   viewResumeText: {

@@ -35,13 +35,16 @@ const videoExtensions = [
   '.mp4', '.mov', '.avi', '.mkv', '.flv', '.wmv', '.webm',
   '.m4v', '.3gp', '.3g2', '.f4v', '.f4p', '.f4a', '.f4b', '.qt', '.quicktime'
 ];
+
 const ResourcesEditScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const { post, imageUrl } = route.params;
   const isDefaultLocalImage =
-    imageUrl && (imageUrl.includes('assets/') || imageUrl.includes('images/homepage'));
-  console.log('post', post)
+    imageUrl &&
+    !imageUrl.startsWith('http') && // means it's a local asset (not from network)
+    imageUrl.includes('image.jpg'); // optional: ensure it’s the specific placeholder
+
   const [image, setImage] = useState(isDefaultLocalImage ? null : imageUrl);
 
   const profile = useSelector(state => state.CompanyProfile.profile);
@@ -51,12 +54,14 @@ const ResourcesEditScreen = () => {
   const scrollViewRef = useRef(null)
   const [isLoading, setIsLoading] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
-  const [thumbnailUri, setThumbnailUri] = useState(null);
+  const [mediaMeta, setMediaMeta] = useState(null);
+  const [thumbnailUri, setThumbnailUri] = useState(mediaMeta?.previewThumbnail);
   const [overlayUri, setOverlayUri] = useState(null);
-
+  useEffect(() => {
+    setThumbnailUri(mediaMeta?.previewThumbnail)
+  }, [mediaMeta])
   const [file, setFile] = useState(null);
   const [fileType, setFileType] = useState('');
-  const [mediaMeta, setMediaMeta] = useState(null);
   const [compressedImage, setCompressedImage] = useState(null);
 
   const { uploadFile, uploading } = useS3Uploader();
@@ -89,40 +94,11 @@ const ResourcesEditScreen = () => {
 
 
 
-  const handleDeleteOldFile = async (fileKey) => {
-    try {
-      const response = await apiClient.post('/deleteFileFromS3', {
-        command: 'deleteFileFromS3',
-        key: fileKey,
-      });
-
-      if (response.status === 200) {
-
-        setPostData(prevState => ({
-          ...prevState,
-          fileKey: null,
-        }));
-      } else {
-        throw new Error('Failed to delete file');
-      }
-    } catch (error) {
-
-      showToast("something went wrong", 'error');
-
-    } finally {
-
-    }
-  };
-
-
-
 
   const [postData, setPostData] = useState({
     title: post?.title || '',
     resource_body: post?.resource_body || '',
     conclusion: post?.conclusion || '',
-    fileKey: post?.fileKey || '',
-    thumbnail_fileKey: post?.thumbnail_fileKey || '',
 
   });
 
@@ -130,32 +106,15 @@ const ResourcesEditScreen = () => {
 
   const [showModal, setShowModal] = useState(false);
 
-
-  const hasUnsavedChanges = Boolean(hasChanges);
-  const [pendingAction, setPendingAction] = React.useState(null);
-
-
-  React.useEffect(() => {
-    const unsubscribe = navigation.addListener('beforeRemove', (e) => {
-      if (!hasUnsavedChanges) return;
-
-      e.preventDefault();
-
-      setPendingAction(e.data.action);
-      setShowModal(true);
-    });
-
-    return unsubscribe;
-  }, [hasUnsavedChanges, navigation]);
-
   const handleLeave = () => {
+    // ✅ Temporarily disable the guard before navigating back
     setHasChanges(false);
-    setShowModal(false);
 
-    if (pendingAction) {
-      navigation.dispatch(pendingAction);
-      setPendingAction(null);
-    }
+    // Give React time to update before navigation triggers
+    requestAnimationFrame(() => {
+      setShowModal(false);
+      navigation.goBack();
+    });
   };
 
   const handleStay = () => {
@@ -163,46 +122,13 @@ const ResourcesEditScreen = () => {
   };
 
   useEffect(() => {
-    if (!post) return;
-
-    const initialPostData = {
-      title: post.title || '',
-      resource_body: post.resource_body || '',
-      conclusion: post.conclusion || '',
-      fileKey: post.fileKey || '',
-    };
-
-    const checkChanges = () => {
-      const hasAnyChanges =
-        postData.title !== initialPostData.title ||
-        postData.resource_body !== initialPostData.resource_body ||
-        postData.conclusion !== initialPostData.conclusion ||
-        postData.fileKey !== initialPostData.fileKey;
-
-      setHasChanges(hasAnyChanges);
-    };
-
-    checkChanges();
-
-  }, [postData, post]);
-
-
-  useFocusEffect(
-    useCallback(() => {
-      if (scrollViewRef.current) {
-        scrollViewRef.current.scrollTo({ offset: 0, animated: false });
-      }
-
-    }, [])
-  );
-
-
-
-  async function uriToBlob(uri) {
-    const response = await fetch(uri);
-    const blob = await response.blob();
-    return blob;
-  }
+    const unsubscribe = navigation.addListener('beforeRemove', (e) => {
+      if (!hasChanges) return;
+      e.preventDefault();
+      setShowModal(true);
+    });
+    return unsubscribe;
+  }, [navigation, hasChanges]);
 
   const sanitizeHtmlBody = (html) => {
     const cleaned = cleanForumHtml(html); // your existing cleaner
@@ -217,72 +143,6 @@ const ResourcesEditScreen = () => {
       .trim();
   };
 
-
-  const dispatch = useDispatch();
-
-  const uploadSelectedMedia = async (media, thumbnailUri) => {
-    console.log('📥 Starting uploadSelectedMedia');
-
-    try {
-      if (!media?.uri || !media?.type) {
-        console.warn('⚠️ Invalid media object:', media);
-        return null;
-      }
-
-      const cleanedUri = media.uri.replace('file://', '');
-      const fileStat = await RNFS.stat(cleanedUri);
-      const fileSize = fileStat.size;
-
-      console.log(`📁 Media: ${media.type}, Size: ${fileSize} bytes`);
-
-      const isImage = media.type.startsWith('image/');
-      const isVideo = media.type.startsWith('video/');
-
-      if (isImage && fileSize > 5 * 1024 * 1024) {
-        showToast("Image size shouldn't exceed 5MB", 'error');
-        return null;
-      }
-
-      if (isVideo && fileSize > 10 * 1024 * 1024) {
-        showToast("Video size shouldn't exceed 10MB", 'error');
-        return null;
-      }
-
-      const { data } = await apiClient.post('/uploadFileToS3', {
-        command: 'uploadFileToS3',
-        headers: {
-          'Content-Type': media.type,
-          'Content-Length': fileSize,
-        },
-      });
-
-      if (data.status !== 'success') throw new Error('Failed to get upload URL');
-
-
-      await fetch(data.url, {
-        method: 'PUT',
-        headers: { 'Content-Type': media.type },
-        body: await uriToBlob(media.uri),
-      });
-
-      let thumbnailFileKey = null;
-
-      if (file.type.startsWith("video/")) {
-
-        thumbnailFileKey = await uploadFromBase64(overlayUri, data.fileKey);
-
-      }
-
-      return {
-        fileKey: data.fileKey,
-        thumbnailFileKey,
-      };
-    } catch (err) {
-      console.error('❌ Media upload failed', err);
-      showToast("Media upload failed", 'error');
-      return null;
-    }
-  };
 
   const handleMediaPickerPress = () => {
     Alert.alert(
@@ -417,7 +277,7 @@ const ResourcesEditScreen = () => {
   };
 
   const handlePostSubmission = async () => {
-    setHasChanges(true);
+
     setIsLoading(true);
 
     try {
@@ -470,38 +330,30 @@ const ResourcesEditScreen = () => {
       }
 
       const hasMedia = file || fileKey;
-      setHasChanges(false)
+
       const payload = {
         command: "updateResourcePost",
         user_id: myId,
         resource_id: post.resource_id,
         title: trimmedTitle,
         resource_body: cleanedBody,
-        ...(hasMedia ? { fileKey, thumbnail_fileKey: thumbnailFileKey } : {}),
-        ...(hasMedia ? { extraData: mediaMeta || post.extraData || {} } : {}),
+        ...(fileKey && { fileKey }),
+        ...(fileKey && thumbnailFileKey && { thumbnail_fileKey: thumbnailFileKey }),
+        ...(fileKey && mediaMeta && Object.keys(mediaMeta).length > 0 && { extraData: mediaMeta }),
       };
-
+      setHasChanges(false)
       const response = await apiClient.post('/updateResourcePost', payload);
-
+      console.log('payload', payload)
       const updatedPostData = {
-        ...post,
-        title: trimmedTitle,
-        resource_body: cleanedBody,
-        ...(hasMedia ? { fileKey, thumbnail_fileKey: thumbnailFileKey } : {}),
-        ...(hasMedia ? { extraData: mediaMeta || post.extraData || {} } : {}),
+        ...payload,
       };
 
       if (response.data.status === 'success') {
+
         EventRegister.emit('onResourcePostUpdated', {
           updatedPost: updatedPostData,
         });
-
-        setFile(null);
-        setFileType('');
-        setThumbnailUri(null);
-        setMediaMeta(null);
-        setHasChanges(false);
-
+        setHasChanges(false)
         showToast("Resource post updated successfully", 'success');
         navigation.goBack();
       } else {
@@ -511,91 +363,9 @@ const ResourcesEditScreen = () => {
       showToast(error.message, 'error');
     } finally {
       setIsLoading(false);
-      setHasChanges(false);
+
     }
   };
-
-
-
-
-  const fetchMediaForPost = async (post) => {
-    const mediaData = { resource_id: post.resource_id };
-
-    if (post.fileKey) {
-      try {
-        const res = await apiClient.post('/getObjectSignedUrl', {
-          command: "getObjectSignedUrl",
-          key: post.fileKey,
-        });
-        console.log('Signed URL response for fileKey:', res.data);
-
-        const url = res.data && (typeof res.data === 'string' ? res.data : res.data.url);
-        if (url && url.length > 0) {
-          mediaData.imageUrl = url;
-
-          if (videoExtensions.some((ext) => post.fileKey.toLowerCase().endsWith(ext))) {
-            mediaData.videoUrl = url;
-
-            if (post.thumbnail_fileKey) {
-              try {
-                const thumbRes = await apiClient.post('/getObjectSignedUrl', {
-                  command: "getObjectSignedUrl",
-                  key: post.thumbnail_fileKey,
-                });
-                mediaData.thumbnailUrl = thumbRes.data;
-
-                await new Promise((resolve) => {
-                  Image.getSize(mediaData.thumbnailUrl, (width, height) => {
-                    mediaData.aspectRatio = width / height;
-                    resolve();
-                  }, resolve);
-                });
-              } catch (error) {
-                mediaData.thumbnailUrl = null;
-                mediaData.aspectRatio = 1;
-              }
-            } else {
-              mediaData.thumbnailUrl = null;
-              mediaData.aspectRatio = 1;
-            }
-          } else {
-            // Image case
-            await new Promise((resolve) => {
-              Image.getSize(url, (width, height) => {
-                mediaData.aspectRatio = width / height;
-                resolve();
-              }, resolve);
-            });
-          }
-        } else {
-
-          mediaData.imageUrl = null;
-          mediaData.videoUrl = null;
-        }
-      } catch (error) {
-
-        mediaData.imageUrl = null;
-        mediaData.videoUrl = null;
-      }
-    }
-
-    // Handle author image if exists
-    if (post.author_fileKey) {
-      try {
-        const authorImageRes = await apiClient.post('/getObjectSignedUrl', {
-          command: "getObjectSignedUrl",
-          key: post.author_fileKey,
-        });
-        mediaData.authorImageUrl = authorImageRes.data;
-      } catch (error) {
-        mediaData.authorImageUrl = null;
-      }
-    }
-
-    return { ...post, ...mediaData };
-  };
-
-
 
   const bodyEditorRef = useRef();
 
@@ -647,6 +417,7 @@ const ResourcesEditScreen = () => {
     }
 
     setPostData((prev) => ({ ...prev, title: plainText }));
+    setHasChanges(true);
   };
 
 
@@ -664,6 +435,8 @@ const ResourcesEditScreen = () => {
     }
 
     setPostData((prev) => ({ ...prev, resource_body: html }));
+    setHasChanges(true);
+
   };
 
 

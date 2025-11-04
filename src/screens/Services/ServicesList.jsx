@@ -19,6 +19,7 @@ import { highlightMatch } from '../helperComponents/signedUrls';
 import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
 import Search from '../../assets/svgIcons/search.svg';
 import Close from '../../assets/svgIcons/close.svg';
+import HomeBanner from '../Banners/homeBanner3.jsx';
 
 import { colors, dimensions } from '../../assets/theme.jsx';
 const ServicesList = () => {
@@ -360,6 +361,7 @@ const ServicesList = () => {
                     }
                     ListHeaderComponent={
                         <View>
+                            <HomeBanner bannerId="serviceAd01"/>
                             {!loading && searchQuery.trim() !== '' && searchResults.length > 0 && (
                                 <Text style={styles.companyCount}>
                                     {searchResults.length} results found

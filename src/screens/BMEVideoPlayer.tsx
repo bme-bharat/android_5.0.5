@@ -14,10 +14,11 @@ import {
   ViewProps,
   AppState,
   AppStateStatus,
+  ImageSourcePropType,
 } from "react-native";
 
 type PlaybackStatusEvent = {
-  event: string;
+  status: string;
   position?: number;
   duration?: number;
   message?: string;
@@ -33,9 +34,10 @@ type BMEVideoPlayerProps = ViewProps & {
   muted?: boolean;
   volume?: number;
   resizeMode?: "contain" | "cover" | "stretch";
-  poster?: string;
+  poster?: ImageSourcePropType;
   posterResizeMode?: "contain" | "cover" | "stretch";
   repeat?: boolean;
+  showProgressBar?: boolean; 
   onPlaybackStatus?: (event: PlaybackStatusEvent) => void;
   onSeek?: (event: SeekEvent) => void; // 🔹 new callback
   onEndReached?: () => void;
@@ -68,12 +70,6 @@ const BMEVideoPlayer = forwardRef<BMEVideoPlayerHandle, BMEVideoPlayerProps>(
       return () => subscription.remove();
     }, []);
 
-    // Defensive cleanup: release native player on unmount
-    useEffect(() => {
-      return () => {
-        dispatchCommand("release");
-      };
-    }, []);
 
     // Compute actual paused state
     const actualPaused = pausedProp || !isAppActive;
@@ -107,18 +103,19 @@ const BMEVideoPlayer = forwardRef<BMEVideoPlayerHandle, BMEVideoPlayerProps>(
       [onPlaybackStatus]
     );
 
+    const handleEndReached = useCallback(
+      (event: NativeSyntheticEvent<any>) => {
+        props.onEndReached?.();
+      },
+      [props.onEndReached]
+    );
+    
     const handleSeek = useCallback(
       (event: NativeSyntheticEvent<SeekEvent>) => {
         onSeek?.(event.nativeEvent);
       },
       [onSeek]
     );
-
-    useEffect(() => {
-      return () => {
-        dispatchCommand("release");
-      };
-    }, []);
     
     return (
       <NativeBMEVideoPlayer
@@ -127,7 +124,7 @@ const BMEVideoPlayer = forwardRef<BMEVideoPlayerHandle, BMEVideoPlayerProps>(
         ref={nativeRef}
         onPlaybackStatus={onPlaybackStatus ? handlePlaybackStatus : undefined}
         onSeek={onSeek ? handleSeek : undefined}
-        onEndReached={props.onEndReached}
+        onEndReached={props.onEndReached ? handleEndReached : undefined}
 
       />
     );

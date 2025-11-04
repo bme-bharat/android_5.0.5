@@ -48,7 +48,7 @@ const MyProducts = () => {
     const handleAddProduct = () => {
         setTimeout(() => {
             navigation.navigate('CreateProduct')
-        }, 300); // Small delay for smooth UI transition
+        }, 200); // Small delay for smooth UI transition
     };
 
     const handleEditProduct = (product) => {
@@ -300,21 +300,19 @@ const MyProducts = () => {
 
                         </View>
                         <View style={styles.buttonContainer}>
-                            <TouchableOpacity onPress={() => handleEditProduct(item)} style={[styles.actionButton, { marginLeft: 10 }]}>
-                                <View style={styles.iconTextContainer}>
-
+                            <TouchableOpacity onPress={() => handleEditProduct(item)} style={[styles.actionButton, {marginRight:20}]}>
+                               
                                     <Text style={styles.buttonText}>Edit</Text>
-                                </View>
+                            
                             </TouchableOpacity>
 
                             <TouchableOpacity
                                 onPress={() => handleDeletePress(item.product_id, item.images, item.files)}
                                 style={styles.actionButton}
                             >
-                                <View style={styles.deleteButton}>
-
+                            
                                     <Text style={styles.deleteButtonText}>Delete</Text>
-                                </View>
+                               
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -457,6 +455,9 @@ const styles = StyleSheet.create({
     actionButton: {
         padding: 8,
         borderRadius: 5,
+        elevation:2,
+        backgroundColor:'#fff',
+        width:'30%'
     },
     iconTextContainer: {
         flexDirection: 'row',
@@ -479,6 +480,7 @@ const styles = StyleSheet.create({
     },
     deleteButtonText: {
         color: "#FF0000",
+        fontSize: 15,
     },
     deleteButton: {
         flexDirection: 'row',

@@ -12,6 +12,7 @@ import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
 import Delete from '../../assets/svgIcons/delete.svg';
 
 import { colors, dimensions } from '../../assets/theme.jsx';
+import { commonStyles } from '../AppUtils/AppStyles.js';
 
 const MyEnqueries = () => {
     const { myId, myData } = useNetwork();
@@ -190,29 +191,28 @@ const MyEnqueries = () => {
                 activeOpacity={1} onPress={() => {
                     ServiceDetails(item?.service_id, item?.company_id);
                 }} >
-                <View style={styles.postContainer}>
-
+           
                     <View style={styles.textContainer}>
 
-                        <View style={styles.title1}>
-                            <Text style={styles.label}>Company name      </Text>
-                            <Text style={styles.colon}>:</Text>
-                            <Text style={styles.value}>{item?.company_name || ""}</Text>
+                        <View style={commonStyles.valContainer}>
+                            <Text style={commonStyles.label}>Company name      </Text>
+                            <Text style={commonStyles.colon}>:</Text>
+                            <Text style={commonStyles.value}>{item?.company_name || ""}</Text>
                         </View>
-                        <View style={styles.title1}>
-                            <Text style={styles.label}>Service name      </Text>
-                            <Text style={styles.colon}>:</Text>
-                            <Text style={styles.value}>{item?.service_title || ""}</Text>
+                        <View style={commonStyles.valContainer}>
+                            <Text style={commonStyles.label}>Service name      </Text>
+                            <Text style={commonStyles.colon}>:</Text>
+                            <Text style={commonStyles.value}>{item?.service_title || ""}</Text>
                         </View>
-                        <View style={styles.title1}>
-                            <Text style={styles.label}>Enquiry description      </Text>
-                            <Text style={styles.colon}>:</Text>
-                            <Text style={styles.value}>{item?.enquiry_description || ""}</Text>
+                        <View style={commonStyles.valContainer}>
+                            <Text style={commonStyles.label}>Enquiry description      </Text>
+                            <Text style={commonStyles.colon}>:</Text>
+                            <Text style={commonStyles.value}>{item?.enquiry_description || ""}</Text>
                         </View>
-                        <View style={styles.title1}>
-                            <Text style={styles.label}>Enquired on      </Text>
-                            <Text style={styles.colon}>:</Text>
-                            <Text style={styles.value}>{formattedDate || ""}</Text>
+                        <View style={commonStyles.valContainer}>
+                            <Text style={commonStyles.label}>Enquired on      </Text>
+                            <Text style={commonStyles.colon}>:</Text>
+                            <Text style={commonStyles.value}>{formattedDate || ""}</Text>
                         </View>
 
 
@@ -242,7 +242,7 @@ const MyEnqueries = () => {
 
 
                     </View>
-                </View>
+          
             </TouchableOpacity>
         );
 
@@ -327,9 +327,15 @@ const styles = StyleSheet.create({
         backgroundColor: '#f5f5f5',
     },
     textContainer: {
-        flex: 1,
-        padding: 15,
-        gap: 6,
+        marginBottom: 10,
+        marginHorizontal: 10,
+        backgroundColor: 'white',
+        justifyContent: 'center',
+        borderRadius: 10,
+        borderWidth: 0.5,
+        borderColor: '#ddd',
+        elevation:3,
+        top: 5
     },
     productDetails: {
         flex: 1,
@@ -337,7 +343,7 @@ const styles = StyleSheet.create({
     buttonContainer: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        marginTop: 10,
+        margin: 10,
 
     },
 
@@ -402,7 +408,6 @@ const styles = StyleSheet.create({
         paddingVertical: 8,
         paddingHorizontal: 12,
         borderRadius: 5,
-        marginLeft: 10,
         backgroundColor: '#ffffff',
         elevation: 2,
         shadowColor: '#000',
@@ -430,7 +435,6 @@ const styles = StyleSheet.create({
         borderColor: '#ddd',
         shadowColor: '#000',
         top: 5
-
     },
 });
 

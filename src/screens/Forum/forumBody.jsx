@@ -2,7 +2,8 @@ import React, { useMemo, useState } from 'react';
 import { View, Text, TouchableOpacity, useWindowDimensions } from 'react-native';
 import RenderHTML, { defaultHTMLElementModels } from 'react-native-render-html';
 import { decode } from 'html-entities';
-import truncate from 'html-truncate'; 
+import truncate from 'html-truncate';
+import { colors } from '../../assets/theme';
 
 // ========== Clean inline styles ==========
 const stripInlineStyles = (domNode) => {
@@ -33,17 +34,18 @@ const baseStyle = { fontSize: 15 };
 const defaultTextProps = {
   selectable: true,
   style: {
-    fontSize: 15,
+    fontSize: 14,
     marginTop: 0,
     marginBottom: 0,
     // fontWeight: '400',
-    // lineHeight: 20,
-
+    lineHeight: 20,
+    color:colors.text_primary,
+    letterSpacing: 0.2, 
   },
 };
 
 const tagStyles = {
-  p: { marginTop: 0, marginBottom: 5 },
+  p: { marginTop: 0, marginBottom: 15 },
   'li > p': { marginTop: 0, marginBottom: 0 },
   div: { marginTop: 0, marginBottom: 0 },
   br: { marginBottom: 10 },
@@ -103,14 +105,14 @@ export const ForumBody = ({ html = '' }) => {
 
   const collapsedHtml = useMemo(() => {
     if (!showReadMore || isExpanded) return html;
-  
+
     const truncated = truncate(html, MAX_CHARS, {
-      ellipsis: '... <span style="color: #999">Read more</span>',
+      ellipsis: '... <span style="color: #075cab">Read more</span>',
     });
-  
+
     return `<p>${truncated}</p>`;
   }, [html, isExpanded, showReadMore]);
-  
+
 
   const handleExpand = () => {
     if (!isExpanded) setIsExpanded(true);
@@ -140,7 +142,7 @@ export const ForumPostBody = ({ html, forumId, numberOfLines }) => {
   }, [html]);
 
   return (
-    <View style={{ paddingHorizontal: 10, marginTop: 5 }}>
+    <View >
       <Text
         {...(numberOfLines ? {
           numberOfLines,
@@ -148,8 +150,8 @@ export const ForumPostBody = ({ html, forumId, numberOfLines }) => {
         } : {})}
         style={{
           fontSize: 14,
-          color: '#333',
-          fontWeight: '600',
+          fontWeight: '400',
+          color: colors.text_primary,
           lineHeight: 20,
         }}
       >
@@ -218,8 +220,8 @@ export const cleanForumHtml = (html) => {
     .replace(/\sstyle="\s*"/gi, '')
     // Sanitize anchor tags
     .replace(/<a [^>]*href="([^"]+)"[^>]*>/gi, '<a href="$1">')
-    // DO NOT remove empty b/strong/i/em/u/span tags
-    // Old line (removed): .replace(/<[^\/>][^>]*>\s*<\/[^>]+>/gi, '')
+  // DO NOT remove empty b/strong/i/em/u/span tags
+  // Old line (removed): .replace(/<[^\/>][^>]*>\s*<\/[^>]+>/gi, '')
 };
 
 export const cleanTooltips = (html) => {

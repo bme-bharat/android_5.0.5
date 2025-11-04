@@ -1,71 +1,237 @@
-import React, { useState } from 'react';
-import { Button, NativeModules, View, ScrollView, Text } from 'react-native';
-import PreviewModal from './src/screens/Picker/PreviewModal'; // make sure the path is correct
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { View, Text, Button, FlatList, ScrollView, TouchableOpacity, StyleSheet, Modal, TextInput, Alert } from 'react-native';
 
-const { DocumentPicker } = NativeModules;
+const URL = 'wss://6xhohxdci4.execute-api.ap-south-1.amazonaws.com/chatApi/';
 
-const categories = [
-  { label: 'Documents', value: 'docs' },
-  { label: 'Images', value: 'images' },
-  { label: 'Videos', value: 'videos' },
-  { label: 'All Files', value: 'allFiles' },
-];
+export default function App() {
+  const socket = useRef(null);
+  const [isConnected, setIsConnected] = useState(false);
+  const [members, setMembers] = useState([]);
+  const [chatRows, setChatRows] = useState([]);
 
-const App = () => {
-  const [pickedFiles, setPickedFiles] = useState({});
-  const [previewItem, setPreviewItem] = useState(null);
+  // Modal states
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalCallback, setModalCallback] = useState(null);
+  const [modalValue, setModalValue] = useState('');
+  const [modalTitle, setModalTitle] = useState('');
 
-  const handlePick = async (category) => {
-    try {
-      const result = await DocumentPicker.pick({ allowMultiple: true, category });
-      console.log(`Picked ${category}:`, result);
-      setPickedFiles((prev) => ({ ...prev, [category]: result }));
-    } catch (e) {
-      console.error(`Document pick failed for ${category}:`, e);
+  const showModal = useCallback((title, callback) => {
+    setModalTitle(title);
+    setModalCallback(() => callback);
+    setModalValue('');
+    setModalVisible(true);
+  }, []);
+
+  const handleModalSubmit = useCallback(() => {
+    if (modalCallback) {
+      modalCallback(modalValue);
     }
-  };
+    setModalVisible(false);
+  }, [modalCallback, modalValue]);
 
-  const handleUpload = (item) => {
-    console.log('Upload clicked for:', item);
-    // call your upload logic here
-    setPreviewItem(null); // close modal after upload
-  };
+  const onSocketOpen = useCallback(() => {
+    setIsConnected(true);
+    showModal('Enter your name', (name) => {
+      socket.current?.send(JSON.stringify({ action: 'setName', name }));
+    });
+  }, [showModal]);
+
+  const onSocketClose = useCallback(() => {
+    setMembers([]);
+    setIsConnected(false);
+    setChatRows([]);
+  }, []);
+
+  const onSocketMessage = useCallback((dataStr) => {
+    const data = JSON.parse(dataStr);
+    if (data.members) {
+      setMembers(data.members);
+    } else if (data.publicMessage) {
+      setChatRows(old => [...old, { type: 'public', text: data.publicMessage }]);
+    } else if (data.privateMessage) {
+      Alert.alert('Private Message', data.privateMessage);
+    } else if (data.systemMessage) {
+      setChatRows(old => [...old, { type: 'system', text: data.systemMessage }]);
+    }
+  }, []);
+
+  const onConnect = useCallback(() => {
+    if (socket.current?.readyState !== WebSocket.OPEN) {
+      socket.current = new WebSocket(URL);
+      socket.current.addEventListener('open', onSocketOpen);
+      socket.current.addEventListener('close', onSocketClose);
+      socket.current.addEventListener('message', (event) => {
+        onSocketMessage(event.data);
+      });
+    }
+  }, [onSocketOpen, onSocketClose, onSocketMessage]);
+
+  useEffect(() => {
+    return () => {
+      socket.current?.close();
+    };
+  }, []);
+
+  const onSendPrivateMessage = useCallback((to) => {
+    showModal(`Enter private message for ${to}`, (message) => {
+      socket.current?.send(JSON.stringify({ action: 'sendPrivate', message, to }));
+    });
+  }, [showModal]);
+
+  const onSendPublicMessage = useCallback(() => {
+    showModal('Enter public message', (message) => {
+      socket.current?.send(JSON.stringify({ action: 'sendPublic', message }));
+    });
+  }, [showModal]);
+
+  const onDisconnect = useCallback(() => {
+    if (isConnected) {
+      socket.current?.close();
+    }
+  }, [isConnected]);
 
   return (
-    <View style={{ flex: 1, padding: 16 ,}}>
-      <ScrollView>
-        {categories.map((cat) => (
-          <View key={cat.value} style={{ marginBottom: 16 }}>
-            <Button
-              title={`Pick ${cat.label}`}
-              onPress={() => handlePick(cat.value)}
-            />
-            {pickedFiles[cat.value] && (
-              <View style={{ marginTop: 8 }}>
-                <Text>Picked {cat.label}:</Text>
-                {pickedFiles[cat.value].map((file, index) => (
-                  <Text
-                    key={index}
-                    style={{ fontSize: 12, color: 'blue', textDecorationLine: 'underline' }}
-                    onPress={() => setPreviewItem(file)}
-                  >
-                    {file.name} ({file.size} bytes)
-                  </Text>
-                ))}
-              </View>
-            )}
+    <View style={styles.container}>
+
+      {/* Members List */}
+      <FlatList
+        horizontal
+        data={members}
+        keyExtractor={(item) => item}
+        renderItem={({ item }) => (
+          <TouchableOpacity style={styles.memberButton} onPress={() => onSendPrivateMessage(item)}>
+            <Text style={styles.memberText}>{item}</Text>
+          </TouchableOpacity>
+        )}
+        style={styles.membersList}
+        showsHorizontalScrollIndicator={false}
+      />
+
+      {/* Chat Messages */}
+      <ScrollView style={styles.chatScroll}>
+        {chatRows.map((row, index) => (
+          <View key={index} style={[styles.chatRow, row.type === 'system' ? styles.systemRow : styles.publicRow]}>
+            <Text style={row.type === 'system' ? styles.systemText : styles.publicText}>{row.text}</Text>
           </View>
         ))}
       </ScrollView>
 
-      {/* Preview modal */}
-      <PreviewModal
-        item={previewItem}
-        onClose={() => setPreviewItem(null)}
-        onUpload={handleUpload}
-      />
+      {/* Buttons */}
+      <View style={styles.buttonsContainer}>
+        {isConnected && <Button title="Send Public" onPress={onSendPublicMessage} />}
+        {isConnected && <Button title="Disconnect" onPress={onDisconnect} />}
+        {!isConnected && <Button title="Connect" onPress={onConnect} />}
+      </View>
+
+      {/* Connection Indicator */}
+      <View style={[styles.connectionIndicator, { backgroundColor: isConnected ? '#00da00' : '#e2e2e2' }]} />
+
+      {/* Input Modal */}
+      <Modal visible={modalVisible} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <Text style={styles.modalTitle}>{modalTitle}</Text>
+            <TextInput
+              value={modalValue}
+              onChangeText={setModalValue}
+              style={styles.modalInput}
+              autoFocus
+            />
+            <View style={styles.modalButtons}>
+              <Button title="Submit" onPress={handleModalSubmit} />
+              <Button title="Cancel" onPress={() => setModalVisible(false)} />
+            </View>
+          </View>
+        </View>
+      </Modal>
+
     </View>
   );
-};
+}
 
-export default App;
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#f4ede3',
+    paddingTop: 40,
+    paddingHorizontal: 10,
+  },
+  membersList: {
+    maxHeight: 50,
+    marginBottom: 10,
+  },
+  memberButton: {
+    backgroundColor: '#3e103f',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 20,
+    marginRight: 8,
+  },
+  memberText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
+  chatScroll: {
+    flex: 1,
+    marginBottom: 10,
+  },
+  chatRow: {
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 6,
+    marginBottom: 5,
+    elevation: 1,
+  },
+  systemRow: {
+    backgroundColor: '#e1e1e1',
+  },
+  publicRow: {
+    backgroundColor: '#ffffff',
+  },
+  systemText: {
+    fontStyle: 'italic',
+  },
+  publicText: {
+    fontWeight: 'bold',
+  },
+  buttonsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginBottom: 20,
+  },
+  connectionIndicator: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    position: 'absolute',
+    top: 45,
+    right: 15,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContainer: {
+    width: 300,
+    backgroundColor: 'white',
+    borderRadius: 8,
+    padding: 20,
+  },
+  modalTitle: {
+    fontSize: 16,
+    marginBottom: 10,
+  },
+  modalInput: {
+    borderBottomWidth: 1,
+    borderColor: '#888',
+    marginBottom: 15,
+    paddingVertical: 4,
+    paddingHorizontal: 2,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+});

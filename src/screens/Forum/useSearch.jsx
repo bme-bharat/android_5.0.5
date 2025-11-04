@@ -28,10 +28,7 @@ export const searchForumPostsWithEnrichment = async ({
             searchQuery: trimmedText,
         };
 
-        const res = await withTimeout(
-            apiClient.post('/searchLatestForumPosts', requestData),
-            10000
-        );
+        const res = await apiClient.post('/searchLatestForumPosts', requestData)
 
         const forumPosts = res.data.response || [];
         const count = res.data.count || forumPosts.length;

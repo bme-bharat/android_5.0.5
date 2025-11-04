@@ -813,7 +813,7 @@ const EditProduct = () => {
 
             </TouchableOpacity>
             <KeyboardAwareScrollView
-                contentContainerStyle={{ flexGrow: 1, backgroundColor: "#f8f9fa", paddingHorizontal: 10, }}
+                contentContainerStyle={{ flexGrow: 1, backgroundColor: "#f8f9fa", paddingHorizontal: 10,paddingBottom:'40%' }}
                 keyboardShouldPersistTaps="handled"
                 extraScrollHeight={20}
                 onScrollBeginDrag={() => Keyboard.dismiss()}

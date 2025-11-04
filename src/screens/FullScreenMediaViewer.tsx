@@ -16,7 +16,7 @@ import BMEVideoPlayer, { BMEVideoPlayerHandle } from "./BMEVideoPlayer";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import Icon from "react-native-vector-icons/Ionicons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import Close from '../assets/svgIcons/close.svg';
+import Close from '../assets/svgIcons/close-large.svg';
 import Play from '../assets/svgIcons/play.svg';
 import Pause from '../assets/svgIcons/pause.svg';
 import Mute from '../assets/svgIcons/mute.svg';
@@ -25,7 +25,7 @@ import play from '../images/homepage/PlayIcon.png'
 import { colors, dimensions } from '../assets/theme.jsx';
 
 const { height } = Dimensions.get("window");
-const AUTO_HIDE_DELAY = 3000;
+const AUTO_HIDE_DELAY = 5000;
 const SEEK_IGNORE_MS = 300;
 
 const InlineVideo = ({ route }) => {
@@ -47,6 +47,7 @@ const InlineVideo = ({ route }) => {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const [sliderDisabled, setSliderDisabled] = useState(false);
+  const [wasPausedBeforeSliding, setWasPausedBeforeSliding] = useState(false);
 
   const topInset =
     Platform.OS === "android" ? StatusBar.currentHeight || 0 : insets.top;
@@ -85,7 +86,7 @@ const InlineVideo = ({ route }) => {
     }).start();
 
     // Auto-hide only if playing AND not sliding
-    if (!isPaused && !isSliding) {
+    if (!isPaused && !isSliding && !loading) {
       hideTimeout.current = setTimeout(() => {
         Animated.timing(fadeAnim, {
           toValue: 0,
@@ -200,7 +201,7 @@ const InlineVideo = ({ route }) => {
           muted={muted}
           onPlaybackStatus={handlePlaybackStatus}
           style={{ width: "100%", aspectRatio: videoHeight }}
-          resizeMode="contain"
+          resizeMode="cover"
           repeat
           poster={poster}
           posterResizeMode="cover"
@@ -213,29 +214,31 @@ const InlineVideo = ({ route }) => {
             {/* Top row */}
             <View style={[styles.topControls,]}>
               <TouchableOpacity onPress={handleClose} style={styles.iconButton}>
-                <Close width={dimensions.icon.xl} height={dimensions.icon.xl} color={colors.background} />
+                <Close width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.background} />
 
               </TouchableOpacity>
-
-              {loading && (
-                <View
-                  style={styles.iconButton} >
-                  <ActivityIndicator size="small" color="#FFF" />
-                </View>
-              )}
             </View>
+
 
             {/* Central play/pause */}
             <View style={styles.centralIcon}>
-              <TouchableOpacity activeOpacity={0.8} onPress={togglePlayPause} style={{ backgroundColor: "rgba(0,0,0,0.5)", borderRadius: 100, padding: 10 }}>
-                {paused ? (
-                  <Play width={dimensions.icon.xl} height={dimensions.icon.xl} color={colors.background} />
-                ) : (
-                  <Pause width={dimensions.icon.xl} height={dimensions.icon.xl} color={colors.background} />
-
-                )}
-              </TouchableOpacity>
+              {loading ? (
+                <ActivityIndicator size="large" color="#FFF" />
+              ) : (
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  onPress={togglePlayPause}
+                  style={{ backgroundColor: "rgba(0,0,0,0.5)", borderRadius: 100, padding: 10 }}
+                >
+                  {paused ? (
+                    <Play width={dimensions.icon.xl} height={dimensions.icon.xl} color={colors.background} />
+                  ) : (
+                    <Pause width={dimensions.icon.xl} height={dimensions.icon.xl} color={colors.background} />
+                  )}
+                </TouchableOpacity>
+              )}
             </View>
+
 
             {/* Bottom row */}
             <View style={[styles.bottomControls,]}>
@@ -259,29 +262,30 @@ const InlineVideo = ({ route }) => {
                 maximumValue={duration > 0 ? duration : 0}
                 value={position}
 
-                onValueChange={(value) => {
-                  if (isSliding) {
-                    sliderValueRef.current = value;
-                    setPosition(value);
-                  }
-                }}
                 onSlidingStart={() => {
                   setIsSliding(true);
-                  showControls(); // keeps controls visible
+                  setWasPausedBeforeSliding(paused); // remember current pause state
+                  setPaused(true); // pause video while sliding
+                  showControls(); // keep controls visible
                 }}
-
+                onValueChange={(value) => {
+                  sliderValueRef.current = value;
+                  setPosition(value); // update slider position visually
+                }}
                 onSlidingComplete={(value) => {
                   handleSeekComplete(value);
                   setIsSliding(false);
-                  showControls(); // re-start auto-hide if needed
+                  setPaused(wasPausedBeforeSliding); // restore paused state
+                  showControls(); // restart auto-hide if needed
                 }}
+              
 
                 minimumTrackTintColor="#075cab"
                 maximumTrackTintColor="rgba(255,255,255,0.5)"
                 thumbTintColor="#fff"
               />
               <Text style={styles.timeText}>
-                -{formatTime(duration - position)}
+                {formatTime(position)} / {formatTime(duration)}
               </Text>
 
               <TouchableOpacity onPress={toggleMute} style={styles.iconButtonMute}>
@@ -370,7 +374,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   smallPlayPause: {
-    
+
   },
 });
 

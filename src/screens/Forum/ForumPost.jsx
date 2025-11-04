@@ -42,6 +42,7 @@ const ForumPostScreen = () => {
   const [file, setFile] = useState(null);
   const [fileType, setFileType] = useState('');
   const [mediaMeta, setMediaMeta] = useState(null);
+ 
   const [compressedImage, setCompressedImage] = useState(null);
   const navigation = useNavigation();
   const [postData, setPostData] = useState({
@@ -246,82 +247,6 @@ const ForumPostScreen = () => {
   );
 
 
-  const handleUploadFile = async () => {
-    setLoading(true);
-    console.log("📤 Starting handleUploadFile...");
-
-    if (!file) {
-      console.log("⚠️ No file selected for upload.");
-      setLoading(false);
-      return { fileKey: null, thumbnailFileKey: null };
-    }
-
-    try {
-      console.log("📂 Getting file stats for:", file.uri);
-      const fileStat = await RNFS.stat(file.uri);
-      const fileSize = fileStat.size;
-      console.log(`✅ File size: ${fileSize} bytes`);
-
-      // 1. Get Upload URL
-      console.log("🌐 Requesting upload URL from backend...");
-      const res = await apiClient.post('/uploadFileToS3', {
-        command: 'uploadFileToS3',
-        headers: {
-          'Content-Type': fileType,
-          'Content-Length': fileSize,
-        },
-      });
-
-      console.log("📡 Backend response:", res.data);
-
-      if (res.data.status !== 'success') {
-        throw new Error(res.data.errorMessage || 'Failed to get upload URL');
-      }
-
-      const uploadUrl = res.data.url;
-      const fileKey = res.data.fileKey;
-      console.log("✅ Got upload URL:", uploadUrl);
-      console.log("🗝️ File Key:", fileKey);
-
-      // 2. Upload Main File
-      console.log("⬆️ Preparing file blob for upload...");
-      const fileBlob = await uriToBlob(file.uri);
-
-      console.log("🚀 Uploading file to S3...");
-      const uploadRes = await fetch(uploadUrl, {
-        method: 'PUT',
-        headers: { 'Content-Type': fileType },
-        body: fileBlob,
-      });
-
-      console.log("📡 S3 Upload Response Status:", uploadRes.status);
-
-      if (uploadRes.status !== 200) {
-        throw new Error('Failed to upload file to S3');
-      }
-
-      // 3. Upload Thumbnail (for video only)
-      let thumbnailFileKey = null;
-
-      if (fileType.startsWith("video/")) {
-        console.log("🎞️ Detected video file. Uploading thumbnail...");
-        thumbnailFileKey = await uploadFromBase64(overlayUri, fileKey);
-        console.log("🖼️ Thumbnail File Key:", thumbnailFileKey);
-      } else {
-        console.log("📷 Non-video file. Skipping thumbnail upload.");
-      }
-
-      console.log("✅ Upload complete:", { fileKey, thumbnailFileKey });
-      return { fileKey, thumbnailFileKey };
-    } catch (error) {
-      console.error("❌ Error during file upload:", error);
-      showToast("An error occurred during file upload", 'error');
-      return { fileKey: null, thumbnailFileKey: null };
-    } finally {
-      console.log("🏁 handleUploadFile finished.");
-      setLoading(false);
-    }
-  };
 
 
 

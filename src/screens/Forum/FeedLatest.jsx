@@ -273,7 +273,8 @@ const LatestPosts = () => {
                                 placeholder="Search"
                                 placeholderTextColor="gray"
                                 value={searchQuery}
-                                onChangeText={handleDebouncedTextChange}
+                                onChangeText={setSearchQuery}      // <--- Add this
+                            onSubmitEditing={() => handleSearch(searchQuery)}
                             />
 
 

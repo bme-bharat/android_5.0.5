@@ -96,6 +96,7 @@ const screenOption = {
   title: null, // Removes the title
   headerBackTitleVisible: false,
   headerShown: false,
+  animation: 'none',
 };
 
 const CompanyStackNav = () => {

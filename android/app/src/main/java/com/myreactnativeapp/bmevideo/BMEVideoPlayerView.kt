@@ -31,9 +31,14 @@ import com.facebook.react.uimanager.events.Event
 import com.facebook.react.uimanager.events.RCTEventEmitter
 import com.facebook.react.bridge.WritableMap
 import com.facebook.react.bridge.WritableNativeMap
+import com.facebook.react.bridge.LifecycleEventListener
+import android.os.SystemClock
+import android.widget.SeekBar
+import android.widget.ProgressBar
+import android.widget.LinearLayout
 
 
-class BMEVideoPlayerView(context: Context) : FrameLayout(context) {
+class BMEVideoPlayerView(context: Context) : FrameLayout(context),LifecycleEventListener {
 
     private val playerView: PlayerView = PlayerView(context)
     private val posterView: ImageView = ImageView(context)
@@ -46,9 +51,18 @@ class BMEVideoPlayerView(context: Context) : FrameLayout(context) {
     private var lastPosterUrl: String? = null
     private var isPosterFading = false
     private var isSeekable: Boolean = true
+    private var nextSource: String? = null
+    private var firstFrameBitmap: Bitmap? = null
+    private val progressBar: SeekBar = SeekBar(context)
+    private lateinit var progressContainer: LinearLayout
 
     private val mainHandler = Handler(Looper.getMainLooper())
     private var progressRunnable: Runnable? = null
+
+    private var backgroundPaused = false // paused because app went to background
+
+    private var isUserSeeking = false
+    private var lastUserProgress = 0
 
     init {
         layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT)
@@ -58,7 +72,7 @@ class BMEVideoPlayerView(context: Context) : FrameLayout(context) {
         playerView.layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT)
         playerView.useController = false
         playerView.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_ZOOM
-        playerView.setBackgroundColor(Color.TRANSPARENT)
+        playerView.setBackgroundColor(Color.WHITE)
         addView(playerView)
 
         // Poster overlay
@@ -67,6 +81,74 @@ class BMEVideoPlayerView(context: Context) : FrameLayout(context) {
         posterView.setBackgroundColor(Color.WHITE)
         posterView.alpha = 1f
         addView(posterView)
+
+        // if using media3 PlayerView API names:
+        playerView.setKeepContentOnPlayerReset(true)
+        playerView.setShutterBackgroundColor(Color.TRANSPARENT)
+
+// --- Custom Progress Container (light + minimal) ---
+progressContainer = LinearLayout(context).apply {
+    orientation = LinearLayout.VERTICAL
+    layoutParams = LayoutParams(
+        LayoutParams.MATCH_PARENT,
+        LayoutParams.WRAP_CONTENT,
+        android.view.Gravity.BOTTOM
+    )
+    setPadding(0, 0, 0, 0)
+    elevation = 3f
+    visibility = View.GONE
+}
+
+
+// --- SeekBar Styling ---
+        progressBar.layoutParams = LayoutParams(
+            LayoutParams.MATCH_PARENT,
+            (3 * resources.displayMetrics.density).toInt() // thinner bar
+        )
+        progressBar.setPadding(0, 0, 0, 0)
+        progressBar.max = 1000
+        progressBar.progress = 0
+        progressBar.thumb = null
+        progressBar.alpha = 1f
+
+        progressBar.progressDrawable = context.getDrawable(android.R.drawable.progress_horizontal)?.mutate()?.apply {
+            setTintMode(android.graphics.PorterDuff.Mode.SRC_IN)
+            setTint(Color.parseColor("#FFFFFF"))
+        }
+        progressBar.progressBackgroundTintList = android.content.res.ColorStateList.valueOf(Color.parseColor("#DADADA"))
+
+        progressContainer.addView(progressBar)
+        addView(progressContainer)
+
+
+
+progressBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+    override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+        if (fromUser) {
+            lastUserProgress = progress
+        }
+    }
+
+    override fun onStartTrackingTouch(seekBar: SeekBar?) {
+        isUserSeeking = true
+        stopProgressUpdates() // pause UI updates while user drags
+    }
+
+    override fun onStopTrackingTouch(seekBar: SeekBar?) {
+        val player = exoPlayer ?: return
+        val dur = player.duration.takeIf { it > 0 } ?: return
+        val seekToMs = (dur * (lastUserProgress / 1000.0)).toLong()
+        player.seekTo(seekToMs)
+        player.playWhenReady = !paused && !backgroundPaused
+        isUserSeeking = false
+        startProgressUpdates()
+    }
+})
+
+
+        if (context is ReactContext) {
+            context.addLifecycleEventListener(this)
+        }
     }
 
     /* -------------------------
@@ -100,24 +182,68 @@ class BMEVideoPlayerView(context: Context) : FrameLayout(context) {
     }
 }
 
-    private fun startProgressUpdates() {
-        if (progressRunnable != null) return
-        progressRunnable = object : Runnable {
-            override fun run() {
-                val p = exoPlayer ?: return
-                val dur = if (p.duration > 0) p.duration else 0L
-                val pos = p.currentPosition
-                emitPlayback("progress", pos, dur, null)
-                mainHandler.postDelayed(this, 250)
+private var frameCallback: android.view.Choreographer.FrameCallback? = null
+
+private fun startProgressUpdates() {
+    stopProgressUpdates()
+
+    val player = exoPlayer ?: return
+    var lastUpdateTime = SystemClock.elapsedRealtime()
+    var lastPlayerTime = player.currentPosition
+    var lastDuration = player.duration.takeIf { it > 0 } ?: 0L
+
+    val choreographer = android.view.Choreographer.getInstance()
+    frameCallback = object : android.view.Choreographer.FrameCallback {
+        override fun doFrame(frameTimeNanos: Long) {
+            val p = exoPlayer ?: return
+            if (isUserSeeking || !p.isPlaying) {
+                choreographer.postFrameCallback(this)
+                return
             }
+
+            val now = SystemClock.elapsedRealtime()
+            val elapsed = now - lastUpdateTime
+
+            // refresh every 250 ms
+            if (elapsed >= 250) {
+                lastUpdateTime = now
+                lastPlayerTime = p.currentPosition
+                lastDuration = p.duration.takeIf { it > 0 } ?: lastDuration
+            }
+
+            // interpolate smoothly
+            val predicted = lastPlayerTime + (SystemClock.elapsedRealtime() - lastUpdateTime)
+            if (lastDuration > 0) {
+                val progress = ((predicted.toFloat() / lastDuration) * 1000)
+                    .toInt()
+                    .coerceIn(0, 1000)
+                progressBar.progress = progress
+            }
+
+            choreographer.postFrameCallback(this)
         }
-        mainHandler.post(progressRunnable!!)
     }
 
+    choreographer.postFrameCallback(frameCallback!!)
+}
+
+
     private fun stopProgressUpdates() {
-        progressRunnable?.let { mainHandler.removeCallbacks(it) }
-        progressRunnable = null
+    progressRunnable?.let { mainHandler.removeCallbacks(it) }
+    progressRunnable = null
+    frameCallback?.let {
+        android.view.Choreographer.getInstance().removeFrameCallback(it)
     }
+    frameCallback = null
+}
+
+fun setShowProgressBar(show: Boolean) {
+    progressContainer.visibility = if (show) View.VISIBLE else View.GONE
+    progressBar.isEnabled = show
+    progressBar.isClickable = show
+}
+
+
 
     /* -------------------------
        Public API (invoked from manager / JS)
@@ -132,100 +258,63 @@ class BMEVideoPlayerView(context: Context) : FrameLayout(context) {
         exoPlayer?.seekTo(0)
         emitPlayback("paused", 0L, exoPlayer?.duration ?: 0L)
         stopProgressUpdates()
-        showPosterImmediately()
+        progressBar.progress = 0
+        
     }
 
 fun setSource(url: String) {
     currentSource = url
 
-    if (exoPlayer == null) {
-        exoPlayer = ExoPlayer.Builder(context)
-            .setAudioAttributes(
-                androidx.media3.common.AudioAttributes.Builder()
-                    .setUsage(androidx.media3.common.C.USAGE_MEDIA)
-                    .setContentType(androidx.media3.common.C.AUDIO_CONTENT_TYPE_MOVIE)
-                    .build(),
-                /* handleAudioFocus = */ true
-            )
-            .build()
-        playerView.player = exoPlayer
-    }
+    val player = PlayerPool.getPlayer(context)
+    val mediaItem = MediaItem.fromUri(url)
+    player.setMediaItem(mediaItem)
+    player.prepare()
+    player.playWhenReady = false
 
-    // remove previous listener if any
-    playerListener?.let { exoPlayer?.removeListener(it) }
-
-    val mediaItem = MediaItem.fromUri(Uri.parse(url))
-    exoPlayer?.setMediaItem(mediaItem)
-    exoPlayer?.prepare()
-    exoPlayer?.repeatMode = if (repeat) Player.REPEAT_MODE_ONE else Player.REPEAT_MODE_OFF
-    exoPlayer?.playWhenReady = !paused
-
-    // create and attach a listener object and keep reference for removal
-    playerListener = object : Player.Listener {
-        override fun onPlaybackStateChanged(playbackState: Int) {
-            when (playbackState) {
-                Player.STATE_BUFFERING -> {
-                    emitPlayback("buffering", exoPlayer?.currentPosition, exoPlayer?.duration)
-                }
-                Player.STATE_READY -> {
-                    if (exoPlayer?.isPlaying == true) {
-                        fadeOutPoster()
-                        emitPlayback("playing", exoPlayer?.currentPosition, exoPlayer?.duration)
-                        startProgressUpdates()
-                        // 🔑 ensure only one active player at a time
-                        setActivePlayer(this@BMEVideoPlayerView)
-                        
-                                val seekableWindow = exoPlayer?.currentTimeline?.getWindow(0, androidx.media3.common.Timeline.Window())
-        isSeekable = seekableWindow?.isSeekable ?: true
-
-        // emit event if not seekable
-        if (!isSeekable) {
-            emitPlayback("notSeekable", exoPlayer?.currentPosition, exoPlayer?.duration)
-        }
-
-
-                    } else {
-                        emitPlayback("paused", exoPlayer?.currentPosition, exoPlayer?.duration)
-                        stopProgressUpdates()
-                    }
-                }
-                Player.STATE_ENDED -> {
-                    showPosterImmediately()
-                    emitPlayback("ended", exoPlayer?.duration, exoPlayer?.duration)
-                    emitEndReachedEvent()   
-                    stopProgressUpdates()
-                }
-                Player.STATE_IDLE -> {
-                    emitPlayback("idle")
-                    stopProgressUpdates()
-                }
-            }
-        }
-
-        override fun onIsPlayingChanged(isPlaying: Boolean) {
-            if (exoPlayer?.playbackState == Player.STATE_READY && isPlaying) {
-                fadeOutPoster()
-                emitPlayback("playing", exoPlayer?.currentPosition, exoPlayer?.duration)
-                startProgressUpdates()
-                // 🔑 ensure only one active player at a time
-                setActivePlayer(this@BMEVideoPlayerView)
-            } else {
-                emitPlayback("paused", exoPlayer?.currentPosition, exoPlayer?.duration)
-                stopProgressUpdates()
-            }
-        }
-
-        override fun onPlayerError(error: PlaybackException) {
-            showPosterImmediately()
-            emitPlayback("error", exoPlayer?.currentPosition, exoPlayer?.duration, error.localizedMessage)
-            stopProgressUpdates()
-        }
-    }
-
-    exoPlayer?.addListener(playerListener!!)
+    attachPlayer(player)
+    player.seekTo(0)
 }
 
 
+
+fun play() {
+    setPaused(false)
+}
+
+
+fun preloadNext(url: String) {
+    nextSource = url
+    PlayerPool.preloadPlayer(context, url) // background prepare
+}
+
+override fun onHostResume() {
+    if (backgroundPaused) {
+        backgroundPaused = false
+        if (!paused) {
+            exoPlayer?.playWhenReady = true
+            startProgressUpdates()
+        }
+    }
+}
+
+
+
+override fun onHostPause() {
+    if (exoPlayer?.isPlaying == true) {
+        backgroundPaused = true
+        exoPlayer?.playWhenReady = false
+        emitPlayback("paused", exoPlayer?.currentPosition, exoPlayer?.duration)
+        stopProgressUpdates()
+        showPosterImmediately()
+    }
+}
+
+
+
+    override fun onHostDestroy() {
+        // Release player if the view is destroyed
+        releasePlayer()
+    }
 
     fun setResizeMode(mode: String?) {
     playerView.resizeMode = when (mode) {
@@ -285,24 +374,24 @@ fun setSource(url: String) {
     }
 
     fun setPaused(paused: Boolean) {
-    this.paused = paused
-    exoPlayer?.let { player ->
-        if (player.playbackState == Player.STATE_READY) {
-            player.playWhenReady = !paused
-        } // else we rely on listener to update when ready
-    }
+        this.paused = paused
+        exoPlayer?.playWhenReady = !paused && !backgroundPaused
 
-    if (paused) {
-        emitPlayback("paused", exoPlayer?.currentPosition, exoPlayer?.duration)
-        stopProgressUpdates()
-        
-    } else {
-        if (exoPlayer?.playbackState == Player.STATE_READY && exoPlayer?.isPlaying == true) {
-            fadeOutPoster()
-            startProgressUpdates()
+        if (paused) {
+            emitPlayback("paused", exoPlayer?.currentPosition, exoPlayer?.duration)
+            stopProgressUpdates()
+            showPosterImmediately()
+        } else {
+            if (exoPlayer?.playbackState == Player.STATE_READY) {
+                exoPlayer?.playWhenReady = true
+                fadeOutPoster()
+                startProgressUpdates()
+            }
         }
     }
-}
+
+
+
 
 
     fun attachPlayer(player: ExoPlayer, posterUrl: String? = null) {
@@ -314,38 +403,105 @@ fun setSource(url: String) {
         exoPlayer = player
         playerView.player = player
 
-        // attach a listener to the provided player
         playerListener = object : Player.Listener {
-            override fun onPlaybackStateChanged(playbackState: Int) {
-                if (playbackState == Player.STATE_READY && player.isPlaying) {
-                    fadeOutPoster()
-                    emitPlayback("playing", player.currentPosition, player.duration)
-                    startProgressUpdates()
-                }
+
+    override fun onPlaybackStateChanged(state: Int) {
+        when (state) {
+            Player.STATE_BUFFERING -> emitPlayback("buffering", player.currentPosition, player.duration)
+
+            Player.STATE_READY -> {
+    if (!paused) {
+        player.playWhenReady = true
+        fadeOutPoster()
+        emitPlayback("playing", player.currentPosition, player.duration)
+        startProgressUpdates()
+    } else {
+        player.playWhenReady = false
+        emitPlayback("loaded", player.currentPosition, player.duration)
+    }
+}
+
+
+            Player.STATE_ENDED -> {
+                emitPlayback("ended", player.duration, player.duration)
+                emitEndReachedEvent()
+                stopProgressUpdates()
+                player.seekTo(0)
+                player.playWhenReady = false
+                progressBar.progress = 1000
+
             }
 
-            override fun onIsPlayingChanged(isPlaying: Boolean) {
-                if (player.playbackState == Player.STATE_READY && isPlaying) {
-                    fadeOutPoster()
-                    emitPlayback("playing", player.currentPosition, player.duration)
-                    startProgressUpdates()
-                } else {
-                    emitPlayback("paused", player.currentPosition, player.duration)
-                    stopProgressUpdates()
-                }
-            }
-
-            override fun onPlayerError(error: PlaybackException) {
-                showPosterImmediately()
-                emitPlayback("error", player.currentPosition, player.duration, error.localizedMessage)
+            Player.STATE_IDLE -> {
+                // 🔹 Add this here — treat it like "onLoadStart" for JS
+                emitPlayback("loading", 0L, 0L)
                 stopProgressUpdates()
             }
+        }
+    }
+
+
+        override fun onIsPlayingChanged(isPlaying: Boolean) {
+            if (player.playbackState == Player.STATE_READY && isPlaying) {
+                fadeOutPoster()
+                emitPlayback("playing", player.currentPosition, player.duration)
+                startProgressUpdates()
+            } else {
+                emitPlayback("paused", player.currentPosition, player.duration)
+                stopProgressUpdates()
+            }
+        }
+
+        override fun onRenderedFirstFrame() {
+    // safe place to fade out the poster because the player actually painted a frame
+    mainHandler.post {
+        fadeOutPoster()
+        startProgressUpdates()
+    }
+}
+
+        override fun onPlayerError(error: PlaybackException) {
+            mainHandler.postDelayed({
+                val url = currentSource ?: return@postDelayed
+                val mediaItem = MediaItem.fromUri(url)
+                exoPlayer?.setMediaItem(mediaItem)
+                exoPlayer?.prepare()
+                exoPlayer?.playWhenReady = !paused && !backgroundPaused
+
+            }, 1000)
+        }
+
         }
         player.addListener(playerListener!!)
 
         if (!posterUrl.isNullOrBlank()) setPoster(posterUrl)
         else if (!lastPosterUrl.isNullOrBlank()) setPoster(lastPosterUrl)
     }
+
+
+private fun captureFirstFrame(videoUrl: String?) {
+    if (videoUrl.isNullOrBlank()) return
+
+    Thread {
+        try {
+            val retriever = android.media.MediaMetadataRetriever()
+            retriever.setDataSource(context, Uri.parse(videoUrl))
+            val frame = retriever.getFrameAtTime(0, android.media.MediaMetadataRetriever.OPTION_CLOSEST_SYNC)
+            retriever.release()
+
+            frame?.let {
+                firstFrameBitmap = it
+                Handler(Looper.getMainLooper()).post {
+                    posterView.setImageBitmap(it)
+                    posterView.alpha = 1f
+                    posterView.visibility = View.VISIBLE
+                }
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("BMEVideoPlayerView", "Failed to capture first frame: ${e.message}")
+        }
+    }.start()
+}
 
 
 fun seekTo(seconds: Double) {
@@ -405,13 +561,14 @@ private fun emitSeekEvent(positionMs: Long) {
 }
 
 
-    fun releasePlayer() {
-        stopProgressUpdates()
-        playerListener?.let { exoPlayer?.removeListener(it) }
-        playerListener = null
-        exoPlayer?.release()
-        exoPlayer = null
-    }
+   fun releasePlayer() {
+    stopProgressUpdates()
+    playerListener?.let { exoPlayer?.removeListener(it) }
+    exoPlayer?.let { PlayerPool.releasePlayer(it) }
+    playerListener = null
+    exoPlayer = null
+}
+
 
     private fun fadeOutPoster() {
     if (!posterView.isVisible || isPosterFading) return
@@ -433,11 +590,11 @@ private fun emitSeekEvent(positionMs: Long) {
 
 
     private fun showPosterImmediately() {
-        if (!lastPosterUrl.isNullOrBlank()) setPoster(lastPosterUrl)
-        posterView.alpha = 1f
-        posterView.visibility = View.VISIBLE
-        isPosterFading = false
-    }
+    posterView.alpha = 1f
+    posterView.visibility = View.VISIBLE
+    isPosterFading = false
+}
+
     
         companion object {
         private var activePlayer: BMEVideoPlayerView? = null
@@ -463,7 +620,5 @@ private fun emitSeekEvent(positionMs: Long) {
         android.util.Log.w("BMEVideoPlayerView", "emitEndReachedEvent: ${e.message}")
     }
 }
-
-
 
 }

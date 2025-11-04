@@ -417,17 +417,11 @@ const RelatedServicesDetails = () => {
     : [];
 
 
-  let isNavigating = false;
 
   const handleAddProduct = (product) => {
-    if (isNavigating) return;
-    isNavigating = true;
 
     navigation.push('RelatedServicesDetails', { service_id: product.service_id, company_id: product.company_id });
 
-    setTimeout(() => {
-      isNavigating = false;
-    }, 300);
   };
 
 

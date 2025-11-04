@@ -9,7 +9,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const NotificationSettings = () => {
   const { myId, myData, updateMyData } = useNetwork();
-  const { isConnected } = useConnection();
   const { fcmToken, refreshFcmToken } = useFcmToken();
   const [status, setStatus] = useState(myData?.notification_status ?? true);
   const [isProcessing, setIsProcessing] = useState(false);

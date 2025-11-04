@@ -129,13 +129,6 @@ export const compressVideo = async (videoAsset, attempt = 1) => {
     // Estimate bitrate if not provided
     let estimatedBitrate = videoAsset.bitrate || ((originalSizeMB * 8 * 1024 * 1024) / durationSec);
 
-    console.log(`📊 Video Meta:
-      - Resolution: ${width}x${height}
-      - Duration: ${durationSec}s
-      - FPS: ${fps}
-      - Original Size: ${originalSizeMB.toFixed(2)} MB
-      - Estimated Bitrate: ${Math.round(estimatedBitrate)} bps
-    `);
 
     // Aggressive compression presets
     const presets = [
@@ -150,7 +143,6 @@ export const compressVideo = async (videoAsset, attempt = 1) => {
     const targetHeight = Math.round(height * scale);
     let targetBitrate = Math.floor(estimatedBitrate * bitrateFactor);
 
-    // Clamp between 500 Kbps and 1.2 Mbps
     if (targetBitrate < 500_000) targetBitrate = 500_000;
     if (targetBitrate > 1_200_000) targetBitrate = 1_200_000;
 
@@ -163,16 +155,11 @@ export const compressVideo = async (videoAsset, attempt = 1) => {
       progressDivider: 5,
     };
 
-    console.log('🛠️ Compression Settings:', compressionSettings);
-
     const compressedUri = await Compressor.Video.compress(videoUri, compressionSettings);
     const compressedSizeMB = await getFileSizeMB(compressedUri);
 
-    console.log(`✅ Compressed URI: ${compressedUri}`);
-    console.log(`📦 Compressed Size: ${compressedSizeMB.toFixed(2)} MB`);
-
     if (compressedSizeMB > MAX_ALLOWED_SIZE_MB && attempt < 3) {
-      console.log(`📉 Retry #${attempt + 1} — Still too large`);
+      
       return await compressVideo({ ...videoAsset, uri: compressedUri, fileSize: compressedSizeMB * 1024 * 1024 }, attempt + 1);
     }
 
@@ -195,10 +182,10 @@ export const saveBase64ToFile = async (dataUri) => {
 
   try {
     await RNFS.writeFile(filePath, base64Data, "base64");
-    console.log("✅ [saveBase64ToFile] Saved to:", filePath);
+  
     return `file://${filePath}`;
   } catch (err) {
-    console.error("❌ [saveBase64ToFile] Failed:", err);
+
     throw err;
   }
 };
@@ -206,10 +193,10 @@ export const saveBase64ToFile = async (dataUri) => {
 export const uploadFromBase64 = async (dataUri, fileKey) => {
   try {
     const fileUri = await saveBase64ToFile(dataUri);
-    console.log("📤 Uploading file from base64 ->", fileUri);
+    
     return await handleThumbnailUpload(fileUri, fileKey);
   } catch (err) {
-    console.error("❌ [uploadFromBase64] Failed:", err);
+    
     return null;
   }
 };

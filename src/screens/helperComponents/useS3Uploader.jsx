@@ -12,7 +12,7 @@ export const uriToBlob = async (uri) => {
     const response = await fetch(uri);
     return await response.blob();
   } catch (error) {
-    console.error('[uriToBlob] Failed to convert URI to blob:', error);
+    
     throw error;
   }
 };
@@ -42,25 +42,21 @@ export const useS3Uploader = () => {
     // Determine MIME type
     const type = fileType || fileToUpload.type || fileToUpload.mime;
     if (!type) {
-      showToast('File type missing', 'error');
-      console.warn('[useS3Uploader] Missing MIME type for file:', fileToUpload);
+
       return { fileKey: null, thumbnailFileKey: null };
     }
 
     setUploading(true);
-    console.log('[useS3Uploader] Starting upload for file:', fileToUpload);
-
+ 
     try {
       // Optional: get file stats for logging
       if (fileToUpload.uri.startsWith('file://')) {
         const fileStat = await RNFS.stat(fileToUpload.uri);
-        console.log('[useS3Uploader] File stats:', fileStat);
+        
       }
-
       // Convert URI to Blob
       const fileBlob = await uriToBlob(fileToUpload.uri);
-      console.log('[useS3Uploader] Blob created, size:', fileBlob.size);
-
+   
       // Request pre-signed URL
       const res = await apiClient.post('/uploadFileToS3', {
         command: 'uploadFileToS3',
@@ -75,8 +71,7 @@ export const useS3Uploader = () => {
       }
 
       const { url: uploadUrl, fileKey } = res.data;
-      console.log('[useS3Uploader] Upload URL & fileKey:', { uploadUrl, fileKey });
-
+   
       // Upload main file
       const uploadRes = await fetch(uploadUrl, {
         method: 'PUT',
@@ -90,18 +85,14 @@ export const useS3Uploader = () => {
 
       let thumbnailFileKey = null;
 
-      // Upload thumbnail if video
       if ((type.startsWith('video/') || fileToUpload.type?.startsWith('video/')) && overlayUri) {
-        console.log('[useS3Uploader] Uploading video thumbnail...');
+      
         thumbnailFileKey = await uploadFromBase64(overlayUri, fileKey);
       }
 
-      console.log('[useS3Uploader] Upload successful:', { fileKey, thumbnailFileKey });
-      showToast(`${fileToUpload.name || 'File'} uploaded successfully`, 'success');
-
       return { fileKey, thumbnailFileKey };
     } catch (error) {
-      console.error('[useS3Uploader] Error uploading file:', error);
+      
       showToast(error.message || 'Upload failed', 'error');
       return { fileKey: null, thumbnailFileKey: null };
     } finally {

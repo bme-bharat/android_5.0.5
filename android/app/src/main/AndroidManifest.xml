@@ -1,5 +1,4 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-package="com.bmebharat.newapp">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" >
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
@@ -8,13 +7,15 @@ package="com.bmebharat.newapp">
     <application
       android:name=".MainApplication"
       android:label="@string/app_name"
-      android:icon="@mipmap/ic_launcher"
-      android:roundIcon="@mipmap/ic_launcher_round"
+      android:icon="@mipmap/ic_launcher_foreground"
+      
       android:allowBackup="false"
-      android:theme="@style/AppTheme"
       android:supportsRtl="true">
       <activity
         android:name=".MainActivity"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:theme="@style/LaunchTheme" 
         android:screenOrientation="portrait"
         android:label="@string/app_name"
         android:configChanges="keyboard|keyboardHidden|orientation|screenLayout|screenSize|smallestScreenSize|uiMode"
@@ -36,5 +37,15 @@ package="com.bmebharat.newapp">
         <data android:scheme="https" android:host="www.bmebharat.com" />
     </intent-filter>
       </activity>
+
+       <receiver
+            android:name=".sms.SmsBroadcastReceiver"
+            android:exported="true"
+            android:permission="com.google.android.gms.auth.api.phone.permission.SEND">
+            <intent-filter>
+                <action android:name="com.google.android.gms.auth.api.phone.SMS_RETRIEVED" />
+            </intent-filter>
+        </receiver>
+        
     </application>
 </manifest>

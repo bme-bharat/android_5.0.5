@@ -11,7 +11,7 @@ const SplashScreen = ({ navigation }) => {
       <Image
         source={require('../images/homepage/open.jpg')} 
         style={styles.image}
-        resizeMode="cover"
+        resizeMode="contain"
       />
     </View>
   );

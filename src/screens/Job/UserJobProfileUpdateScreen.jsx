@@ -40,11 +40,10 @@ const UserJobProfileUpdateScreen = () => {
   const { myId, myData } = useNetwork();
   const route = useRoute();
   const { profile } = route.params || {};
-  const [pdfUri, setPdfUri] = useState(null);
-  const [pdfFileType, setPdfFileType] = useState('');
-  const [brochureKey, setBrochureKey] = useState(null);
+ 
   const [loading, setLoading] = useState(false);
   const [file, setFile] = useState(null);
+  console.log('file',file)
   const [fileType, setFileType] = useState(null);
 
   const handleRemoveMedia = () => {
@@ -64,7 +63,7 @@ const UserJobProfileUpdateScreen = () => {
     expert_in: profile?.expert_in || '',
     education_qualifications: profile?.education_qualifications || '',
   });
-
+console.log('profile?.resume_key',profile?.resume_key)
   const citiesRef = useRef(null);
   const eduRef = useRef(null);
   const expertRef = useRef(null);
@@ -299,7 +298,7 @@ const UserJobProfileUpdateScreen = () => {
     return blob;
   }
 
-  const handleFileUpload = async () => {
+  const handleFileChange = async () => {
     try {
       // Open the native document picker
       const pickedFiles = await DocumentPicker.pick({
@@ -318,6 +317,11 @@ const UserJobProfileUpdateScreen = () => {
         if (fileSize <= MAX_SIZE) {
           setFile(file);
           setFileType(mimeType);
+          setPostData(prev => ({
+            ...prev,
+            
+          }));
+          
         } else {
           showToast("File size must be less than 5MB.", "error");
           setFile(null);
@@ -328,6 +332,7 @@ const UserJobProfileUpdateScreen = () => {
         setFile(null);
         setFileType(null);
       }
+      
     } catch (err) {
       if (err?.message?.includes('cancelled')) {
         // User cancelled, no toast needed
@@ -336,6 +341,7 @@ const UserJobProfileUpdateScreen = () => {
       console.error("Native DocumentPicker error:", err);
       showToast("An unexpected error occurred while picking the file.", "error");
     }
+
   };
 
   const handleUploadFile = async () => {
@@ -477,23 +483,31 @@ const UserJobProfileUpdateScreen = () => {
     }
 
     try {
-      console.log('📁 Attempting to upload file...');
-      const uploadedFileKey = await handleUploadFile();
-      console.log('✅ File uploaded key:', uploadedFileKey);
+      let uploadedFileKey = postData.resume_key || profile?.resume_key; // keep old resume key by default
 
-      if (!uploadedFileKey) {
-        console.error('❌ File upload failed or invalid file');
-        showToast('Please upload a valid PDF file', 'error');
-        return;
+      if (file) {
+        const newFileKey = await handleUploadFile();
+        if (newFileKey) {
+          uploadedFileKey = newFileKey; // replace only if upload succeeds
+        } else {
+          showToast('File upload failed. Keeping existing resume.', 'info');
+        }
+      } else if (file === null && postData.resume_key && postData.resume_key !== profile?.resume_key) {
+        // 🧹 User removed selected file (don’t send or overwrite)
+        uploadedFileKey = profile?.resume_key || ''; // fallback to old
       }
-
+  
+      
       const postPayload = {
         command: 'updateJobProfile',
         user_id: myId,
         ...postData,
-        resume_key: uploadedFileKey,
+        
       };
-
+      if (uploadedFileKey && uploadedFileKey !== postData.resume_key) {
+        postPayload.resume_key = uploadedFileKey;
+      }
+  console.log('postPayload',postPayload)
       const res = await apiClient.post('/updateJobProfile', postPayload);
 
       if (res?.data?.status === 'success') {
@@ -535,7 +549,7 @@ const UserJobProfileUpdateScreen = () => {
       </View>
 
 
-      <KeyboardAwareScrollView
+      <ScrollView
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
         extraScrollHeight={20}
@@ -659,7 +673,7 @@ const UserJobProfileUpdateScreen = () => {
 
 
         {!file && (
-          <TouchableOpacity style={styles.button} onPress={handleFileUpload}>
+          <TouchableOpacity style={styles.button} onPress={handleFileChange}>
 
             <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
               <Pdf width={dimensions.icon.xl} height={dimensions.icon.xl} color={colors.primary} />
@@ -712,7 +726,7 @@ const UserJobProfileUpdateScreen = () => {
           iconType="warning"  // You can change this to any appropriate icon type
         />
 
-      </KeyboardAwareScrollView>
+      </ScrollView>
 
 
 
@@ -724,8 +738,7 @@ const UserJobProfileUpdateScreen = () => {
 const styles = StyleSheet.create({
   container: {
     paddingHorizontal: 10,
-    paddingBottom: '20%',
-    flex: 1,
+    paddingBottom: '40%',
     backgroundColor: 'whitesmoke',
   },
   container1: {
@@ -749,9 +762,9 @@ const styles = StyleSheet.create({
     top: 10,
   },
   title: {
-    color: 'black',
-    fontSize: 15,
+    color: colors.text_primary,
     fontWeight: '500',
+    fontSize: 13,
     marginBottom: 10,
     marginTop: 15,
   },
@@ -777,8 +790,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     paddingHorizontal: 15,
     borderRadius: 8,
-    fontSize: 16,
-    color: '#222',
+    color: colors.text_secondary,
+    fontWeight: '500',
+    fontSize: 13,
     shadowColor: '#000',
     shadowOpacity: 0.05,
     shadowOffset: { width: 0, height: 2 },
@@ -850,8 +864,9 @@ const styles = StyleSheet.create({
     borderColor: '#ddd'
   },
   dropdownButtonText: {
-    fontSize: 16,
-    color: '#333',
+    color: colors.text_secondary,
+    fontWeight: '500',
+    fontSize: 13,
     flex: 1,
   },
   dropdownItem: {

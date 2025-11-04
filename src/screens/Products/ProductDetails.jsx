@@ -18,6 +18,8 @@ import AppStyles from '../AppUtils/AppStyles';
 
 import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
 import ShareIcon from '../../assets/svgIcons/share.svg';
+import Company from '../../assets/svgIcons/company.svg';
+
 import { colors, dimensions } from '../../assets/theme.jsx';
 
 const { width } = Dimensions.get('window');
@@ -408,12 +410,9 @@ const ProductDetails = () => {
     : [];
 
 
-  let isNavigating = false;
 
   const handleAddProduct = (product) => {
-    if (isNavigating) return;
-    isNavigating = true;
-    navigation.navigate('RelatedProductDetails', { product_id: product.product_id, company_id: product.company_id });
+    navigation.push('ProductDetails', { product_id: product.product_id, company_id: product.company_id });
 
   };
 
@@ -486,7 +485,7 @@ const ProductDetails = () => {
         <>
           <ScrollView contentContainerStyle={{ paddingBottom: '20%' }}
             showsVerticalScrollIndicator={false} ref={scrollViewRef} >
-            <TouchableOpacity activeOpacity={1}>
+            <TouchableOpacity activeOpacity={1} >
               <Text style={styles.title}>{product?.title}</Text>
               <Text style={styles.category}>{product?.category}</Text>
               <TouchableOpacity onPress={toggleFullText} activeOpacity={1}>
@@ -591,13 +590,19 @@ const ProductDetails = () => {
 
               </View>
 
+
               <TouchableOpacity activeOpacity={0.8} style={styles.headerRow} onPress={() => handleNavigate(product.company_id)}>
-                <Text style={styles.company} >{product.company_name}</Text>
+                <Company width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.secondary} /><Text style={styles.company} > {product.company_name}</Text>
               </TouchableOpacity>
 
               <View style={styles.priceRow}>
                 {product?.price?.trim() && (
-                  <Text style={styles.price}>₹ {product?.price}</Text>
+                  // <Text style={styles.price}>₹ {product?.price}</Text>
+                  <View style={styles.priceItem}>
+                    <Text style={styles.priceLabel}>Price   :    ₹ {product?.price}</Text> 
+                    {/* <Text style={styles.pricevalue}>₹ {product?.price}</Text> */}
+  
+                  </View>
                 )}
               </View>
 
@@ -694,7 +699,7 @@ const ProductDetails = () => {
                         <Text numberOfLines={1} style={styles.price1}>
                           {item.price && item.price.trim() !== '' ? `₹ ${item?.price}` : '₹ Contact Seller'}
                         </Text>
-                        <Text numberOfLines={1} style={styles.productDescription}>{item?.description}</Text>
+                        <Text numberOfLines={2} style={styles.productDescription}>{item?.description}</Text>
                       </TouchableOpacity>
                     )}
                     onEndReached={() => lastEvaluatedKey && fetchRelatedProducts(product, lastEvaluatedKey)}
@@ -752,9 +757,9 @@ const styles = StyleSheet.create({
   },
   shareText: {
     color: '#075cab',
-    fontSize: 15,
-    fontWeight: '500',
-    paddingHorizontal: 10,
+    fontSize: 16,
+    fontWeight: '600',
+    paddingHorizontal: 10
 
   },
   imageContainer: {
@@ -771,8 +776,9 @@ const styles = StyleSheet.create({
   mainProductImage: {
     width: '100%',
     height: '100%',
-    resizeMode: 'contain',
-    alignSelf: 'center',
+    resizeMode: 'contain', // Ensures the image fills the container nicely
+    alignSelf: 'center'
+
   },
 
   productVideo: {
@@ -803,17 +809,18 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
 
+
   playButton: {
     position: 'absolute',
     top: '50%',
     left: '50%',
-    transform: [{ translateX: -25 }, { translateY: -25 }], // center the 40px icon
+    transform: [{ translateX: -25 }, { translateY: -25 }],
     zIndex: 2,
+    // backgroundColor: 'white', 
     borderRadius: 50,
-    alignSelf: 'center',
-    padding: 8, // optional: adds breathing space around icon
+    // padding: 1,
+    alignSelf: 'center'
   },
-
 
   headerRow: {
     flexDirection: 'row',
@@ -859,8 +866,8 @@ const styles = StyleSheet.create({
 
   category: {
     fontSize: 13,
-    fontWeight: '300',
     color: '#777',
+    fontWeight: '300',
     paddingHorizontal: 10
 
   },
@@ -870,7 +877,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: '#000',
     marginTop: 10,
-
+    letterSpacing: 0.8,
     paddingHorizontal: 10
   },
 
@@ -878,14 +885,17 @@ const styles = StyleSheet.create({
     color: 'black',
     fontSize: 15,
     lineHeight: 20,
-    paddingHorizontal: 10,
+    marginBottom: 18,
+    textAlign: 'justify',
+    paddingHorizontal: 10
 
   },
   productDescription: {
     color: '#000',
     fontSize: 15,
-    // lineHeight: 24,
+    lineHeight: 20,
     // marginTop: 5,
+    textAlign: 'justify',
 
   },
   description1: {
@@ -898,8 +908,8 @@ const styles = StyleSheet.create({
 
   },
   readMore: {
-    color: '#075cab', // Blue color for "Read More"
-    fontWeight: '300', // Make it bold if needed
+    color: 'gray',
+    fontWeight: '300',
     fontSize: 12,
   },
 
@@ -921,7 +931,7 @@ const styles = StyleSheet.create({
 
   price1: {
     fontSize: 15,
-    // fontWeight: 'bold',
+    fontWeight: '500',
     color: '#075cab',
     marginRight: 14,
 
@@ -956,7 +966,7 @@ const styles = StyleSheet.create({
   },
 
   specTitle: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '500',
     color: '#333',
     marginBottom: 14,
@@ -1093,11 +1103,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
   },
   pdf: {
-    padding: 10,
-    // backgroundColor: '#007bff',
-    // color: 'black',
     borderRadius: 5,
-    marginBottom: 5,
+    marginVertical: 10,
   },
   pdfText: {
     color: 'black',
@@ -1107,24 +1114,31 @@ const styles = StyleSheet.create({
     textAlign: 'center'
   },
   relatedTitle: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '500',
     color: '#000',
     marginBottom: 14,
-    // textTransform: 'uppercase',
-    // paddingHorizontal: 10
   },
   relatedList: {
     marginBottom: 20,
   },
   contact: {
     fontSize: 15,
-    color: '#075cab',
     fontWeight: '500',
+    color: '#075cab',
     textDecorationLine: 'underline',
-    marginTop: 10,
-    textAlign: 'center'
+    padding: 10,
+    textAlign: 'center',
   },
+  contact1: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: '#075cab',
+    textAlign: 'center',
+    padding: 10,
+
+  },
+
   productCard: {
     width: 220,
     backgroundColor: '#fff',

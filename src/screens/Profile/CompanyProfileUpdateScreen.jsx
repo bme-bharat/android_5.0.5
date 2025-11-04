@@ -49,6 +49,7 @@ import { PERMISSIONS, RESULTS, request, check } from 'react-native-permissions';
 import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
 import Camera from '../../assets/svgIcons/camera.svg';
 import Close from '../../assets/svgIcons/close.svg';
+import Success from '../../assets/svgIcons/success.svg';
 
 import { colors, dimensions } from '../../assets/theme.jsx';
 import { MediaPreview } from '../helperComponents/MediaPreview.jsx';
@@ -360,6 +361,7 @@ const CompanyUserSignupScreen = () => {
     business_registration_number: profile.business_registration_number || "",
     company_contact_number: profile.company_contact_number || "",
     company_email_id: profile.company_email_id || "",
+    is_email_verified: profile.is_email_verified || false,
     company_located_city: profile.company_located_city || "",
     company_located_state: profile.company_located_state || "",
     Website: profile.Website || '',
@@ -388,6 +390,7 @@ const CompanyUserSignupScreen = () => {
       business_registration_number: profile.business_registration_number || "",
       company_contact_number: profile.company_contact_number || "",
       company_email_id: profile.company_email_id || "",
+      is_email_verified: profile.is_email_verified || false,
       company_located_city: profile.company_located_city || "",
       company_located_state: profile.company_located_state || "",
       Website: profile.Website || "",
@@ -688,7 +691,7 @@ const CompanyUserSignupScreen = () => {
   };
 
   const handleImageSelection = () => {
-    const hasImage = postData.fileKey && postData.fileKey.trim() !== '';
+    const hasImage = localImageUrl || file;
     const options = ['Take Photo', 'Choose from Gallery'];
     if (hasImage) options.push('Remove Image');
 
@@ -699,10 +702,9 @@ const CompanyUserSignupScreen = () => {
         'Select Image',
         '',
         [
+          hasImage ? { text: 'Remove Image', onPress: handleRemoveImage, style: 'destructive' } : null,
           { text: 'Choose from Gallery', onPress: openGallery },
           { text: 'Take Photo', onPress: openCamera },
-          hasImage ? { text: 'Remove Image', onPress: handleRemoveImage, style: 'destructive' } : null,
-          { text: 'Cancel', style: 'cancel' },
         ].filter(Boolean),
         { cancelable: true }
       );
@@ -789,6 +791,14 @@ const CompanyUserSignupScreen = () => {
 
 
   const handleRemoveImage = async () => {
+    if (file && file.uri) {
+      setFile(null);
+      setFileUri(null);
+      setIsImageChanged(true);
+      setImageUri(null);
+      return;
+    }
+
     try {
       if (!postData.fileKey) {
 
@@ -1121,8 +1131,7 @@ const CompanyUserSignupScreen = () => {
     setLoading(true);
 
     if (!file) {
-      console.log('⚠️ No file selected');
-      showToast('No file selected.', 'error');
+
       setLoading(false);
       return null;
     }
@@ -1275,11 +1284,10 @@ const CompanyUserSignupScreen = () => {
 
     try {
       const imageFileKey = imageUri ? await handleUploadImage(imageUri, fileType) : postData.fileKey;
-      // const documentFileKey = postData.brochureKey || "";
-      console.log('📁 Attempting to upload file...');
+ 
       const uploadedFileKey = await handleUploadFile();
-      console.log('✅ File uploaded key:', uploadedFileKey);
-
+ 
+      setHasChanges(false);
       const payload = {
         command: "updateCompanyProfile",
         company_id: profile.company_id,
@@ -1289,7 +1297,7 @@ const CompanyUserSignupScreen = () => {
         company_email_id: emailToSend?.trimStart().trimEnd(),
         company_located_city: postData.company_located_city?.trimStart().trimEnd(),
         company_located_state: postData.company_located_state?.trimStart().trimEnd(),
-        is_email_verified: postData.is_email_verified || false,
+        is_email_verified: verifiedEmail || profile?.is_email_verified,
         Website: postData.Website?.trimStart().trimEnd(),
         company_address: postData.company_address?.trimStart().trimEnd(),
         company_description: postData.company_description?.trimStart().trimEnd(),
@@ -1334,7 +1342,7 @@ const CompanyUserSignupScreen = () => {
 
     } finally {
       setIsLoading(false);
-      setHasChanges(false);
+      
     }
   };
 
@@ -1538,19 +1546,26 @@ const CompanyUserSignupScreen = () => {
                           value={postData.company_email_id || ''}
                           onChangeText={(value) => handleInputChange('company_email_id', value)}
                           placeholder="Email"
-                          editable={!postData.is_email_verified}
 
                         />
 
-                        {!postData.is_email_verified && postData.company_email_id !== verifiedEmail && (
-                          < TouchableOpacity style={styles.buttonemailmain} onPress={handleOtpEmail}>
-                            <Text style={styles.buttonTextemailtext}>{loading ? 'Sending' : 'Verify'}</Text>
+                        {profile.is_email_verified && postData.company_email_id === profile.company_email_id ? (
+                          <Success
+                            width={dimensions.icon.small}
+                            height={dimensions.icon.small}
+                            color={colors.success}
+                          />
+                        ) : (
+                          <TouchableOpacity
+                            style={styles.buttonemailmain}
+                            onPress={handleOtpEmail}
+                          >
+                            <Text style={styles.buttonTextemailtext}>
+                              {loading ? 'Sending' : 'Verify'}
+                            </Text>
                           </TouchableOpacity>
                         )}
 
-                        {profile.is_email_verified && postData.company_email_id === verifiedEmail && (
-                          <MaterialIcon name="check-circle" size={14} color="green" style={styles.verifiedIcon} />
-                        )}
                       </View>
                     </View>
 
@@ -1675,7 +1690,7 @@ const CompanyUserSignupScreen = () => {
                       onPress={handlePostSubmission}
                     >
                       {isLoading ? (
-                        <ActivityIndicator size='small' />
+                        <ActivityIndicator size='small' color={'#075cab'}/>
                       ) : (
                         <Text
                           style={[
@@ -2040,7 +2055,7 @@ const styles = StyleSheet.create({
   closeButton: {
     position: 'absolute',
     top: 10,
-    left: 300,
+    right: 10,
     // padding: 15,
     // marginBottom:15,
     // backgroundColor: '#E0E0E0',

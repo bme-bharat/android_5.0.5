@@ -31,7 +31,6 @@ import { cleanupQuickActions, handleNavigationReady, onNavigationContainerReady,
 
 import { enableScreens } from 'react-native-screens';
 import MediaViewer from './src/screens/helperComponents/mediaViewer';
-import { useFcmToken } from './src/screens/AppUtils/fcmToken';
 import { KeyboardInputProvider } from "./src/screens/AppUtils/KeyboardAvoidingContainer"
 import Message1 from './src/components/Message1';
 import useLastActivityTracker from './src/screens/AppUtils/LastSeenProvider';
@@ -40,7 +39,6 @@ enableScreens();
 export const navigationRef = createNavigationContainerRef();
 
 function App() {
-  const isDarkMode = useColorScheme() === 'dark';
 
   return (
     <SafeAreaProvider>
@@ -212,7 +210,7 @@ const AppContent = () => {
 
   useEffect(() => {
     sessionCheckIntervalRef.current = setInterval(() => {
-      checkUserSession();
+      // checkUserSession();
     }, 5000);
 
     return () => {
@@ -592,20 +590,7 @@ const AppContent = () => {
         <GestureHandlerRootView style={{ flex: 1 }}>
           <ToastProvider>
             <NavigationContainer
-              ref={navigationRef}
-              onReady={() => {
-                const route = navigationRef.getCurrentRoute();
-                routeNameRef.current = route ? route.name : null;
-              }}
-              onStateChange={() => {
-                const route = navigationRef.getCurrentRoute();
-                const currentRouteName = route ? route.name : null;
-                routeNameRef.current = currentRouteName;
-
-                // Save current screen to AsyncStorage
-                // saveCurrentScreen(currentRouteName);
-              }}
-            >
+              ref={navigationRef} >
               <ConnectionProvider>
                 <KeyboardInputProvider>
                   <BottomSheetProvider>

@@ -17,7 +17,7 @@ const CompanyReducer = (state = initialState, action) => {
 
       // Always generate avatar based on priority
       const fullName = `${incoming.first_name || ''} ${incoming.last_name || ''}`.trim();
-      const avatarName = incoming.company_name?.trim() || fullName || 'BME';
+      const avatarName = incoming.company_name?.trim() || fullName;
       const companyAvatar = generateAvatarFromName(avatarName);
 
       const newState = {

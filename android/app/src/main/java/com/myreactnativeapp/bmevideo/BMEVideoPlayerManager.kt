@@ -86,6 +86,10 @@ class BMEVideoPlayerManager : SimpleViewManager<BMEVideoPlayerView>() {
     )
 }
 
+@ReactProp(name = "showProgressBar", defaultBoolean = false)
+fun setShowProgressBar(view: BMEVideoPlayerView, show: Boolean) {
+    view.setShowProgressBar(show)
+}
 
     override fun onDropViewInstance(view: BMEVideoPlayerView) {
     try {

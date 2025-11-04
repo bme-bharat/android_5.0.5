@@ -304,6 +304,13 @@ const UserSignupScreen = () => {
   const [fileUri, setFileUri] = useState(null);
   const [fileType, setFileType] = useState('');
 
+  const handleRemoveImage = async () => {
+    if (imageUri) {
+      setImageUri(null);
+      return;
+    }
+  };
+
   const handleImageSelection = () => {
     if (Platform.OS === 'ios') {
       // You can implement an ActionSheet for iOS later
@@ -313,8 +320,9 @@ const UserSignupScreen = () => {
         '',
         [
           { text: 'Choose from Gallery', onPress: openGallery },
-          { text: 'Cancel', style: 'cancel' }, // 👈 Cancel button
-        ]
+          imageUri ? { text: 'Remove Image', onPress: handleRemoveImage, style: 'destructive' } : null,
+
+        ], { cancelable: true }
       );
     }
   };
@@ -324,19 +332,23 @@ const UserSignupScreen = () => {
 
   const createUserSession = async (userId) => {
     try {
-      const deviceModel = await DeviceInfo.getModel(); // your existing usage
 
+      const [deviceName, model, userAgent, ipAddress] = await Promise.allSettled([
+        DeviceInfo.getDeviceName(),
+        DeviceInfo.getModel(),
+        DeviceInfo.getUserAgent(),
+        DeviceInfo.getIpAddress(),
+      ]);
+      
       const deviceInfo = {
         os: Platform.OS,
-        // osVersion: DeviceInfo.getSystemVersion(),
-        deviceName: await DeviceInfo.getDeviceName(),
-        model: deviceModel,
-        // brand: DeviceInfo.getBrand(),
+        deviceName: deviceName.status === 'fulfilled' ? deviceName.value : 'Unknown',
+        model: model.status === 'fulfilled' ? model.value : 'Unknown',
         appVersion: DeviceInfo.getVersion(),
-        // buildNumber: DeviceInfo.getBuildNumber(),
-        userAgent: await DeviceInfo.getUserAgent(),
-        ipAddress: await DeviceInfo.getIpAddress(),
+        userAgent: userAgent.status === 'fulfilled' ? userAgent.value : 'Unknown',
+        ipAddress: ipAddress.status === 'fulfilled' ? ipAddress.value : '0.0.0.0',
       };
+      
 
       const payload = {
         command: 'createUserSession',
@@ -771,10 +783,11 @@ const UserSignupScreen = () => {
             style={styles.inputText}
             placeholderTextColor="gray"
             onChange={handleEmail}
+            editable={!emailVerify1}
           />
 
           {emailVerify1 ? (
-            <Sucess width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.gray} />
+            <Sucess width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.success} />
 
           ) : email.length > 0 ? (
             <TouchableOpacity style={styles.button1} onPress={sendEmailOtp} disabled={loading}>

@@ -13,7 +13,7 @@ import { showToast } from '../AppUtils/CustomToast';
 import { useNetwork } from '../AppUtils/IdProvider';
 import { openMediaViewer } from '../helperComponents/mediaViewer';
 import { generateAvatarFromName } from '../helperComponents/useInitialsAvatar';
-import AppStyles from '../AppUtils/AppStyles';
+import AppStyles, { commonStyles } from '../AppUtils/AppStyles';
 import { openLink } from '../AppUtils/openLinks';
 import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
 import ShareIcon from '../../assets/svgIcons/share.svg';
@@ -476,34 +476,32 @@ const JobDetailScreen = ({ route }) => {
 
 
             <View style={styles.textContainer1}>
-              <Text style={styles.title}>{post?.job_title || 'No Title'}</Text>
+              <Text style={commonStyles.title}>{post?.job_title || 'No Title'}</Text>
             </View>
-            <View style={styles.detailContainer}>
-
-              <Text style={styles.label}>Company</Text>
-
-              <Text style={styles.colon}>:</Text>
-              <Text style={styles.value} onPress={() => handleNavigate(post?.company_id)} >{post?.company_name || ''}</Text>
+            <View style={commonStyles.labValContainer}>
+              <Text style={commonStyles.label}>Company</Text>
+              <Text style={commonStyles.colon}>:</Text>
+              <Text style={commonStyles.value} onPress={() => handleNavigate(post?.company_id)} >{post?.company_name || ''}</Text>
             </View>
 
 
-            <View style={styles.detailContainer}>
+            <View style={commonStyles.labValContainer}>
 
-              <Text style={styles.label}>Category</Text>
+              <Text style={commonStyles.label}>Category</Text>
 
-              <Text style={styles.colon}>:</Text>
-              <Text style={styles.value}>{post?.company_category || ''}</Text>
+              <Text style={commonStyles.colon}>:</Text>
+              <Text style={commonStyles.value}>{post?.company_category || ''}</Text>
             </View>
 
             {post?.Website ? (
-              <View style={styles.detailContainer}>
+              <View style={commonStyles.labValContainer}>
 
-                <Text style={styles.label}>Website</Text>
+                <Text style={commonStyles.label}>Website</Text>
 
-                <Text style={styles.colon}>:</Text>
-                <Text style={styles.value}>
+                <Text style={commonStyles.colon}>:</Text>
+                <Text style={commonStyles.value}>
                   <TouchableOpacity activeOpacity={1} onPress={() => openLink(post.Website)}>
-                    <Text style={[styles.value, { color: "#075cab", textDecorationLine: "underline" }]}>
+                    <Text style={[commonStyles.value, { color: "#075cab", textDecorationLine: "underline" }]}>
                       {post.Website.trim()}
                     </Text>
                   </TouchableOpacity>
@@ -512,64 +510,64 @@ const JobDetailScreen = ({ route }) => {
               </View>
             ) : null}
 
-            <View style={styles.detailContainer}>
+            <View style={commonStyles.labValContainer}>
 
-              <Text style={styles.label}>Industry type</Text>
+              <Text style={commonStyles.label}>Industry type</Text>
 
-              <Text style={styles.colon}>:</Text>
-              <Text style={styles.value}>{post?.industry_type || ''}</Text>
+              <Text style={commonStyles.colon}>:</Text>
+              <Text style={commonStyles.value}>{post?.industry_type || ''}</Text>
             </View>
 
             {post?.required_qualifications?.trim() && (
-              <View style={styles.detailContainer}>
+              <View style={commonStyles.labValContainer}>
 
-                <Text style={styles.label}>Required qualification</Text>
+                <Text style={commonStyles.label}>Required qualification</Text>
 
-                <Text style={styles.colon}>:</Text>
-                <Text style={styles.value}>{post?.required_qualifications.trim()}</Text>
+                <Text style={commonStyles.colon}>:</Text>
+                <Text style={commonStyles.value}>{post?.required_qualifications.trim()}</Text>
               </View>
             )}
 
             {post?.required_expertise?.trim() && (
-              <View style={styles.detailContainer}>
+              <View style={commonStyles.labValContainer}>
 
-                <Text style={styles.label}>Required expertise</Text>
+                <Text style={commonStyles.label}>Required expertise</Text>
 
-                <Text style={styles.colon}>:</Text>
-                <Text style={styles.value}>{post?.required_expertise.trim()}</Text>
+                <Text style={commonStyles.colon}>:</Text>
+                <Text style={commonStyles.value}>{post?.required_expertise.trim()}</Text>
               </View>
             )}
 
             {post?.experience_required?.trim() && (
-              <View style={styles.detailContainer}>
+              <View style={commonStyles.labValContainer}>
 
-                <Text style={styles.label}>Required experience</Text>
+                <Text style={commonStyles.label}>Required experience</Text>
 
-                <Text style={styles.colon}>:</Text>
-                <Text style={styles.value}>{post?.experience_required.trim()}</Text>
+                <Text style={commonStyles.colon}>:</Text>
+                <Text style={commonStyles.value}>{post?.experience_required.trim()}</Text>
               </View>
             )}
 
-            <View style={styles.detailContainer}>
+            <View style={commonStyles.labValContainer}>
 
-              <Text style={[styles.label]}>Required speicializations </Text>
+              <Text style={[commonStyles.label]}>Required speicializations </Text>
 
-              <Text style={styles.colon}>:</Text>
+              <Text style={commonStyles.colon}>:</Text>
 
-              <Text style={[styles.value]}>{post?.speicializations_required || ''}</Text>
+              <Text style={[commonStyles.value]}>{post?.speicializations_required || ''}</Text>
             </View>
 
             {post?.working_location?.trim() && (
-              <View style={styles.detailContainer}>
+              <View style={commonStyles.labValContainer}>
 
-                <Text style={styles.label}>Work location</Text>
+                <Text style={commonStyles.label}>Work location</Text>
 
-                <Text style={styles.colon}>:</Text>
+                <Text style={commonStyles.colon}>:</Text>
                 <View style={{ flexDirection: "column", flex: 2 }}>
                   {post.working_location
                     .split(",")
                     .map((city, index) => (
-                      <Text key={index} style={styles.value}>
+                      <Text key={index} style={commonStyles.value}>
                         {city.trim()}
                       </Text>
                     ))}
@@ -578,36 +576,36 @@ const JobDetailScreen = ({ route }) => {
             )}
 
 
-            <View style={styles.detailContainer}>
+            <View style={commonStyles.labValContainer}>
 
-              <Text style={styles.label}>Salary package</Text>
+              <Text style={commonStyles.label}>Salary package</Text>
 
-              <Text style={styles.colon}>:</Text>
-              <Text style={styles.value}>{post?.Package || ''}</Text>
+              <Text style={commonStyles.colon}>:</Text>
+              <Text style={commonStyles.value}>{post?.Package || ''}</Text>
             </View>
 
             {post?.job_description?.trimStart().trimEnd() ? (
-              <View style={styles.detailContainer}>
-                <Text style={styles.label}>Job description</Text>
-                <Text style={styles.colon}>:</Text>
-                <Text style={styles.value}>{post?.job_description.trim()}</Text>
+              <View style={commonStyles.labValContainer}>
+                <Text style={commonStyles.label}>Job description</Text>
+                <Text style={commonStyles.colon}>:</Text>
+                <Text style={commonStyles.value}>{post?.job_description.trim()}</Text>
               </View>
             ) : null}
 
 
 
             {post?.preferred_languages?.trimStart().trimEnd() ? (
-              <View style={styles.detailContainer}>
+              <View style={commonStyles.labValContainer}>
 
-                <Text style={[styles.label]}>Required languages</Text>
+                <Text style={[commonStyles.label]}>Required languages</Text>
 
-                <Text style={styles.colon}>:</Text>
+                <Text style={commonStyles.label}>:</Text>
 
                 <View style={{ flexDirection: "column", flex: 2 }}>
                   {post.preferred_languages
                     .split(",")
                     .map((language, index) => (
-                      <Text key={index} style={styles.value}>
+                      <Text key={index} style={commonStyles.value}>
                         {language.trim()}
                       </Text>
                     ))}
@@ -615,12 +613,12 @@ const JobDetailScreen = ({ route }) => {
               </View>
             ) : null}
 
-            <View style={styles.detailContainer}>
+            <View style={commonStyles.labValContainer}>
 
-              <Text style={styles.label}>Posted on</Text>
+              <Text style={commonStyles.label}>Posted on</Text>
 
-              <Text style={styles.colon}>:</Text>
-              <Text style={styles.value}>
+              <Text style={commonStyles.colon}>:</Text>
+              <Text style={commonStyles.value}>
                 {
                   post?.job_post_created_on
                     ? (() => {
@@ -781,9 +779,9 @@ const styles = StyleSheet.create({
   value: {
     flex: 2, // Take the remaining space
     flexShrink: 1,
-    color: 'black',
-    fontWeight: '400',
-    fontSize: 15,
+    color: colors.text_secondary,
+    fontWeight: '500',
+    fontSize: 13,
     textAlign: 'left', // Align text to the left
     alignSelf: 'flex-start',
   },
@@ -794,9 +792,9 @@ const styles = StyleSheet.create({
 
   },
   title: {
-    color: 'black',
-    fontWeight: '500',
-    fontSize: 15,
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text_primary,
     paddingHorizontal: 12,
   },
 
@@ -823,9 +821,9 @@ const styles = StyleSheet.create({
 
   label: {
     flex: 1, // Take up available space
-    color: 'black',
+    color: colors.text_primary,
     fontWeight: '500',
-    fontSize: 15,
+    fontSize: 13,
     textAlign: 'left', // Align text to the left
     alignSelf: 'flex-start',
 

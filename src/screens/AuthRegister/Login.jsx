@@ -2,7 +2,7 @@
 
 
 import React, { useEffect, useLayoutEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Modal, FlatList, TextInput, StatusBar, StyleSheet, Image, TouchableWithoutFeedback } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, Modal, FlatList, TextInput, StatusBar, StyleSheet, Image, TouchableWithoutFeedback, Button } from 'react-native';
 import axios from 'axios';
 import { useNavigation } from '@react-navigation/native';
 import { COLORS, CountryCodes } from '../../assets/Constants';
@@ -15,9 +15,10 @@ import apiClient from '../ApiClient';
 import ArrowDown from '../../assets/svgIcons/arrow-down.svg';
 import Phone from '../../assets/svgIcons/phone.svg';
 import Email from '../../assets/svgIcons/mail.svg';
-
 import { colors, dimensions } from '../../assets/theme.jsx';
 import { useFcmToken } from '../AppUtils/fcmToken.jsx';
+import { startSmsListener, addSmsListener } from '../SmsRetriever.js';
+import { addPhoneHintListener, requestPhoneNumber } from '../PhoneHint.js';
 
 const LoginPhoneScreen = () => {
   const navigation = useNavigation();
@@ -31,7 +32,23 @@ const LoginPhoneScreen = () => {
   const [isPhoneLogin, setIsPhoneLogin] = useState(true);
   const [phone, setPhone] = useState('');
   const { fcmToken, refreshFcmToken } = useFcmToken();
+  const [message, setMessage] = useState('');
+  
+  useEffect(() => {
+    // Subscribe to Phone Hint events
+    const removeListener = addPhoneHintListener((number) => {
+      console.log('Selected number:', number);
+      setPhone(number);
+      if (phone) sendOTPHandle(); 
+    });
 
+    // Auto trigger the phone hint picker on mount
+    requestPhoneNumber();
+
+    // Cleanup listener on unmount
+    return () => removeListener();
+  }, []);
+  
 
   const handleCountrySelection = (country) => {
     setCountryCode(country.value);
@@ -39,7 +56,7 @@ const LoginPhoneScreen = () => {
     setCountryVerify(country.value !== '');
     setModalVisible(false);
   };
-
+  
 
   const sendOTPHandle = async () => {
     if (!phone) {
@@ -185,7 +202,7 @@ const LoginPhoneScreen = () => {
                 placeholderTextColor="gray"
                 value={phone}
                 textContentType="oneTimeCode"
-                autoFocus
+                
               />
             </View>
 

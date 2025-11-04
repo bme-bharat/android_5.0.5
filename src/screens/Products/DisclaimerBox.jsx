@@ -1,6 +1,7 @@
 // src/components/DisclaimerBox.js
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { colors } from '../../assets/theme';
 
 const DisclaimerBox = () => {
   return (
@@ -34,13 +35,13 @@ const styles = StyleSheet.create({
     borderColor: '#ccc',
     padding: 10,
     borderRadius: 8,
-    
+
   },
   heading: {
     fontSize: 15,
     fontWeight: '500',
-    marginBottom: 16,
-    color: '#333',
+    marginBottom: 10,
+    color: colors.text_primary,
   },
   point: {
     flexDirection: 'row',
@@ -51,14 +52,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     lineHeight: 22,
     marginRight: 8,
-    color: '#333',
+    color: colors.text_secondary,
   },
   text: {
     flex: 1,
+    fontWeight: '500',
     fontSize: 13,
-    fontWeight:"300",
-    lineHeight: 16,
-    color: '#555',
+    color: colors.text_secondary,
   },
 });
 

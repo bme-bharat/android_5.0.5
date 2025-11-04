@@ -29,12 +29,12 @@ const alphabetColors = {
 
 export const generateAvatarFromName = (name) => {
   const getInitial = (name) => {
-    if (!name) return '?';
+    if (!name) return ;
     return name.trim().charAt(0).toUpperCase();
   };
 
   const getBackgroundColorFromInitial = (char) => {
-    return alphabetColors[char] || '#888888'; // fallback color
+    return alphabetColors[char] ; // fallback color
   };
 
   const getContrastColor = (hexColor) => {

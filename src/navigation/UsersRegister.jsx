@@ -43,6 +43,7 @@ const screenOption = {
   headerBackTitleVisible: false,
   headerShown: false,
   gestureEnabled: false,
+  animation: 'none',
 };
 
 const UsersRegister = () => (
