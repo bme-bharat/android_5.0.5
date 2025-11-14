@@ -273,7 +273,7 @@ const CompanyJobEditScreen = ({ route }) => {
       </TouchableOpacity>
 
       <KeyboardAwareScrollView
-        contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 10, paddingBottom: '30%' }}
+        contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 5, paddingBottom: '30%' }}
         keyboardShouldPersistTaps="handled"
         extraScrollHeight={20}  // Adjust for better visibility when keyboard opens
       >
@@ -281,7 +281,7 @@ const CompanyJobEditScreen = ({ route }) => {
           <View style={styles.inputstyle}>
             <Text style={[styles.title]}>Job title <Text style={{ color: 'red' }}>*</Text></Text>
             <TextInput
-              style={[styles.input, { minHeight: 50, maxHeight: 150 }]}
+              style={[styles.input,]}
               editable={false}
               onChangeText={text => handleChange('job_title', text)}
 
@@ -296,15 +296,14 @@ const CompanyJobEditScreen = ({ route }) => {
               onSelect={(item) => handleChange('industry_type', item.label)}
               buttonStyle={styles.dropdownButton}
               buttonTextStyle={styles.dropdownButtonText}
-              itemStyle={styles.dropdownItem}
-              itemTextStyle={styles.dropdownItemText}
+              
               placeholder={jobEditFormData.industry_type || ""} // Show the current value or placeholder
             />
           </View>
           <View style={styles.inputstyle}>
-            <Text style={[styles.title]}> Required qualification <Text style={{ color: 'red' }}>*</Text></Text>
+            <Text style={[styles.title]}>Required qualification <Text style={{ color: 'red' }}>*</Text></Text>
             <TextInput
-              style={[styles.input, { minHeight: 50, maxHeight: 150 }]}
+              style={[styles.input,]}
 
               multiline
               placeholderTextColor="gray"
@@ -313,7 +312,7 @@ const CompanyJobEditScreen = ({ route }) => {
             />
           </View>
           <View style={styles.inputstyle}>
-            <Text style={[styles.title]}> Required expertise <Text style={{ color: 'red' }}>*</Text></Text>
+            <Text style={[styles.title]}>Required expertise <Text style={{ color: 'red' }}>*</Text></Text>
             <CustomDropDownMenu
               key={expertiseKey}
               items={expertiseOptions.map(item => ({ label: item, value: item }))}
@@ -326,24 +325,22 @@ const CompanyJobEditScreen = ({ route }) => {
             {renderSelectedItems(selectedSkills, removeSkill)}
           </View>
 
-          <View style={styles.inputContainer}>
-            <Text style={[styles.title]}> Required experience <Text style={{ color: 'red' }}>*</Text></Text>
+          <View style={styles.inputstyle}>
+            <Text style={[styles.title]}>Required experience <Text style={{ color: 'red' }}>*</Text></Text>
             <CustomDropDownMenu
               items={ExperienceType}
               onSelect={(item) => handleChange('experience_required', item.label)}
               buttonStyle={styles.dropdownButton}
               buttonTextStyle={styles.dropdownButtonText}
-              itemStyle={styles.dropdownItem}
-              itemTextStyle={styles.dropdownItemText}
               placeholder={jobEditFormData.experience_required || ""} // Show the current value or placeholder
             />
           </View>
 
           <View style={styles.inputstyle}>
 
-            <Text style={[styles.title]}> Required speicializations <Text style={{ color: 'red' }}>*</Text></Text>
+            <Text style={[styles.title]}>Required speicializations <Text style={{ color: 'red' }}>*</Text></Text>
             <TextInput
-              style={[styles.input, { minHeight: 50, maxHeight: 150 }]}
+              style={[styles.input]}
 
               placeholderTextColor="gray"
               multiline
@@ -353,9 +350,9 @@ const CompanyJobEditScreen = ({ route }) => {
           </View>
 
           <View style={styles.inputstyle}>
-            <Text style={[styles.title]}> Job description <Text style={{ color: 'red' }}>*</Text></Text>
+            <Text style={[styles.title]}>Job description <Text style={{ color: 'red' }}>*</Text></Text>
             <TextInput
-              style={[styles.input, { minHeight: 50, maxHeight: 150 }]}
+              style={[styles.input]}
               multiline
               placeholderTextColor="gray"
               onChangeText={text => handleChange('job_description', text)}
@@ -366,7 +363,7 @@ const CompanyJobEditScreen = ({ route }) => {
 
 
           <View style={styles.inputstyle}>
-            <Text style={[styles.title]}> Work location <Text style={{ color: 'red' }}>*</Text></Text>
+            <Text style={[styles.title]}>Work location <Text style={{ color: 'red' }}>*</Text></Text>
             <CustomDropDownMenu
               items={topTierCities.map(city => ({ label: city, value: city }))}
               onSelect={handleCitySelect}
@@ -378,23 +375,22 @@ const CompanyJobEditScreen = ({ route }) => {
             {renderSelectedItems(selectedCities, removeCity)}
           </View>
 
-          <View style={styles.inputContainer}>
-            <Text style={[styles.title]}> Salary package <Text style={{ color: 'red' }}>*</Text></Text>
+          <View style={styles.inputstyle}>
+            <Text style={[styles.title]}>Salary package <Text style={{ color: 'red' }}>*</Text></Text>
             <CustomDropDownMenu
               items={SalaryType}
               onSelect={(item) => handleChange('Package', item.label)}
               buttonStyle={styles.dropdownButton}
               buttonTextStyle={styles.dropdownButtonText}
-              itemStyle={styles.dropdownItem}
-              itemTextStyle={styles.dropdownItemText}
+              
               placeholder={jobEditFormData.Package || ""}
             />
           </View>
           <View style={styles.inputstyle}>
-            <Text style={styles.title}> Required languages </Text>
+            <Text style={styles.title}>Required languages </Text>
 
             <TextInput
-              style={[styles.input, { minHeight: 50, maxHeight: 150, textAlignVertical: 'top' }]}  // Use minHeight instead of height
+              style={[styles.input]}  // Use minHeight instead of height
               placeholderTextColor="gray"
               multiline
               onChangeText={text => handleChange('preferred_languages', text)}
@@ -475,10 +471,11 @@ const styles = StyleSheet.create({
     marginVertical: 20,
   },
   title: {
-    color: 'black',
+    color: colors.text_primary,
     fontSize: 15,
     fontWeight: '500',
-    marginBottom: 10
+    marginVertical: 5,
+    paddingHorizontal: 5,
 
   },
 
@@ -491,17 +488,22 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   inputstyle: {
-    marginVertical: 10,
+    marginBottom: 10,
   },
   input: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    padding: 7,
+    height: 40,
+    backgroundColor: '#fff',
     borderRadius: 8,
-    fontSize: 16,
-    marginBottom: 5,
-    color: 'black',
-    textAlignVertical: 'top'
+    fontSize: 14,
+    fontWeight: '500',
+    color:colors.text_secondary,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    paddingHorizontal: 15,
   },
   button: {
     alignSelf: 'center', // Centers the button
@@ -523,28 +525,28 @@ const styles = StyleSheet.create({
   },
 
   dropdownButton: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 5,
+    height: 40,
     backgroundColor: '#fff',
+    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#ddd'
   },
   dropdownButtonText: {
-    fontSize: 16,
-    color: '#000',
+    fontSize: 14,
+    fontWeight: '500',
+    color:colors.text_secondary,
+    flex: 1,
+    paddingVertical: 5,
   },
   dropdownItem: {
     backgroundColor: '#fff',
 
   },
-  dropdownItemText: {
-    fontSize: 16,
-    color: 'black',
-    // marginLeft: 5,
-    // marginTop: 7,
-    // marginBottom: 2
-
-
-  },
+  
   delete: {
     color: '#FF0000',
     fontWeight: '600',

@@ -252,8 +252,6 @@ console.log('allForumPost',allForumPost)
 
 
   const RenderPostItem = ({ item }) => {
-
-
     const imageUri = item.signedUrl || item.thumbnailUrl || item.imageUrl || defaultLogo;
 
     const formattedDate = item.posted_on
@@ -409,15 +407,16 @@ const styles = StyleSheet.create({
   },
   postContainer: {
     flexDirection: 'row',
-    marginBottom: 10,
-    marginHorizontal: 10,
+    marginBottom: 5,
+    marginHorizontal: 5,
     backgroundColor: 'white',
     justifyContent: 'center',
     borderRadius: 10,
     borderWidth: 0.5,
     borderColor: '#ddd',
     shadowColor: '#000',
-    top: 10
+    top: 5,
+    elevation:2
   },
   noPostsContainer: {
     flex: 1,
@@ -498,7 +497,7 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    backgroundColor: 'white',
+    backgroundColor: 'whitesmoke',
   },
   imageContainer: {
     flex: 1,

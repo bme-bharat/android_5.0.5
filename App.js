@@ -210,7 +210,7 @@ const AppContent = () => {
 
   useEffect(() => {
     sessionCheckIntervalRef.current = setInterval(() => {
-      // checkUserSession();
+      checkUserSession();
     }, 5000);
 
     return () => {

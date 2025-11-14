@@ -13,6 +13,7 @@ const AllNotification = () => {
   const { myId, myData } = useNetwork();
 
   const [notifications, setNotifications] = useState([]);
+  console.log('notifications',notifications)
   const route = useRoute();
   const { userId } = route.params;
   const navigation = useNavigation();
@@ -126,6 +127,16 @@ const AllNotification = () => {
             console.warn('❌ Missing enquiry_id in notification item:', item);
           }
           break;
+        
+          case 'job_suggestion':
+          if (item.job_post_id) {
+            navigation.navigate('JobDetail', {
+              post_id: item.job_post_id,
+            });
+          } else {
+            console.warn('❌ Missing enquiry_id in notification item:', item);
+          }
+          break;
 
         case 'contact_alert':
           if (item.enquirer_user_type === 'users') {
@@ -148,18 +159,17 @@ const AllNotification = () => {
 
 
     return (
-      <TouchableOpacity onPress={navigateToScreen} activeOpacity={0.8}>
+      <TouchableOpacity onPress={navigateToScreen} activeOpacity={0.8} style={styles.notificationItem}>
 
-        <View style={styles.notificationItem}>
           <Text style={[styles.message, item.read && styles.readMessage, !item.read && styles.unreadMessage]}>
             {item.message}
           </Text>
 
-          <Text key={item.id} style={{ alignSelf: 'flex-end', color: 'gray' }}>
+          <Text key={item.id} style={{ alignSelf: 'flex-end', color: colors.text_secondary, fontSize: 11, fontWeight:'300' }}>  
             {formatTimeAgo(item.timestamp)}
           </Text>
 
-        </View>
+    
       </TouchableOpacity>
     );
   };
@@ -193,8 +203,8 @@ const AllNotification = () => {
         <View style={styles.headerContainer}>
 
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                     <ArrowleftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-         
+            <ArrowleftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
+
           </TouchableOpacity>
 
         </View>
@@ -212,8 +222,8 @@ const AllNotification = () => {
         <View style={styles.headerContainer}>
 
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                    <ArrowleftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-        
+            <ArrowleftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
+
           </TouchableOpacity>
 
         </View>
@@ -227,8 +237,8 @@ const AllNotification = () => {
     <View style={styles.container}>
       <View style={styles.headerContainer}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                    <ArrowleftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-        
+          <ArrowleftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
+
         </TouchableOpacity>
       </View>
 
@@ -245,7 +255,7 @@ const AllNotification = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f9f9f9',
+    backgroundColor: colors.app_background,
 
   },
   headerContainer: {
@@ -261,7 +271,7 @@ const styles = StyleSheet.create({
   },
   backButton: {
     alignSelf: 'flex-start',
-    margin: 10,
+    padding: 10,
 
   }
   ,
@@ -269,23 +279,23 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     borderRadius: 8,
     padding: 10,
-    paddingHorizontal: 15,
-    marginBottom: 5,
-    marginTop: 5
+    marginBottom:5,
+    marginHorizontal:5,
+    elevation:2,
+    top:5
   },
   message: {
     fontSize: 16,
     color: '#333',
-    marginBottom: 5,
   },
   readMessage: {
-    color: 'gray',
-    fontSize: 15,
+    color: colors.text_secondary,
+    fontSize: 13,
     fontWeight: '500',
   },
   unreadMessage: {
-    color: 'black',
-    fontSize: 15,
+    color: colors.text_primary,
+    fontSize: 13,
     fontWeight: '500',
   },
   commentorName: {

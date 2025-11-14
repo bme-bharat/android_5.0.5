@@ -304,7 +304,7 @@ const MyServices = () => {
         const signedImageUrl = item.signedImageUrl || signedUrls[firstImageKey]; // <- key fix
 
         return (
-            <TouchableOpacity onPress={() => navigateToDetails(item)} style={styles.productCard1}>
+            <TouchableOpacity onPress={() => navigateToDetails(item)} style={styles.productCard1} activeOpacity={1}>
                 <View style={styles.productCard}>
                     <View style={styles.imageContainer}>
                         {signedImageUrl ? (
@@ -315,43 +315,39 @@ const MyServices = () => {
                     </View>
 
                     <View style={styles.textContainer}>
-                        <Text numberOfLines={1} style={commonStyles.label}>{item.title || "N/A"}</Text>
-                        <Text numberOfLines={1} style={styles.value1}>{item.category || "N/A"}</Text>
-                        <Text numberOfLines={1} style={styles.value1}>{item.description || "N/A"}</Text>
+                        <Text numberOfLines={1} style={styles.value1}>{item.title || "N/A"}</Text>
+                        <Text numberOfLines={1} style={styles.value}>{item.category || "N/A"}</Text>
+                        <Text numberOfLines={1} style={styles.value}>{item.description || "N/A"}</Text>
                         {(item.price ?? '').toString().trim() !== '' ? (
                             <View style={styles.priceRow}>
-                                <Text numberOfLines={1} style={styles.value}>₹ {item.price}</Text>
+                                <Text numberOfLines={1} style={styles.value1}>₹ {item.price}</Text>
                             </View>
                         ) : (
-                            <Text style={styles.value}>₹ N/A</Text>
+                            <Text style={styles.value1}>₹ N/A</Text>
                         )}
                     </View>
                 </View>
 
                 <View style={styles.buttonContainer}>
                     <TouchableOpacity onPress={() => handleEditProduct(item)} style={[styles.actionButton]} activeOpacity={1}>
-                        <View style={styles.iconTextContainer}>
 
-                            <Text style={styles.buttonText}>Edit</Text>
-                        </View>
+                        <Text style={styles.buttonText}>Edit</Text>
+
                     </TouchableOpacity>
 
                     <TouchableOpacity
                         onPress={() => handleDeletePress(item.service_id, item.images, item.files)}
-                        style={styles.actionButton}
+                        style={[styles.actionButton, { marginLeft: 10 }]}
                         activeOpacity={1}
                     >
-                        <View style={styles.iconTextContainer}>
+                        <Text style={styles.deleteButtonText}>Delete</Text>
 
-                            <Text style={styles.deleteButtonText}>Delete</Text>
-                        </View>
                     </TouchableOpacity>
 
-                    <TouchableOpacity onPress={() => handleEnquiry(item)} style={[styles.actionButton]} activeOpacity={1}>
-                        <View style={styles.iconTextContainer}>
-                           
-                            <Text style={styles.buttonText}>View Enquiries</Text>
-                        </View>
+                    <TouchableOpacity onPress={() => handleEnquiry(item)} style={[styles.actionButton,{marginLeft:10}]} activeOpacity={1}>
+
+                        <Text style={styles.buttonText}>View Enquiries</Text>
+
                     </TouchableOpacity>
                 </View>
             </TouchableOpacity>
@@ -485,12 +481,15 @@ const styles = StyleSheet.create({
     buttonContainer: {
         flexDirection: 'row',
         justifyContent: 'flex-end',
-        // backgroundColor:'red'
     },
 
     actionButton: {
         padding: 8,
         borderRadius: 5,
+        alignItems: 'center',
+        elevation: 2,
+        backgroundColor: '#fff',
+
     },
     iconTextContainer: {
         flexDirection: 'row',
@@ -513,7 +512,7 @@ const styles = StyleSheet.create({
     deleteButtonText: {
         color: "#FF0000",
         fontSize: 15,
-        fontWeight:'500'
+        fontWeight: '500'
     },
 
     backButton: {
@@ -575,14 +574,14 @@ const styles = StyleSheet.create({
 
     productCard: {
         flexDirection: 'row',
-        marginHorizontal: 10,
+        marginHorizontal: 5,
         backgroundColor: 'white',
         padding: 5,
 
     },
     productCard1: {
         marginBottom: 10,
-        marginHorizontal: 10,
+        marginHorizontal: 5,
         top: 10,
         backgroundColor: 'white',
         borderRadius: 10,
@@ -590,6 +589,7 @@ const styles = StyleSheet.create({
         borderColor: '#ddd',
         borderWidth: 0.5,
         shadowColor: '#000',
+        padding: 10
 
     },
     imageContainer: {
@@ -645,9 +645,9 @@ const styles = StyleSheet.create({
     value: {
         flex: 2, // Take the remaining space
         flexShrink: 1,
-        color: 'black',
-        fontWeight: '500',
-        fontSize: 15,
+        fontSize: 14,
+        fontWeight: '400',
+        color: colors.text_secondary,
         textAlign: 'left', // Align text to the left
         alignSelf: 'flex-start',
         padding: 5,
@@ -655,8 +655,9 @@ const styles = StyleSheet.create({
     value1: {
         flex: 2, // Take the remaining space
         flexShrink: 1,
-        color: '#777',
-        fontSize: 15,
+        fontSize: 16,
+        fontWeight: '600',
+        color: colors.text_primary,
         textAlign: 'left', // Align text to the left
         alignSelf: 'flex-start',
         padding: 5,

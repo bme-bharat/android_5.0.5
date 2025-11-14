@@ -695,7 +695,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     color: colors.text_secondary,
     fontWeight: '500',
-    fontSize: 13,
+    fontSize: 14,
     shadowColor: '#000',
     shadowOpacity: 0.05,
     shadowOffset: { width: 0, height: 2 },
@@ -801,7 +801,7 @@ const styles = StyleSheet.create({
   dropdownButtonText: {
     color: colors.text_secondary,
     fontWeight: '500',
-    fontSize: 13,
+    fontSize: 14,
     flex: 1,
   },
   dropdownItem: {
@@ -818,7 +818,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     color: colors.text_primary,
     fontWeight: '500',
-    fontSize: 13,
+    fontSize: 14,
     paddingHorizontal: 10
   },
   inputContainer: {

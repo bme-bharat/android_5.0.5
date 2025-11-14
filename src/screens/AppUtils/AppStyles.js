@@ -9,7 +9,7 @@ export default AppStyle = StyleSheet.create({
   scrollView: {
     paddingTop: headerHeight,
     paddingBottom: bottomHeight,
-    backgroundColor: colors.app_background
+    
 
   },
   menuContainer:{
@@ -73,7 +73,7 @@ padding:10
     justifyContent: 'center',
     borderColor: '#075cab',
     borderWidth: 1,
-    marginTop: 20,
+    marginVertical: 20,
   },
 
   PostbtnSkip: {
@@ -216,7 +216,7 @@ padding:10
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 10,
+    padding: 6,
     borderRadius: 8,
 
   },
@@ -227,11 +227,15 @@ padding:10
 
   },
   dotsContainer: {
+    marginTop: 12,
+    gap: 8,
+    position: 'absolute',
+    bottom:20, // move higher or lower as needed
+    left: 0,
+    right: 0,
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 12,
-    gap: 8,
   },
 
   dot: {
@@ -391,7 +395,7 @@ export const styles = StyleSheet.create({
 
   rowText: {
     fontSize: 13,
-    fontWeight:'400',
+    fontWeight:'500',
     color: colors.text_primary,
     marginLeft: 6,
     flexShrink: 1,     // allow text to shrink
@@ -560,17 +564,17 @@ export const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     borderBottomWidth: 1,
     borderColor: '#f0f0f0',
-    marginHorizontal:10
+    paddingHorizontal:10
   },
   searchBar: { height: 80, width: '50%' },
   rightContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 10,
   },
 
   notificationContainer: {
-    padding: 10,
+    padding: 8,
   },
 
   notificationBadge: {
@@ -837,7 +841,6 @@ export const commonStyles = StyleSheet.create({
     borderRadius: 8,
     padding: 10,
     marginVertical: 5,
-    marginHorizontal: 10
   },
 valContainer: {
     flex: 1,
@@ -852,7 +855,7 @@ valContainer: {
     flex: 1,
     color: colors.text_primary,
     fontWeight: '500',
-    fontSize: 13,
+    fontSize: 14,
     textAlign: 'left',
     alignSelf: 'flex-start',
 
@@ -865,11 +868,12 @@ valContainer: {
   value: {
     flex: 2, // Take the remaining space
     flexShrink: 1,
-    color: "#5F6368",
+    color: colors.text_secondary,
     fontWeight: '500',
-    fontSize: 13,
+    fontSize: 14,
     textAlign: 'left', // Align text to the left
     alignSelf: 'flex-start',
+    letterSpacing: 0.2
   },
   avatarContainer: {
     width: '100%',
@@ -879,7 +883,7 @@ valContainer: {
     borderRadius: 80,
   },
   avatarText: {
-    fontSize: 40,
+    fontSize: 50,
     fontWeight: 'bold',
   },
 })

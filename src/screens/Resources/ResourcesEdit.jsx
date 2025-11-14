@@ -31,10 +31,10 @@ import { colors, dimensions } from '../../assets/theme.jsx';
 
 const { DocumentPicker } = NativeModules;
 
-const videoExtensions = [
-  '.mp4', '.mov', '.avi', '.mkv', '.flv', '.wmv', '.webm',
-  '.m4v', '.3gp', '.3g2', '.f4v', '.f4p', '.f4a', '.f4b', '.qt', '.quicktime'
-];
+const calculateAspectRatio = (width, height) => {
+  if (!width || !height || height <= 0) return 1;
+  return width / height;
+};
 
 const ResourcesEditScreen = () => {
   const navigation = useNavigation();
@@ -205,12 +205,10 @@ const ResourcesEditScreen = () => {
         showToast("Image size shouldn't exceed 5MB", 'error');
         return;
       }
+      const aspectRatio = calculateAspectRatio(file.width, file.height);
 
-      // 3️⃣ Save file and metadata like your old pattern
       const meta = {
-        width: compressedImage.width,
-        height: compressedImage.height,
-        size: compressedImage.size,
+        aspectRatio,
         name: file.name,
         type: file.type || 'image/jpeg',
       };
@@ -500,7 +498,7 @@ const ResourcesEditScreen = () => {
 
 
       <KeyboardAwareScrollView
-        contentContainerStyle={{ flexGrow: 1, paddingBottom: '20%', }}
+        contentContainerStyle={{ flexGrow: 1, paddingBottom: '40%',marginHorizontal:10, }}
         keyboardShouldPersistTaps="handled"
         extraScrollHeight={20}
         showsVerticalScrollIndicator={false}
@@ -561,8 +559,15 @@ const ResourcesEditScreen = () => {
 
         <RichEditor
           ref={bodyEditorRef}
-          useContainer={false}
-          style={styles.input}
+          useContainer={true}
+          style={{
+            minHeight: 250,
+            borderRadius: 10,
+            borderWidth: 1,
+            borderColor: '#ccc',
+            overflow: 'hidden',
+            
+          }}
           initialContentHTML={initialBodyRef.current}
           placeholder="Share your thoughts, questions or ideas..."
           editorInitializedCallback={() => { }}
@@ -574,7 +579,6 @@ const ResourcesEditScreen = () => {
       * {
         font-size: 15px !important;
         line-height: 20px !important;
-        color: #000 !important; 
       }
       p, div, ul, li, ol, h1, h2, h3, h4, h5, h6 {
         margin: 0 !important;
@@ -637,7 +641,6 @@ const ResourcesEditScreen = () => {
       </KeyboardAwareScrollView>
 
 
-
       <Message3
         visible={showModal}
         onClose={() => setShowModal(false)}  // Optional if you want to close it from outside
@@ -647,7 +650,7 @@ const ResourcesEditScreen = () => {
         message="Your updates will be lost if you leave this page. This action cannot be undone."
         iconType="warning"  // You can change this to any appropriate icon type
       />
-      <Toast />
+
     </View>
 
   );
@@ -704,14 +707,13 @@ const styles = StyleSheet.create({
     color: 'black',
     textAlign: 'justify',
     backgroundColor: 'white',
-    marginHorizontal: 10,
     minHeight: 300,
     maxHeight: 400,
   },
 
   buttonContainer: {
     width: 80,
-    padding: 10,
+    height: 35,
     borderRadius: 10,
     // backgroundColor: '#075CAB',
     alignItems: 'center',
@@ -721,7 +723,6 @@ const styles = StyleSheet.create({
   profileContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 15,
     marginTop: 10,
     marginBottom: 20,
   },
@@ -782,7 +783,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 10,
     borderBottomWidth: 1,
     borderBottomColor: '#ccc',
   },

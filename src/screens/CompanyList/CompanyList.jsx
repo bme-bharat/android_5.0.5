@@ -364,7 +364,7 @@ const CompanyListScreen = () => {
   };
 
   return (
-    <View style={styles.container1}>
+
       <View style={styles.container} >
         {/* Search and Refresh */}
         <View style={styles.headerContainer}>
@@ -428,7 +428,7 @@ const CompanyListScreen = () => {
                   fetchCompanies(lastEvaluatedKey);
                 }
               }}
-              contentContainerStyle={{ paddingBottom: '20%' }}
+              contentContainerStyle={{ paddingBottom: '20%', backgroundColor:colors.app_background }}
               onEndReachedThreshold={0.5}
               showsVerticalScrollIndicator={false}
               onViewableItemsChanged={onViewableItemsChanged}
@@ -489,7 +489,7 @@ const CompanyListScreen = () => {
 
         </TouchableWithoutFeedback>
       </View>
-    </View>
+
   )
 
 };
@@ -497,15 +497,10 @@ const CompanyListScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'whitesmoke',
+    backgroundColor: colors.app_background
 
   },
 
-  container1: {
-    flex: 1,
-    backgroundColor: 'whitesmoke',
-
-  },
   loaderContainer: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -527,7 +522,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'whitesmoke',
+    backgroundColor: 'white',
     borderBottomWidth: 1,
     borderColor: '#f0f0f0',
 
@@ -662,13 +657,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   card: {
+    top:5,
     marginBottom: 5,
     backgroundColor: "white",
     borderRadius: 10,
     borderWidth: 1,
     borderColor: '#ddd',
-    marginHorizontal: 10
+    marginHorizontal: 5
   },
+  
   cardImage: {
     width: '100%',
     height: '100%',

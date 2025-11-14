@@ -164,11 +164,14 @@ console.log('profile?.resume_key',profile?.resume_key)
   }), [profile]);
 
   useEffect(() => {
-    const hasAnyChanges = Object.keys(initialPostData).some(
-      (key) => postData[key] !== initialPostData[key]
-    );
+    const hasAnyChanges =
+      Object.keys(initialPostData).some(
+        (key) => postData[key] !== initialPostData[key]
+      ) || !!file; // ✅ mark changed if a file is selected
+  
     setHasChanges(hasAnyChanges);
-  }, [postData, initialPostData]);
+  }, [postData, initialPostData, file]);
+  
 
   useEffect(() => {
     if (profile) {
@@ -319,8 +322,9 @@ console.log('profile?.resume_key',profile?.resume_key)
           setFileType(mimeType);
           setPostData(prev => ({
             ...prev,
-            
+          
           }));
+          setHasChanges(true);
           
         } else {
           showToast("File size must be less than 5MB.", "error");
@@ -643,7 +647,7 @@ console.log('profile?.resume_key',profile?.resume_key)
         <TouchableOpacity style={styles.inputWrapper} activeOpacity={0.8} onPress={focusEduInput}>
 
           <TextInput
-            style={[styles.input, { minHeight: 50, maxHeight: 350 }]}
+            style={[styles.input]}
             value={postData.education_qualifications}
             ref={eduRef}
             multiline
@@ -660,7 +664,7 @@ console.log('profile?.resume_key',profile?.resume_key)
         <TouchableOpacity style={styles.inputWrapper} activeOpacity={0.8} onPress={focusLanguagesInput}>
 
           <TextInput
-            style={[styles.input, { minHeight: 50, maxHeight: 350 }]}
+            style={[styles.input]}
             ref={langRef}
             value={postData.languages}
             multiline
@@ -680,7 +684,7 @@ console.log('profile?.resume_key',profile?.resume_key)
               <Text style={[styles.buttonText, { color: '#777' }]}>{postData.resume_key ? postData.resume_key : 'No Resume Selected'}</Text>
             </View>
 
-            <Text style={styles.buttonText}> Upload CV</Text>
+            <Text style={styles.buttonText}>Upload CV</Text>
           </TouchableOpacity>
 
         )}
@@ -737,8 +741,8 @@ console.log('profile?.resume_key',profile?.resume_key)
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: 10,
-    paddingBottom: '40%',
+    paddingHorizontal: 5,
+    paddingBottom: '20%',
     backgroundColor: 'whitesmoke',
   },
   container1: {
@@ -759,12 +763,12 @@ const styles = StyleSheet.create({
     marginBottom: 25,
     textAlign: 'center',
     color: '#075cab',
-    top: 10,
+    paddingTop: 10,
   },
   title: {
     color: colors.text_primary,
     fontWeight: '500',
-    fontSize: 13,
+    fontSize: 14,
     marginBottom: 10,
     marginTop: 15,
   },
@@ -792,7 +796,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     color: colors.text_secondary,
     fontWeight: '500',
-    fontSize: 13,
+    fontSize: 14,
     shadowColor: '#000',
     shadowOpacity: 0.05,
     shadowOffset: { width: 0, height: 2 },
@@ -848,7 +852,7 @@ const styles = StyleSheet.create({
   },
 
   dropdownButton: {
-    height: 50,
+    height: 40,
     backgroundColor: '#fff',
     borderRadius: 8,
     flexDirection: 'row',
@@ -866,7 +870,7 @@ const styles = StyleSheet.create({
   dropdownButtonText: {
     color: colors.text_secondary,
     fontWeight: '500',
-    fontSize: 13,
+    fontSize: 14,
     flex: 1,
   },
   dropdownItem: {

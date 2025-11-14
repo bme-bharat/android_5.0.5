@@ -7,7 +7,7 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import apiClient from '../ApiClient';
 import { useNetwork } from '../AppUtils/IdProvider';
 import { useConnection } from '../AppUtils/ConnectionProvider';
-import AppStyles from '../AppUtils/AppStyles';
+import AppStyles, { commonStyles } from '../AppUtils/AppStyles';
 import { generateAvatarFromName } from '../helperComponents/useInitialsAvatar';
 import { highlightMatch } from '../helperComponents/signedUrls';
 import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
@@ -277,17 +277,17 @@ const CompanyListJobCandidates = () => {
           <Text numberOfLines={1} style={styles.name}>
             {highlightMatch(`${item.first_name || ""} ${item.last_name || ""}`, searchQuery)}
           </Text>
-          <View style={styles.detailContainer}>
-            <Text numberOfLines={1} style={styles.label}>Expert In</Text>
-            <Text numberOfLines={1} style={styles.value}>: {highlightMatch(item.expert_in || "", searchQuery)}</Text>
+          <View style={commonStyles.valContainer}>
+            <Text numberOfLines={1} style={commonStyles.label}>Expert In</Text>
+            <Text numberOfLines={1} style={commonStyles.value}>: {highlightMatch(item.expert_in || "", searchQuery)}</Text>
           </View>
-          <View style={styles.detailContainer}>
-            <Text style={styles.label}>Experience</Text>
-            <Text style={styles.value}>: {highlightMatch(item.work_experience || "", searchQuery)}</Text>
+          <View style={commonStyles.valContainer}>
+            <Text style={commonStyles.label}>Experience</Text>
+            <Text style={commonStyles.value}>: {highlightMatch(item.work_experience || "", searchQuery)}</Text>
           </View>
-          <View style={styles.detailContainer}>
-            <Text style={styles.label}>Preferred cities</Text>
-            <Text numberOfLines={1} style={styles.value}>: {highlightMatch(item.city || "", searchQuery)}</Text>
+          <View style={commonStyles.valContainer}>
+            <Text style={commonStyles.label}>Preferred cities</Text>
+            <Text numberOfLines={1} style={commonStyles.value}>: {highlightMatch(item.city || "", searchQuery)}</Text>
           </View>
         </View>
       </TouchableOpacity>
@@ -352,7 +352,7 @@ const CompanyListJobCandidates = () => {
             <RefreshControl refreshing={isRefreshing} onRefresh={handlerefresh} />
           }
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={[AppStyles.scrollView, { paddingHorizontal: 10, }]}
+          contentContainerStyle={[AppStyles.scrollView, { paddingHorizontal: 5, }]}
           renderItem={renderJob} // Use renderJob here
           keyExtractor={(item, index) => `${item.user_id}-${index}`}
 
@@ -416,10 +416,10 @@ const styles = StyleSheet.create({
   },
 
   name: {
-    fontSize: 15,
-    fontWeight: '700',
+    fontSize: 16,
+    fontWeight: '600',
     marginBottom: 10,
-    color: "black",
+    color: colors.text_primary,
     marginLeft: 10
   },
   loaderContainer: {

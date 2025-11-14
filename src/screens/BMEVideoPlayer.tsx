@@ -16,6 +16,7 @@ import {
   AppStateStatus,
   ImageSourcePropType,
 } from "react-native";
+import { useIsFocused } from "@react-navigation/native";
 
 type PlaybackStatusEvent = {
   status: string;
@@ -37,9 +38,9 @@ type BMEVideoPlayerProps = ViewProps & {
   poster?: ImageSourcePropType;
   posterResizeMode?: "contain" | "cover" | "stretch";
   repeat?: boolean;
-  showProgressBar?: boolean; 
+  showProgressBar?: boolean;
   onPlaybackStatus?: (event: PlaybackStatusEvent) => void;
-  onSeek?: (event: SeekEvent) => void; // 🔹 new callback
+  onSeek?: (event: SeekEvent) => void;
   onEndReached?: () => void;
 };
 
@@ -48,7 +49,7 @@ export type BMEVideoPlayerHandle = {
   pause: () => void;
   seekTo: (seconds: number) => void;
   release: () => void;
-  stop: () => void;            
+  stop: () => void;
 };
 
 const NativeBMEVideoPlayer =
@@ -58,6 +59,9 @@ const BMEVideoPlayer = forwardRef<BMEVideoPlayerHandle, BMEVideoPlayerProps>(
   ({ paused: pausedProp, onPlaybackStatus, onSeek, ...props }, ref) => {
     const nativeRef = useRef<any>(null);
     const [isAppActive, setIsAppActive] = useState(true);
+    const isFocused = useIsFocused();
+    const lastPositionRef = useRef<number>(0); // 🔹 store last position
+    const hasJustResumed = useRef(false); // prevent double resume triggers
 
     // Track AppState
     useEffect(() => {
@@ -70,21 +74,17 @@ const BMEVideoPlayer = forwardRef<BMEVideoPlayerHandle, BMEVideoPlayerProps>(
       return () => subscription.remove();
     }, []);
 
-
-    // Compute actual paused state
-    const actualPaused = pausedProp || !isAppActive;
-
-    // Dispatch command helper
+    // Dispatch command
     const dispatchCommand = useCallback((commandName: string, args: any[] = []) => {
       const reactTag = findNodeHandle(nativeRef.current);
-      if (reactTag == null) return;
+      if (!reactTag) return;
       const commandId =
         UIManager.getViewManagerConfig("BMEVideoPlayer").Commands[commandName];
       if (commandId == null) return;
       UIManager.dispatchViewManagerCommand(reactTag, commandId, args);
     }, []);
 
-    // Expose imperative API
+    // Imperative API
     useImperativeHandle(ref, () => ({
       play: () => dispatchCommand("play"),
       pause: () => dispatchCommand("pause"),
@@ -93,30 +93,47 @@ const BMEVideoPlayer = forwardRef<BMEVideoPlayerHandle, BMEVideoPlayerProps>(
       stop: () => dispatchCommand("stop"),
     }));
 
-    // Wrap event handler (only if provided)
+    // 🔹 Combined paused logic
+    const actualPaused = pausedProp || !isAppActive || !isFocused;
+
+    // 🔹 Resume automatically when screen/app becomes active again
+    useEffect(() => {
+      if (isAppActive && isFocused && !pausedProp && lastPositionRef.current > 0) {
+        if (!hasJustResumed.current) {
+          hasJustResumed.current = true;
+          setTimeout(() => {
+            dispatchCommand("seekTo", [lastPositionRef.current]);
+            dispatchCommand("play");
+          }, 200); // small delay to ensure player ready
+        }
+      } else {
+        hasJustResumed.current = false;
+      }
+    }, [isAppActive, isFocused, pausedProp, dispatchCommand]);
+
+    // 🔹 Handle playback status updates
     const handlePlaybackStatus = useCallback(
       (event: NativeSyntheticEvent<PlaybackStatusEvent>) => {
-        if (onPlaybackStatus) {
-          onPlaybackStatus(event.nativeEvent);
+        const { position, status } = event.nativeEvent;
+        if (status === "playing" && position != null) {
+          lastPositionRef.current = position;
         }
+        onPlaybackStatus?.(event.nativeEvent);
       },
       [onPlaybackStatus]
     );
 
-    const handleEndReached = useCallback(
-      (event: NativeSyntheticEvent<any>) => {
-        props.onEndReached?.();
-      },
-      [props.onEndReached]
-    );
-    
     const handleSeek = useCallback(
       (event: NativeSyntheticEvent<SeekEvent>) => {
         onSeek?.(event.nativeEvent);
       },
       [onSeek]
     );
-    
+
+    const handleEndReached = useCallback(() => {
+      props.onEndReached?.();
+    }, [props.onEndReached]);
+
     return (
       <NativeBMEVideoPlayer
         {...props}
@@ -125,7 +142,6 @@ const BMEVideoPlayer = forwardRef<BMEVideoPlayerHandle, BMEVideoPlayerProps>(
         onPlaybackStatus={onPlaybackStatus ? handlePlaybackStatus : undefined}
         onSeek={onSeek ? handleSeek : undefined}
         onEndReached={props.onEndReached ? handleEndReached : undefined}
-
       />
     );
   }

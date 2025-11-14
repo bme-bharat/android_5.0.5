@@ -309,6 +309,7 @@ export default function useRenderForumItem({
                         delete videoRefs[item.forum_id];
                       }
                     }}
+                    showProgressBar={true}  
                     source={item?.fileKeySignedUrl}
                     style={{
                       width: '100%',
@@ -320,11 +321,6 @@ export default function useRenderForumItem({
                     resizeMode="cover"
                     poster={item?.thumbnailSignedUrl}
                     posterResizeMode='cover'
-
-                  onEnd={() => {
-                
-                  }}
-                
 
                   />
 
@@ -471,8 +467,9 @@ const styles = StyleSheet.create({
 
   comments: {
     paddingHorizontal: 5,
-    // borderTopWidth: 0.5,
-    // borderColor: '#ccc',
+    borderTopWidth: 0.5,
+    borderBottomWidth: 0.5,
+    borderColor: '#ccc',
     paddingVertical: 10,
     backgroundColor: 'white',
     minHeight: 120,
@@ -531,10 +528,9 @@ const styles = StyleSheet.create({
 
   },
   date1: {
-    fontSize: 13,
-    color: '#666',
-    // marginBottom: 5,
-    fontWeight: '300',
+    fontSize: 11,
+    fontWeight: "300",
+    color: colors.text_secondary,
 
 
   },

@@ -1,5 +1,5 @@
 import React, { useEffect, useState, forwardRef, useImperativeHandle, useRef } from 'react';
-import { View, Text, FlatList, ActivityIndicator, StyleSheet, TouchableOpacity, Image, Keyboard, TouchableWithoutFeedback, Animated, Pressable } from 'react-native';
+import { View, Text, FlatList, ActivityIndicator, StyleSheet, TouchableOpacity, Image, Keyboard, TouchableWithoutFeedback, Animated, Pressable, Dimensions } from 'react-native';
 import apiClient from '../ApiClient';
 import { Image as FastImage } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -19,6 +19,8 @@ import Block from '../../assets/svgIcons/restrict.svg';
 
 import { colors, dimensions } from '../../assets/theme.jsx';
 
+const { height: SCREEN_HEIGHT } = Dimensions.get('window');
+const MAX_TRANSLATE_Y = -SCREEN_HEIGHT;
 
 const CommentsSection = forwardRef(({ forum_id, currentUserId, onEditComment, highlightCommentId }, ref) => {
     const profile = useSelector(state => state.CompanyProfile.profile);
@@ -422,70 +424,94 @@ const CommentsSection = forwardRef(({ forum_id, currentUserId, onEditComment, hi
                         ]}
                     >
 
-                        <TouchableOpacity onPress={() => handleNavigate(item)}>
-                            <View style={styles.imageContainer}>
-                                {item.signedUrl ? (
-                                    <FastImage
-                                        source={{ uri: item.signedUrl }}
-                                        style={styles.profileIcon}
-                                        resizeMode="cover"
-                                        onError={() => {
-                                            // Optional: you can fallback to initials if loading fails
-                                        }}
-                                    />
-                                ) : item.avatarProps ? (
-                                    <View
-                                        style={[
-                                            styles.profileIcon,
-                                            { backgroundColor: item.avatarProps.backgroundColor, justifyContent: 'center', alignItems: 'center' },
-                                        ]}
-                                    >
-                                        <Text style={{ color: item.avatarProps.textColor, fontWeight: 'bold' }}>
-                                            {item.avatarProps.initials}
-                                        </Text>
-                                    </View>
-                                ) : (
-                                    <View style={[styles.profileIcon, { backgroundColor: '#ccc' }]} />
-                                )}
-                            </View>
-                        </TouchableOpacity>
-
-
                         <View style={styles.commentContent}>
-                            <View style={styles.authorRow}>
-                                <Text style={styles.authorText} onPress={() => handleNavigate(item)}>{item.author}</Text>
-                                <Text style={styles.timestampText}>{getTimeDisplay(item.commented_on)}</Text>
+                            {/* Profile Image / Avatar */}
+                            <TouchableOpacity onPress={() => handleNavigate(item)}>
+                                <View style={styles.imageContainer}>
+                                    {item.signedUrl ? (
+                                        <FastImage
+                                            source={{ uri: item.signedUrl }}
+                                            style={styles.profileIcon}
+                                            resizeMode="cover"
+                                            onError={() => {
+                                                // Optional: fallback if image fails
+                                            }}
+                                        />
+                                    ) : item.avatarProps ? (
+                                        <View
+                                            style={[
+                                                styles.profileIcon,
+                                                {
+                                                    backgroundColor: item.avatarProps.backgroundColor,
+                                                    justifyContent: 'center',
+                                                    alignItems: 'center',
+                                                },
+                                            ]} >
+                                            <Text
+                                                style={{
+                                                    color: item.avatarProps.textColor,
+                                                    fontWeight: 'bold',
+                                                }}
+                                            >
+                                                {item.avatarProps.initials}
+                                            </Text>
+                                        </View>
+                                    ) : (
+                                        <View style={[styles.profileIcon, { backgroundColor: '#ccc' }]} />
+                                    )}
+                                </View>
+                            </TouchableOpacity>
 
-                                {(isCommentOwner || isForumOwner) && (
-                                    <TouchableOpacity
-                                        onPress={() => handleDropdownToggle(item.comment_id)}
-                                        style={styles.menuIconContainer}
+                            {/* Comment Details */}
+                            <View style={styles.commentBody}>
+                                {/* Author + Timestamp + Menu */}
+                                <View style={styles.authorRow}>
+                                    <Text
+                                        style={styles.authorText}
+                                        onPress={() => handleNavigate(item)}
                                     >
-                                        <Dots width={dimensions.icon.small} height={dimensions.icon.small} color={colors.primary} />
-
-                                    </TouchableOpacity>
-                                )}
-
-                            </View>
-
-                            {item.text && (
-                                <>
-                                    <Text style={styles.commentText} numberOfLines={expandedComments[item.comment_id] ? undefined : 3}>
-                                        {item.text.trim()}
+                                        {item.author}
                                     </Text>
 
-                                    {item.text.trim().length > 100 && ( // Optional threshold
-                                        <TouchableOpacity onPress={() => toggleExpand(item.comment_id)}>
-                                            <Text style={styles.readMoreText}>
-                                                {expandedComments[item.comment_id] ? 'Read Less' : 'Read More'}
-                                            </Text>
+                                    <Text style={styles.timestampText}>
+                                        {getTimeDisplay(item.commented_on)}
+                                    </Text>
+
+                                    {(isCommentOwner || isForumOwner) && (
+                                        <TouchableOpacity
+                                            onPress={() => handleDropdownToggle(item.comment_id)}
+                                            style={styles.menuIconContainer}
+                                        >
+                                            <Dots
+                                                width={dimensions.icon.small}
+                                                height={dimensions.icon.small}
+                                                color={colors.primary}
+                                            />
                                         </TouchableOpacity>
                                     )}
-                                </>
-                            )}
+                                </View>
 
+                                {item.text && (
+                                    <>
+                                        <Text
+                                            style={styles.commentText}
+                                            numberOfLines={expandedComments[item.comment_id] ? undefined : 3}
+                                        >
+                                            {item.text.trim()}
+                                        </Text>
 
+                                        {item.text.trim().length > 100 && (
+                                            <TouchableOpacity onPress={() => toggleExpand(item.comment_id)}>
+                                                <Text style={styles.readMoreText}>
+                                                    {expandedComments[item.comment_id] ? 'Read Less' : 'Read More'}
+                                                </Text>
+                                            </TouchableOpacity>
+                                        )}
+                                    </>
+                                )}
+                            </View>
                         </View>
+
 
                         {dropdownVisible[item.comment_id] && (
                             <View style={styles.buttonContainer}>
@@ -562,10 +588,10 @@ const CommentsSection = forwardRef(({ forum_id, currentUserId, onEditComment, hi
 
 const styles = StyleSheet.create({
     commentItem: {
-        padding: 7,
-        paddingHorizontal: 10,
         flexDirection: 'row',
         alignItems: 'flex-start',
+        paddingVertical: 7,
+        paddingHorizontal: 10,
         margin: 5,
         borderRadius: 12,
     },
@@ -583,60 +609,64 @@ const styles = StyleSheet.create({
 
     commentContent: {
         flex: 1,
+        flexDirection: 'row',
+    },
+
+    commentBody: {
+        flex: 1,
+        flexDirection: 'column',
     },
 
     authorRow: {
         flexDirection: 'row',
-        // justifyContent: 'space-between',
         alignItems: 'center',
-
+        marginBottom: 2,
     },
 
     authorText: {
         fontWeight: '500',
-        fontSize: 15,
+        fontSize: 14,
+        color: colors.text_primary,
         maxWidth: '70%',
-        paddingHorizontal: 2
+        paddingHorizontal: 2,
+        
     },
 
     timestampText: {
-        color: '#666',
-        fontSize: 13,
-        fontWeight: "300",
-        maxWidth: '30%',
-        textAlign: 'right',
-        marginLeft: 20,
+        color: colors.text_secondary,
+        fontSize: 11,
+        fontWeight: '300',
+        marginLeft: 8,
     },
+
     menuIconContainer: {
-        paddingHorizontal: 8,
-        paddingVertical: 4,
         marginLeft: 'auto',
-    },
-    fullScreenOverlay: {
-        ...StyleSheet.absoluteFillObject,
-        zIndex: 1,
+        paddingHorizontal: 6,
+        paddingVertical: 4,
     },
 
     commentText: {
         marginTop: 2,
-        fontSize: 15,
-        lineHeight: '20',
+        fontSize: 14,
+        fontWeight: '400',
+        lineHeight: 20,
         paddingHorizontal: 2,
-        color: "#333"
+        color: colors.text_secondary,
     },
 
     readMoreText: {
         color: '#075cab',
         fontWeight: '500',
         marginTop: 4,
+        paddingHorizontal: 2,
     },
 
     buttonContainer: {
         flexDirection: 'row',
-        position: "absolute",
+        position: 'absolute',
         top: 10,
         right: 8,
-        backgroundColor: "#fff",
+        backgroundColor: '#fff',
         borderRadius: 8,
     },
 
@@ -644,33 +674,43 @@ const styles = StyleSheet.create({
         paddingVertical: 6,
         paddingHorizontal: 10,
         marginHorizontal: 3,
-        backgroundColor: "#ffe6e6",
+        backgroundColor: '#ffe6e6',
         borderRadius: 5,
     },
+
     editButton: {
         paddingVertical: 6,
         paddingHorizontal: 10,
         marginHorizontal: 3,
-        backgroundColor: "#e6f0ff",
+        backgroundColor: '#e6f0ff',
         borderRadius: 5,
     },
+
     blockButton: {
         paddingVertical: 6,
         paddingHorizontal: 10,
         marginHorizontal: 3,
-        backgroundColor: "#fff3e6",
+        backgroundColor: '#fff3e6',
         borderRadius: 5,
     },
+
+    fullScreenOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        zIndex: 1,
+    },
+
     errorText: {
         color: 'red',
         textAlign: 'center',
         marginTop: 10,
     },
+
     emptyText: {
         textAlign: 'center',
         marginTop: 20,
         color: '#666',
     },
 });
+
 
 export default CommentsSection;

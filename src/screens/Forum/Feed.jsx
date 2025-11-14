@@ -103,7 +103,7 @@ const AllPosts = () => {
         isConnected,
         myId
     });
-
+console.log('localPosts',localPosts[0])
 
     const {
 
@@ -484,7 +484,7 @@ const AllPosts = () => {
 
     return (
 
-        <View style={{ flex: 1,  }}>
+        <View style={{ flex: 1, backgroundColor: colors.app_background }}>
 
             <Animated.View style={[AppStyles.headerContainer, headerStyle]}>
                 <View style={AppStyles.searchContainer}>

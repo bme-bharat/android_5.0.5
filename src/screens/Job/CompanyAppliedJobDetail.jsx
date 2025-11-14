@@ -13,6 +13,7 @@ import apiClient from '../ApiClient';
 import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
 
 import { colors, dimensions } from '../../assets/theme.jsx';
+import { commonStyles } from '../AppUtils/AppStyles.js';
 const CompanyGetAppliedJobsScreen = () => {
   const route = useRoute();
   const { userId } = route.params;
@@ -150,108 +151,108 @@ const CompanyGetAppliedJobsScreen = () => {
                     <Text style={styles.title}>{item.first_name} {item.last_name}</Text>
                     <View style={styles.detailsContainer}>
 
-                      <View style={styles.detail}>
-                        <Text style={styles.label}>Email ID       </Text>
-                        <Text style={styles.colon}>:</Text>
-                        <Text style={styles.value}>{(item.user_email_id || "").trimStart().trimEnd()}</Text>
+                      <View style={commonStyles.labValContainer}>
+                        <Text style={commonStyles.label}>Email ID       </Text>
+                        <Text style={commonStyles.colon}>:</Text>
+                        <Text style={commonStyles.value}>{(item.user_email_id || "").trimStart().trimEnd()}</Text>
                       </View>
 
-                      <View style={styles.detail}>
-                        <Text style={styles.label}>Phone no.     </Text>
-                        <Text style={styles.colon}>:</Text>
-                        <Text style={styles.value}>{(item.user_phone_number || "").trimStart().trimEnd()}</Text>
+                      <View style={commonStyles.labValContainer}>
+                        <Text style={commonStyles.label}>Phone no.     </Text>
+                        <Text style={commonStyles.colon}>:</Text>
+                        <Text style={commonStyles.value}>{(item.user_phone_number || "").trimStart().trimEnd()}</Text>
                       </View>
-                      <View style={styles.detail}>
-                        <Text style={styles.label}>Category          </Text>
-                        <Text style={styles.colon}>:</Text>
-                        <Text style={styles.value}>{(item.user_category || "").trimStart().trimEnd()}</Text>
-                      </View>
-
-
-                      <View style={styles.detail}>
-                        <Text style={styles.label}>City          </Text>
-                        <Text style={styles.colon}>:</Text>
-                        <Text style={styles.value}>{(item.city || "").trimStart().trimEnd()}</Text>
+                      <View style={commonStyles.labValContainer}>
+                        <Text style={commonStyles.label}>Category          </Text>
+                        <Text style={commonStyles.colon}>:</Text>
+                        <Text style={commonStyles.value}>{(item.user_category || "").trimStart().trimEnd()}</Text>
                       </View>
 
 
-                      <View style={styles.detail}>
-                        <Text style={styles.label}>State          </Text>
-                        <Text style={styles.colon}>:</Text>
-                        <Text style={styles.value}>{(item.state || "").trimStart().trimEnd()}</Text>
+                      <View style={commonStyles.labValContainer}>
+                        <Text style={commonStyles.label}>City          </Text>
+                        <Text style={commonStyles.colon}>:</Text>
+                        <Text style={commonStyles.value}>{(item.city || "").trimStart().trimEnd()}</Text>
+                      </View>
+
+
+                      <View style={commonStyles.labValContainer}>
+                        <Text style={commonStyles.label}>State          </Text>
+                        <Text style={commonStyles.colon}>:</Text>
+                        <Text style={commonStyles.value}>{(item.state || "").trimStart().trimEnd()}</Text>
                       </View>
 
                       {item.education_qualifications && item.education_qualifications.trim() !== "" && (
-                        <View style={styles.detail}>
-                          <Text style={styles.label}>Educational qualification</Text>
-                          <Text style={styles.colon}>:</Text>
-                          <Text style={styles.value}>{item.education_qualifications.trim()}</Text>
+                        <View style={commonStyles.labValContainer}>
+                          <Text style={commonStyles.label}>Educational qualification</Text>
+                          <Text style={commonStyles.colon}>:</Text>
+                          <Text style={commonStyles.value}>{item.education_qualifications.trim()}</Text>
                         </View>
                       )}
 
-                      <View style={styles.detail}>
-                        <Text style={styles.label}>Date of birth          </Text>
-                        <Text style={styles.colon}>:</Text>
-                        <Text style={styles.value}>{(item.date_of_birth || "")}</Text>
+                      <View style={commonStyles.labValContainer}>
+                        <Text style={commonStyles.label}>Date of birth          </Text>
+                        <Text style={commonStyles.colon}>:</Text>
+                        <Text style={commonStyles.value}>{(item.date_of_birth || "")}</Text>
                       </View>
 
 
                       {item.college && item.college.trim() !== "" && (
-                        <View style={styles.detail}>
-                          <Text style={styles.label}>College</Text>
-                          <Text style={styles.colon}>:</Text>
-                          <Text style={styles.value}>{item.college.trim()}</Text>
+                        <View style={commonStyles.labValContainer}>
+                          <Text style={commonStyles.label}>College</Text>
+                          <Text style={commonStyles.colon}>:</Text>
+                          <Text style={commonStyles.value}>{item.college.trim()}</Text>
                         </View>
                       )}
 
                       {item.domain_strength && item.domain_strength.trim() !== "" && (
-                        <View style={styles.detail}>
-                          <Text style={styles.label}>Domain strength</Text>
-                          <Text style={styles.colon}>:</Text>
-                          <Text style={styles.value}>{item.domain_strength.trim()}</Text>
+                        <View style={commonStyles.labValContainer}>
+                          <Text style={commonStyles.label}>Domain strength</Text>
+                          <Text style={commonStyles.colon}>:</Text>
+                          <Text style={commonStyles.value}>{item.domain_strength.trim()}</Text>
                         </View>
                       )}
 
                       {item.work_experience && item.work_experience.trim() !== "" && (
-                        <View style={styles.detail}>
-                          <Text style={styles.label}>Work experience</Text>
-                          <Text style={styles.colon}>:</Text>
-                          <Text style={styles.value}>{item.work_experience.trim()}</Text>
+                        <View style={commonStyles.labValContainer}>
+                          <Text style={commonStyles.label}>Work experience</Text>
+                          <Text style={commonStyles.colon}>:</Text>
+                          <Text style={commonStyles.value}>{item.work_experience.trim()}</Text>
                         </View>
                       )}
 
 
                       {item.languages && item.languages.trim() !== "" && (
-                        <View style={styles.detail}>
-                          <Text style={styles.label}>Languages known</Text>
-                          <Text style={styles.colon}>:</Text>
-                          <Text style={styles.value}>{item.languages.trim()}</Text>
+                        <View style={commonStyles.labValContainer}>
+                          <Text style={commonStyles.label}>Languages known</Text>
+                          <Text style={commonStyles.colon}>:</Text>
+                          <Text style={commonStyles.value}>{item.languages.trim()}</Text>
                         </View>
                       )}
 
                       {item.preferred_cities && item.preferred_cities.trim() !== "" && (
-                        <View style={styles.detail}>
-                          <Text style={styles.label}>Preferred cities</Text>
-                          <Text style={styles.colon}>:</Text>
-                          <Text style={styles.value}>{item.preferred_cities.trim()}</Text>
+                        <View style={commonStyles.labValContainer}>
+                          <Text style={commonStyles.label}>Preferred cities</Text>
+                          <Text style={commonStyles.colon}>:</Text>
+                          <Text style={commonStyles.value}>{item.preferred_cities.trim()}</Text>
                         </View>
                       )}
 
                       {item.expected_salary && item.expected_salary.trim() !== "" && (
-                        <View style={styles.detail}>
-                          <Text style={styles.label}>Expected salary</Text>
-                          <Text style={styles.colon}>:</Text>
-                          <Text style={styles.value}>{item.expected_salary.trim()}</Text>
+                        <View style={commonStyles.labValContainer}>
+                          <Text style={commonStyles.label}>Expected salary</Text>
+                          <Text style={commonStyles.colon}>:</Text>
+                          <Text style={commonStyles.value}>{item.expected_salary.trim()}</Text>
                         </View>
                       )}
 
 
 
                       {item.expert_in && item.expert_in.trim() !== "" && (
-                        <View style={styles.detail}>
-                          <Text style={styles.label}>Expert In</Text>
-                          <Text style={styles.colon}>:</Text>
-                          <Text style={styles.value}>{item.expert_in.trim()}</Text>
+                        <View style={commonStyles.labValContainer}>
+                          <Text style={commonStyles.label}>Expert In</Text>
+                          <Text style={commonStyles.colon}>:</Text>
+                          <Text style={commonStyles.value}>{item.expert_in.trim()}</Text>
                         </View>
                       )}
 

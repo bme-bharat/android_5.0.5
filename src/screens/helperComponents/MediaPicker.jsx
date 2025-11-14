@@ -122,6 +122,7 @@ export const handleImageSelection = async (asset, onMediaSelected, maxImageSizeM
 
 /* ---------- Video Selection ---------- */
 export const handleVideoSelection = async (asset, onMediaSelected, maxVideoSizeMB, maxVideoDuration, setIsCompressing) => {
+  console.log('handleVideoSelection called with asset:', asset);
   try {
     const totalSeconds = Math.floor(asset.duration || 0);
     if (totalSeconds > maxVideoDuration) {
@@ -133,10 +134,12 @@ export const handleVideoSelection = async (asset, onMediaSelected, maxVideoSizeM
     setIsCompressing(true);
 
     const compressedUri = await compressVideo(asset);
+
     setIsCompressing(false);
     if (!compressedUri) return;
 
     const compressedStats = await RNFS.stat(compressedUri.replace('file://', ''));
+
     if (compressedStats.size > maxVideoSizeMB * 1024 * 1024) {
       showToast(`Video size shouldn't exceed ${maxVideoSizeMB}MB`, 'error');
       return;
@@ -250,6 +253,11 @@ const handleMediaSelection = async (type, fromCamera = false, fileTypes = null) 
      
           showToast('No media file found.', 'error');
           return;
+        }
+
+        if (!asset.uri && asset.originalPath) {
+          console.log('asset.uri',asset.uri)
+          asset.uri = `file://${asset.originalPath}`;
         }
 
         try {

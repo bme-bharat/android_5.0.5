@@ -28,7 +28,10 @@ import Add from '../../assets/svgIcons/add.svg';
 import Sucess from '../../assets/svgIcons/success.svg';
 import Close from '../../assets/svgIcons/close.svg';
 import Warning from '../../assets/svgIcons/warning.svg';
+import defaultImage from '../../images/homepage/buliding.jpg';
+
 import { colors, dimensions } from '../../assets/theme.jsx';
+import { commonStyles } from '../AppUtils/AppStyles.js';
 
 const CompanyProfileScreen = ({ route }) => {
   const navigation = useNavigation();
@@ -414,15 +417,14 @@ const CompanyProfileScreen = ({ route }) => {
       </View>
 
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: '20%' }}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: '20%', paddingHorizontal:5 }}>
 
         <TouchableOpacity activeOpacity={1} onPress={() => openMediaViewer([{ type: 'image', url: profile?.imageUrl }])}
           style={styles.imageContainer} >
 
           {profile?.imageUrl ? (
             <FastImage
-              source={{ uri: profile?.imageUrl, }}
-
+              source={{ uri: profile?.imageUrl || defaultImage }}
               style={styles.detailImage}
               resizeMode='contain'
               onError={() => { }}
@@ -438,70 +440,70 @@ const CompanyProfileScreen = ({ route }) => {
 
         <View style={styles.detailsContainer}>
           {/* Profile Details */}
-          <View style={styles.title1}>
-            <Text style={styles.label}>Company name   </Text>
-            <Text style={styles.colon}>:</Text>
+          <View style={commonStyles.labValContainer}>
+            <Text style={commonStyles.label}>Company name   </Text>
+            <Text style={commonStyles.colon}>:</Text>
 
-            <Text style={styles.value}>{(profile?.company_name || "").trimStart().trimEnd()}</Text>
+            <Text style={commonStyles.value}>{(profile?.company_name || "").trimStart().trimEnd()}</Text>
 
           </View>
-          <View style={styles.title1}>
-            <Text style={styles.label}>Business phone no. </Text>
-            <Text style={styles.colon}>:</Text>
+          <View style={commonStyles.labValContainer}>
+            <Text style={commonStyles.label}>Business phone no. </Text>
+            <Text style={commonStyles.colon}>:</Text>
 
-            <Text style={styles.value}>{(profile?.company_contact_number || "").trimStart().trimEnd()}</Text>
+            <Text style={commonStyles.value}>{(profile?.company_contact_number || "").trimStart().trimEnd()}</Text>
           </View>
-          <View style={styles.title1}>
-            <Text style={styles.label}>Email ID     </Text>
-            <Text style={styles.colon}>:</Text>
+          <View style={commonStyles.labValContainer}>
+            <Text style={commonStyles.label}>Email ID     </Text>
+            <Text style={commonStyles.colon}>:</Text>
 
-            <Text style={styles.value}>{profile?.company_email_id || ""} <Text >{profile.is_email_verified && (
+            <Text style={commonStyles.value}>{profile?.company_email_id || ""} <Text >{profile.is_email_verified && (
               <Sucess width={dimensions.icon.small} height={dimensions.icon.small} color={colors.success} />
 
             )}</Text>
             </Text>
           </View>
-          <View style={styles.title1}>
-            <Text style={styles.label}>CIN / Business registration number </Text>
-            <Text style={styles.colon}>:</Text>
+          <View style={commonStyles.labValContainer}>
+            <Text style={commonStyles.label}>CIN / Business registration number </Text>
+            <Text style={commonStyles.colon}>:</Text>
 
-            <Text style={styles.value}>{(profile?.business_registration_number || "").trimStart().trimEnd()}</Text>
+            <Text style={commonStyles.value}>{(profile?.business_registration_number || "").trimStart().trimEnd()}</Text>
           </View>
 
           {/* select_your_profile */}
-          <View style={styles.title1}>
-            <Text style={styles.label}>Profile type      </Text>
-            <Text style={styles.colon}>:</Text>
+          <View style={commonStyles.labValContainer}>
+            <Text style={commonStyles.label}>Profile type      </Text>
+            <Text style={commonStyles.colon}>:</Text>
 
-            <Text style={styles.value}>{profile?.select_your_profile || ""}</Text>
+            <Text style={commonStyles.value}>{profile?.select_your_profile || ""}</Text>
           </View>
-          <View style={styles.title1}>
-            <Text style={styles.label}>Category      </Text>
-            <Text style={styles.colon}>:</Text>
+          <View style={commonStyles.labValContainer}>
+            <Text style={commonStyles.label}>Category      </Text>
+            <Text style={commonStyles.colon}>:</Text>
 
-            <Text style={styles.value}>{profile?.category || ""}</Text>
+            <Text style={commonStyles.value}>{profile?.category || ""}</Text>
           </View>
 
-          <View style={styles.title1}>
-            <Text style={styles.label}>State            </Text>
-            <Text style={styles.colon}>:</Text>
+          <View style={commonStyles.labValContainer}>
+            <Text style={commonStyles.label}>State            </Text>
+            <Text style={commonStyles.colon}>:</Text>
 
-            <Text style={styles.value}>{profile?.company_located_state || ""}</Text>
+            <Text style={commonStyles.value}>{profile?.company_located_state || ""}</Text>
           </View>
-          <View style={styles.title1}>
-            <Text style={styles.label}>City              </Text>
-            <Text style={styles.colon}>:</Text>
+          <View style={commonStyles.labValContainer}>
+            <Text style={commonStyles.label}>City              </Text>
+            <Text style={commonStyles.colon}>:</Text>
 
-            <Text style={styles.value}>{profile?.company_located_city || ""}</Text>
+            <Text style={commonStyles.value}>{profile?.company_located_city || ""}</Text>
           </View>
 
           {(profile?.Website?.trimStart().trimEnd()) ? (
-            <View style={styles.title1}>
-              <Text style={styles.label}>Website</Text>
-              <Text style={styles.colon}>:</Text>
-              <Text style={styles.value}>
+            <View style={commonStyles.labValContainer}>
+              <Text style={commonStyles.label}>Website</Text>
+              <Text style={commonStyles.colon}>:</Text>
+              <Text style={commonStyles.value}>
                 <TouchableOpacity onPress={() => openLink(profile.Website)}>
-                  <Text style={[styles.value, { color: "#075cab", textDecorationLine: "underline" }]}>
+                  <Text style={[commonStyles.value, { color: "#075cab", textDecorationLine: "underline" }]}>
                     {profile.Website.trim()}
                   </Text>
                 </TouchableOpacity>
@@ -510,18 +512,18 @@ const CompanyProfileScreen = ({ route }) => {
           ) : null}
 
           {(profile?.company_address?.trimStart().trimEnd()) ? (
-            <View style={styles.title1}>
-              <Text style={styles.label}>Company address</Text>
-              <Text style={styles.colon}>:</Text>
-              <Text style={styles.value}>{profile.company_address.trimStart().trimEnd()}</Text>
+            <View style={commonStyles.labValContainer}>
+              <Text style={commonStyles.label}>Company address</Text>
+              <Text style={commonStyles.colon}>:</Text>
+              <Text style={commonStyles.value}>{profile.company_address.trimStart().trimEnd()}</Text>
             </View>
           ) : null}
 
           {(profile?.company_description?.trimStart().trimEnd()) ? (
-            <View style={[styles.title1, { textAlign: 'justify' }]}>
-              <Text style={styles.label}>Company description</Text>
-              <Text style={styles.colon}>:</Text>
-              <Text style={[styles.value, { textAlign: 'justify' }]}>
+            <View style={[commonStyles.labValContainer, { textAlign: 'justify' }]}>
+              <Text style={commonStyles.label}>Company description</Text>
+              <Text style={commonStyles.colon}>:</Text>
+              <Text style={[commonStyles.value, { textAlign: 'justify' }]}>
                 {profile.company_description.trimStart().trimEnd()}
               </Text>
             </View>

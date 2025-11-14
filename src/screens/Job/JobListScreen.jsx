@@ -811,12 +811,12 @@ const styles = StyleSheet.create({
 
   container1: {
     flex: 1,
-    backgroundColor: 'whitesmoke',
+    backgroundColor: colors.app_background
 
   },
   container: {
     flex: 1,
-    backgroundColor: 'whitesmoke',
+    backgroundColor: colors.app_background
 
   },
 
@@ -837,6 +837,7 @@ const styles = StyleSheet.create({
 
   shareButton: {
     alignSelf: 'flex-end',
+    padding:10
   },
 
   backButton: {
@@ -847,8 +848,6 @@ const styles = StyleSheet.create({
 
   card: {
     backgroundColor: "white",
-    
-    
     marginBottom: 5,
     borderWidth: 0.5,
     borderColor: '#ddd',
@@ -858,7 +857,6 @@ const styles = StyleSheet.create({
 
   textContainer: {
     paddingHorizontal: 16,
-    paddingBottom: 16,
 
   },
   title1: {
@@ -879,6 +877,7 @@ const styles = StyleSheet.create({
   viewMoreButton: {
     backgroundColor: COLORS.primary,
     borderRadius: 4,
+    padding:10
   },
 
   buttonContainer: {

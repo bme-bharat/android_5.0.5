@@ -277,8 +277,8 @@ const MyProducts = () => {
 
 
         return (
-            <TouchableOpacity onPress={() => navigateToDetails(item)} activeOpacity={0.8}>
-                <View style={styles.productCard}>
+            <TouchableOpacity onPress={() => navigateToDetails(item)} activeOpacity={1} style={styles.productCard}>
+
                     <View style={styles.imageContainer}>
                         {signedImageUrl ? (
                             <Image source={{ uri: signedImageUrl }} style={styles.image} />
@@ -290,34 +290,34 @@ const MyProducts = () => {
                     <View style={styles.textContainer}>
                         <View style={styles.productDetails}>
 
-                            <Text numberOfLines={1} style={styles.value}>{item.title || "N/A"}</Text>
+                            <Text numberOfLines={1} style={styles.value1}>{item.title || "N/A"}</Text>
 
-                            <Text numberOfLines={1} style={styles.value1}>{item.category || "N/A"}</Text>
+                            <Text numberOfLines={1} style={styles.value}>{item.category || "N/A"}</Text>
 
-                            <Text numberOfLines={1} style={styles.value1}>{item.description || "N/A"}</Text>
+                            <Text numberOfLines={1} style={styles.value}>{item.description || "N/A"}</Text>
 
-                            <Text style={styles.value}>₹ {item.price || 'N/A'}</Text>
+                            <Text style={styles.value1}>₹ {item.price || 'N/A'}</Text>
 
                         </View>
                         <View style={styles.buttonContainer}>
-                            <TouchableOpacity onPress={() => handleEditProduct(item)} style={[styles.actionButton, {marginRight:20}]}>
-                               
-                                    <Text style={styles.buttonText}>Edit</Text>
-                            
+                            <TouchableOpacity onPress={() => handleEditProduct(item)} 
+                            style={[styles.actionButton, { marginRight: 20 }]} activeOpacity={1}>
+
+                                <Text style={styles.buttonText}>Edit</Text>
+
                             </TouchableOpacity>
 
                             <TouchableOpacity
                                 onPress={() => handleDeletePress(item.product_id, item.images, item.files)}
                                 style={styles.actionButton}
+                                activeOpacity={1}
                             >
-                            
-                                    <Text style={styles.deleteButtonText}>Delete</Text>
-                               
+                                <Text style={styles.deleteButtonText}>Delete</Text>
+
                             </TouchableOpacity>
                         </View>
                     </View>
 
-                </View>
 
             </TouchableOpacity>
         );
@@ -455,9 +455,10 @@ const styles = StyleSheet.create({
     actionButton: {
         padding: 8,
         borderRadius: 5,
-        elevation:2,
-        backgroundColor:'#fff',
-        width:'30%'
+        elevation: 2,
+        backgroundColor: '#fff',
+        width: '30%',
+        alignItems:'center'
     },
     iconTextContainer: {
         flexDirection: 'row',
@@ -557,8 +558,8 @@ const styles = StyleSheet.create({
     productCard: {
         flexDirection: 'row',
         marginBottom: 10,
-        marginHorizontal: 10,
-        top: 10,
+        marginHorizontal: 5,
+        top: 5,
         backgroundColor: 'white',
         justifyContent: 'center',
         borderRadius: 10,
@@ -626,9 +627,9 @@ const styles = StyleSheet.create({
     value: {
         flex: 2, // Take the remaining space
         flexShrink: 1,
-        color: 'black',
-        fontWeight: '500',
-        fontSize: 15,
+        fontSize: 14,
+        fontWeight: '400',
+        color: colors.text_secondary,
         textAlign: 'left', // Align text to the left
         alignSelf: 'flex-start',
         padding: 5,
@@ -636,8 +637,9 @@ const styles = StyleSheet.create({
     value1: {
         flex: 2, // Take the remaining space
         flexShrink: 1,
-        color: '#777',
-        fontSize: 15,
+        fontSize: 16,
+        fontWeight: '600',
+        color: colors.text_primary,
         textAlign: 'left', // Align text to the left
         alignSelf: 'flex-start',
         padding: 5,

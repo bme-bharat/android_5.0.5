@@ -16,6 +16,7 @@ import { openLink } from '../AppUtils/openLinks';
 import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
 
 import { colors, dimensions } from '../../assets/theme.jsx';
+import { commonStyles } from '../AppUtils/AppStyles.js';
 
 const defaultImageCompany = Image.resolveAssetSource(defaultImage).uri;
 const defautImage = Image.resolveAssetSource(default_image1).uri;
@@ -537,7 +538,7 @@ const CompanyDetailsPage = () => {
           <View
             style={[
               styles.imagerprofile,
-              { backgroundColor: imageUrl?.backgroundColor || '#ccc' },
+              { backgroundColor: imageUrl?.backgroundColor },
             ]}
           >
             <Text style={{ color: imageUrl?.textColor || '#000', fontSize: 50, fontWeight: 'bold' }}>
@@ -549,63 +550,53 @@ const CompanyDetailsPage = () => {
 
       <View style={styles.textContainer}>
 
-        <View style={styles.title}>
-          <View style={styles.lableIconContainer}>
-            <Text style={styles.label}>Company </Text>
-          </View>
+        <View style={commonStyles.labValContainer}>
 
-          <Text style={styles.colon}>:</Text>
-          <Text style={styles.value}>{profile?.company_name || ""}</Text>
+          <Text style={commonStyles.label}>Company </Text>
+          <Text style={commonStyles.colon}>:</Text>
+          <Text style={commonStyles.value}>{profile?.company_name || ""}</Text>
         </View>
 
 
-        {/* <View style={styles.title}>
+        {/* <View style={commonStyles.labValContainer}>
           <View style={styles.lableIconContainer}>
-            <Text style={styles.label}>Registration </Text>
+            <Text style={commonStyles.label}>Registration </Text>
           </View>
 
-          <Text style={styles.colon}>:</Text>
-          <Text style={styles.value}>{profile?.business_registration_number || ""}</Text>
+          <Text style={commonStyles.colon}>:</Text>
+          <Text style={commonStyles.value}>{profile?.business_registration_number || ""}</Text>
         </View> */}
 
 
-        <View style={styles.title}>
-          <View style={styles.lableIconContainer}>
-            <Text style={styles.label}>Category </Text>
-          </View>
+        <View style={commonStyles.labValContainer}>
 
-          <Text style={styles.colon}>:</Text>
-          <Text style={styles.value}>{profile?.category || ""}</Text>
+          <Text style={commonStyles.label}>Category </Text>
+          <Text style={commonStyles.colon}>:</Text>
+          <Text style={commonStyles.value}>{profile?.category || ""}</Text>
         </View>
 
-        <View style={styles.title}>
-          <View style={styles.lableIconContainer}>
-            <Text style={styles.label}>State </Text>
-          </View>
+        <View style={commonStyles.labValContainer}>
 
-          <Text style={styles.colon}>:</Text>
-          <Text style={styles.value}>{profile?.company_located_state || ""}</Text>
+          <Text style={commonStyles.label}>State </Text>
+          <Text style={commonStyles.colon}>:</Text>
+          <Text style={commonStyles.value}>{profile?.company_located_state || ""}</Text>
         </View>
 
-        <View style={styles.title}>
-          <View style={styles.lableIconContainer}>
-            <Text style={styles.label}>City </Text>
-          </View>
+        <View style={commonStyles.labValContainer}>
 
-          <Text style={styles.colon}>:</Text>
-          <Text style={styles.value}>{profile?.company_located_city || ""}</Text>
+          <Text style={commonStyles.label}>City </Text>
+          <Text style={commonStyles.colon}>:</Text>
+          <Text style={commonStyles.value}>{profile?.company_located_city || ""}</Text>
         </View>
 
         {!!profile?.Website?.trim() && (
-          <View style={styles.title}>
-            <View style={styles.lableIconContainer}>
-              <Text style={styles.label}>Website </Text>
-            </View>
+          <View style={commonStyles.labValContainer}>
 
-            <Text style={styles.colon}>:</Text>
-            <Text style={styles.value}>
+            <Text style={commonStyles.label}>Website </Text>
+            <Text style={commonStyles.colon}>:</Text>
+            <Text style={commonStyles.value}>
               <TouchableOpacity activeOpacity={1} onPress={() => openLink(profile.Website)}>
-                <Text style={[styles.value, { color: "#075cab", textDecorationLine: "underline" }]}>
+                <Text style={[commonStyles.value, { color: "#075cab", textDecorationLine: "underline" }]}>
                   {profile.Website.trim()}
                 </Text>
               </TouchableOpacity>
@@ -614,24 +605,20 @@ const CompanyDetailsPage = () => {
         )}
 
         {!!profile?.company_description?.trim() && (
-          <View style={[styles.title]}>
+          <View style={[commonStyles.labValContainer]}>
 
-            <View style={styles.lableIconContainer}>
-              <Text style={styles.label}>Description</Text>
-            </View>
-            <Text style={styles.colon}>:</Text>
-            <Text style={[styles.value]}>{profile.company_description.trim()}</Text>
+            <Text style={commonStyles.label}>Description</Text>
+            <Text style={commonStyles.colon}>:</Text>
+            <Text style={[commonStyles.value]}>{profile.company_description.trim()}</Text>
           </View>
         )}
 
         {profile?.company_address ? (
-          <View style={styles.title}>
-            <View style={styles.lableIconContainer}>
-              <Text style={styles.label}>Address </Text>
-            </View>
+          <View style={commonStyles.labValContainer}>
 
-            <Text style={styles.colon}>:</Text>
-            <Text style={styles.value}>{profile?.company_address || ""}</Text>
+            <Text style={commonStyles.label}>Address </Text>
+            <Text style={commonStyles.colon}>:</Text>
+            <Text style={commonStyles.value}>{profile?.company_address || ""}</Text>
           </View>
         ) : null}
         {
@@ -763,7 +750,7 @@ const CompanyDetailsPage = () => {
             forumId={item?.resource_id}
             numberOfLines={2}
           />
-          <Text style={styles.labelProduct}>{formattedDate || ""}</Text>
+          <Text style={commonStyles.labelProduct}>{formattedDate || ""}</Text>
 
         </View>
       </TouchableOpacity>
@@ -818,7 +805,7 @@ const CompanyDetailsPage = () => {
             forumId={item?.forum_id}
             numberOfLines={2}
           />
-          <Text style={styles.labelProduct}>{formattedDate || ""}</Text>
+          <Text style={commonStyles.labelProduct}>{formattedDate || ""}</Text>
         </View>
 
       </TouchableOpacity>
@@ -859,7 +846,7 @@ const CompanyDetailsPage = () => {
                 if (activeTab === 'resources') return `resource-${item.resource_id}`;
                 return `unknown-${Math.random().toString()}`;
               }}
-              contentContainerStyle={{ paddingBottom: '20%' }}
+              contentContainerStyle={{ paddingBottom: '20%', paddingHorizontal:5 }}
               ListHeaderComponent={
                 <>
                   <ProfileHeader

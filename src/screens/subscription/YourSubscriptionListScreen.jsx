@@ -171,6 +171,7 @@ const YourSubscriptionListScreen = () => {
         renderItem={renderItem}
         keyExtractor={(item) => item.transaction_id}
         showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: '20%' }}
       />
 
     </View>
@@ -189,9 +190,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   header: {
-    fontSize: 20,
-    fontWeight: '700',
-    marginBottom: 16,
+    fontSize: 18,
+    fontWeight: '600',
+    padding:10,
     color: '#075cab',
     textAlign: 'center',
   },
@@ -210,16 +211,14 @@ const styles = StyleSheet.create({
 
   },
   itemContainer: {
+    top:5,
     padding: 10,
-    marginVertical: 8,
-    marginHorizontal: 4,
+    marginHorizontal:5,
+    marginBottom:5,
     borderRadius: 12,
     backgroundColor: '#ffffff',
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    elevation: 2,
+
   },
   detailContainer: {
     flexDirection: 'row',

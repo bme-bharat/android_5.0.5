@@ -9,7 +9,7 @@ import { COLORS } from '../../assets/Constants';
 import dayjs from 'dayjs';
 
 import apiClient from '../ApiClient';
-import AppStyles from '../AppUtils/AppStyles';
+import AppStyles, { commonStyles } from '../AppUtils/AppStyles';
 import { highlightMatch } from '../helperComponents/signedUrls';
 import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
 import Search from '../../assets/svgIcons/search.svg';
@@ -220,34 +220,28 @@ const AllEvents = () => {
         </Text>
 
         <View style={styles.detailsContainer}>
-          <View style={styles.detailItem}>
-            <View style={styles.lableIconContainer}>
+          <View style={commonStyles.valContainer}>
 
-              <Text style={[styles.label, isExpired && styles.expiredText]}>Date</Text>
-            </View>
-            <Text style={[styles.colon, isExpired && styles.expiredText]}>:</Text>
-            <Text style={[styles.details, isExpired && styles.expiredText]}>
+            <Text style={[commonStyles.label, isExpired && styles.expiredText]}>Date</Text>
+            <Text style={[commonStyles.colon, isExpired && styles.expiredText]}>:</Text>
+            <Text style={[commonStyles.value, isExpired && styles.expiredText]}>
               {dayjs(item.start_date).format("DD")} to {dayjs(item.end_date).format("DD MMM YYYY")}
             </Text>
           </View>
 
-          <View style={styles.detailItem}>
-            <View style={styles.lableIconContainer}>
+          <View style={commonStyles.valContainer}>
 
-              <Text style={[styles.label, isExpired && styles.expiredText]}>Location</Text>
-            </View>
-            <Text style={[styles.colon, isExpired && styles.expiredText]}>:</Text>
-            <Text style={[styles.details, isExpired && styles.expiredText]}>{highlightMatch(item.location, searchQuery)}</Text>
+            <Text style={[commonStyles.label, isExpired && styles.expiredText]}>Location</Text>
+            <Text style={[commonStyles.colon, isExpired && styles.expiredText]}>:</Text>
+            <Text style={[commonStyles.value, isExpired && styles.expiredText]}>{highlightMatch(item.location, searchQuery)}</Text>
 
           </View>
 
-          <View style={styles.detailItem}>
-            <View style={styles.lableIconContainer}>
+          <View style={commonStyles.valContainer}>
 
-              <Text style={[styles.label, isExpired && styles.expiredText]}>Time</Text>
-            </View>
-            <Text style={[styles.colon, isExpired && styles.expiredText]}>:</Text>
-            <Text style={[styles.details, isExpired && styles.expiredText]}>{highlightMatch(item.time)}</Text>
+            <Text style={[commonStyles.label, isExpired && styles.expiredText]}>Time</Text>
+            <Text style={[commonStyles.colon, isExpired && styles.expiredText]}>:</Text>
+            <Text style={[commonStyles.value, isExpired && styles.expiredText]}>{highlightMatch(item.time)}</Text>
           </View>
         </View>
 
@@ -323,7 +317,7 @@ const AllEvents = () => {
         renderItem={renderItem}
         keyExtractor={(item, index) => `${item.event_id}-${index}`}
         onScrollBeginDrag={() => Keyboard.dismiss()}
-        contentContainerStyle={ { paddingHorizontal: 10, paddingBottom:'20%'}}
+        contentContainerStyle={{ paddingBottom: '20%', backgroundColor: colors.app_background, paddingHorizontal:5, }}
         onEndReached={() => {
           if (hasMore && !loadingMore) fetchEvents(lastKey);
         }}
@@ -367,10 +361,22 @@ const styles = StyleSheet.create({
 
   expiredEventContainer: {
     backgroundColor: '#e0e0e0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    overflow: 'hidden',
+    marginBottom: 8,
+    padding: 8,
+    paddingBottom: 5,
+    borderWidth: 0.5,
+    borderRadius:8,
+    borderColor: '#ddd',
   },
 
   expiredText: {
     color: '#888',
+    backgroundColor:'#e0e0e0',
   },
 
   expiredImage: {
@@ -395,7 +401,6 @@ const styles = StyleSheet.create({
   },
   eventContainer: {
     backgroundColor: 'white',
-    borderRadius: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.15,
@@ -403,8 +408,9 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     marginBottom: 8,
     padding: 8,
-    paddingBottom: 15,
+    paddingBottom: 5,
     borderWidth: 0.5,
+    borderRadius:8,
     borderColor: '#ddd',
   },
   events: {
@@ -443,7 +449,6 @@ const styles = StyleSheet.create({
   },
   detailsContainer: {
     marginBottom: 15,
-    paddingHorizontal: 10
   },
   detailItem: {
     flexDirection: 'row',

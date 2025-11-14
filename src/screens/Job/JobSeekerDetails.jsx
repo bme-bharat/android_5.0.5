@@ -29,7 +29,7 @@ const CompanyGetJobCandidatesScreen = () => {
 
       </View>
 
-      <ScrollView showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 15, paddingBottom: '20%' }}
+      <ScrollView showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 5, paddingBottom: '20%' }}
         showsVerticalScrollIndicator={false} ref={scrollViewRef} >
         <TouchableOpacity
           onPress={() => {
@@ -73,20 +73,20 @@ const CompanyGetJobCandidatesScreen = () => {
         <View style={styles.textContainer}>
           <Text style={commonStyles.title}>{`${posts.first_name || ""} ${posts.last_name || ""}`}
           </Text>
-          <View style={commoncommonStyles.valContainer}>
+          <View style={commonStyles.labValContainer}>
             <Text style={commonStyles.label}>Gender</Text>
             <Text style={commonStyles.colon}>:</Text>
 
             <Text style={commonStyles.value}>{posts.gender || ""}</Text>
           </View>
-          <View style={commoncommonStyles.valContainer}>
+          <View style={commonStyles.labValContainer}>
             <Text style={commonStyles.label}>Work experience</Text>
             <Text style={commonStyles.colon}>:</Text>
 
             <Text style={commonStyles.value}>{(posts.work_experience || "").trimStart().trimEnd()}</Text>
           </View>
           {posts.college?.trim() ? (
-            <View style={commoncommonStyles.valContainer}>
+            <View style={commonStyles.labValContainer}>
               <Text style={commonStyles.label}>College</Text>
               <Text style={commonStyles.colon}>:</Text>
               <Text style={commonStyles.value}>{posts.college.trim()}</Text>
@@ -94,14 +94,14 @@ const CompanyGetJobCandidatesScreen = () => {
           ) : null}
 
           {posts.education_qualifications?.trim() && (
-            <View style={commoncommonStyles.valContainer}>
+            <View style={commonStyles.labValContainer}>
               <Text style={commonStyles.label}>Educational qualification</Text>
               <Text style={commonStyles.colon}>:</Text>
               <Text style={commonStyles.value}>{posts.education_qualifications.trim()}</Text>
             </View>
           )}
 
-          <View style={commoncommonStyles.valContainer}>
+          <View style={commonStyles.labValContainer}>
             <Text style={commonStyles.label}>Expert in</Text>
             <Text style={commonStyles.colon}>:</Text>
 
@@ -115,27 +115,27 @@ const CompanyGetJobCandidatesScreen = () => {
                 ))}
             </View>
           </View>
-          <View style={commoncommonStyles.valContainer}>
+          <View style={commonStyles.labValContainer}>
             <Text style={commonStyles.label}>City</Text>
             <Text style={commonStyles.colon}>:</Text>
 
             <Text style={commonStyles.value}>{posts.city || ""}</Text>
           </View>
-          <View style={commoncommonStyles.valContainer}>
+          <View style={commonStyles.labValContainer}>
             <Text style={commonStyles.label}>State</Text>
             <Text style={commonStyles.colon}>:</Text>
 
             <Text style={commonStyles.value}>{posts.state || ""}</Text>
           </View>
 
-          <View style={commoncommonStyles.valContainer}>
+          <View style={commonStyles.labValContainer}>
             <Text style={commonStyles.label}>Domain strength</Text>
             <Text style={commonStyles.colon}>:</Text>
 
             <Text style={commonStyles.value}>{posts.domain_strength || ""}</Text>
           </View>
           {posts?.industry_type?.trim() && (
-            <View style={commoncommonStyles.valContainer}>
+            <View style={commonStyles.labValContainer}>
               <Text style={commonStyles.label}>Industry type</Text>
               <Text style={commonStyles.colon}>:</Text>
 
@@ -144,7 +144,7 @@ const CompanyGetJobCandidatesScreen = () => {
           )}
 
           {posts.languages?.trim() && (
-            <View style={commoncommonStyles.valContainer}>
+            <View style={commonStyles.labValContainer}>
               <Text style={commonStyles.label}>Languages known</Text>
               <Text style={commonStyles.colon}>:</Text>
 
@@ -161,7 +161,7 @@ const CompanyGetJobCandidatesScreen = () => {
           )}
 
           {posts.preferred_cities?.trim() && (
-            <View style={commoncommonStyles.valContainer}>
+            <View style={commonStyles.labValContainer}>
               <Text style={commonStyles.label}>Preferred cities</Text>
               <Text style={commonStyles.colon}>:</Text>
 
@@ -178,7 +178,7 @@ const CompanyGetJobCandidatesScreen = () => {
           )}
 
           {posts.expected_salary?.trim() && (
-            <View style={commoncommonStyles.valContainer}>
+            <View style={commonStyles.labValContainer}>
               <Text style={commonStyles.label}>Expected salary</Text>
               <Text style={commonStyles.colon}>:</Text>
               <Text style={commonStyles.value}>{posts.expected_salary.trim()}</Text>

@@ -72,14 +72,14 @@ const CustomDropDownMenu = ({
         </Text>
         {visible ? (
           <ArrowUp
-            width={dimensions.icon.medium}
-            height={dimensions.icon.medium}
+            width={dimensions.icon.small}
+            height={dimensions.icon.small}
             color={colors.primary}
           />
         ) : (
           <ArrowDown
-            width={dimensions.icon.medium}
-            height={dimensions.icon.medium}
+            width={dimensions.icon.small}
+            height={dimensions.icon.small}
             color={colors.primary}
           />
         )}
@@ -110,10 +110,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 14,
     backgroundColor: '#f2f2f2',
     borderRadius: 8,
+    paddingHorizontal:10
   },
   buttonText: {
     fontSize: 16,

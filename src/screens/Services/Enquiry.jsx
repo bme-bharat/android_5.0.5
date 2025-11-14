@@ -9,7 +9,7 @@ import RNFS from 'react-native-fs';
 import apiClient from '../ApiClient';
 import { showToast } from '../AppUtils/CustomToast';
 import { useNetwork } from '../AppUtils/IdProvider';
-import AppStyles from '../AppUtils/AppStyles';
+import AppStyles, { commonStyles } from '../AppUtils/AppStyles';
 import { MediaPreview } from '../helperComponents/MediaPreview';
 import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
 import Upload from '../../assets/svgIcons/upload.svg';
@@ -221,7 +221,7 @@ const EnquiryForm = () => {
             </View >
             <ScrollView style={styles.container1}>
 
-                <Text style={styles.label}>Enquiry Description:</Text>
+                <Text style={commonStyles.label}>Enquiry Description:</Text>
                 <TextInput
                     style={styles.input}
                     multiline
@@ -280,7 +280,7 @@ const styles = StyleSheet.create({
     container1: {
         flex: 1,
         // backgroundColor: '#fff',
-        paddingHorizontal: 15,
+        paddingHorizontal: 10,
         paddingTop: 10
     },
     headerContainer: {
@@ -326,13 +326,14 @@ const styles = StyleSheet.create({
     input: {
         borderWidth: 1,
         borderColor: '#ccc',
-        borderRadius: 12,
+        borderRadius: 8,
         padding: 12,
         fontSize: 15,
         textAlignVertical: 'top',
         minHeight: 200,
         maxHeight: 400,
         marginBottom: 20,
+        marginTop:10,
         backgroundColor: '#fafafa',
     },
     mediaContainer: {
@@ -340,7 +341,7 @@ const styles = StyleSheet.create({
     },
     mediaWrapper: {
         position: 'relative',
-        borderRadius: 12,
+        borderRadius: 8,
         borderWidth: 1,
         borderColor: '#ddd',
         backgroundColor: '#f9f9f9',
@@ -365,7 +366,7 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: '#ccc',
         borderStyle: 'dashed',
-        borderRadius: 12,
+        borderRadius: 8,
         padding: 20,
         alignItems: 'center',
         justifyContent: 'center',

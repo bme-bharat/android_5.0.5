@@ -15,6 +15,7 @@ import { generateAvatarFromName } from '../helperComponents/useInitialsAvatar';
 import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
 
 import { colors, dimensions } from '../../assets/theme.jsx';
+import { commonStyles } from '../AppUtils/AppStyles.js';
 
 
 const defautImage = Image.resolveAssetSource(default_image1).uri;
@@ -303,71 +304,57 @@ const UserDetailsPage = () => {
       </View>
 
 
-      <Text style={[styles.title1, { textAlign: 'center', marginBottom: 20 }]}>
+      <Text style={[commonStyles.title, { textAlign: 'center', }]}>
         {profile?.first_name} {profile?.last_name}
       </Text>
 
       <View style={styles.textContainer}>
+        <View style={commonStyles.labValContainer}>
 
-
-        <View style={styles.title}>
-          <View style={styles.lableIconContainer}>
-            <Text style={styles.label}>Profile </Text>
-          </View>
-
-          <Text style={styles.colon}>:</Text>
-          <Text style={styles.value}>{profile?.select_your_profile || ""}</Text>
+          <Text style={commonStyles.label}>Profile </Text>
+          <Text style={commonStyles.colon}>:</Text>
+          <Text style={commonStyles.value}>{profile?.select_your_profile || ""}</Text>
         </View>
 
 
-        <View style={styles.title}>
-          <View style={styles.lableIconContainer}>
-            <Text style={styles.label}>Category </Text>
-          </View>
+        <View style={commonStyles.labValContainer}>
 
-          <Text style={styles.colon}>:</Text>
-          <Text style={styles.value}>{profile?.category || ""}</Text>
+          <Text style={commonStyles.label}>Category </Text>
+          <Text style={commonStyles.colon}>:</Text>
+          <Text style={commonStyles.value}>{profile?.category || ""}</Text>
         </View>
 
 
-        <View style={styles.title}>
-          <View style={styles.lableIconContainer}>
-            <Text style={styles.label}>State </Text>
-          </View>
+        <View style={commonStyles.labValContainer}>
 
-          <Text style={styles.colon}>:</Text>
-          <Text style={styles.value}>{profile?.state || ""}</Text>
+          <Text style={commonStyles.label}>State </Text>
+          <Text style={commonStyles.colon}>:</Text>
+          <Text style={commonStyles.value}>{profile?.state || ""}</Text>
         </View>
 
 
-        <View style={styles.title}>
-          <View style={styles.lableIconContainer}>
-            <Text style={styles.label}>City </Text>
-          </View>
+        <View style={commonStyles.labValContainer}>
 
-          <Text style={styles.colon}>:</Text>
-          <Text style={styles.value}>{profile?.city || ""}</Text>
+          <Text style={commonStyles.label}>City </Text>
+          <Text style={commonStyles.colon}>:</Text>
+          <Text style={commonStyles.value}>{profile?.city || ""}</Text>
         </View>
 
 
-        <View style={styles.title}>
-          <View style={styles.lableIconContainer}>
-            <Text style={styles.label}>Gender </Text>
-          </View>
+        <View style={commonStyles.labValContainer}>
 
-          <Text style={styles.colon}>:</Text>
-          <Text style={styles.value}>{profile?.gender || ""}</Text>
+          <Text style={commonStyles.label}>Gender </Text>
+          <Text style={commonStyles.colon}>:</Text>
+          <Text style={commonStyles.value}>{profile?.gender || ""}</Text>
         </View>
 
 
         {profile?.college ? (
-          <View style={styles.title}>
-            <View style={styles.lableIconContainer}>
-              <Text style={styles.label}>College </Text>
-            </View>
+          <View style={commonStyles.labValContainer}>
 
-            <Text style={styles.colon}>:</Text>
-            <Text style={styles.value}>{profile?.college || ""}</Text>
+            <Text style={commonStyles.label}>College </Text>
+            <Text style={commonStyles.colon}>:</Text>
+            <Text style={commonStyles.value}>{profile?.college || ""}</Text>
           </View>
         ) : null}
 
@@ -472,7 +459,7 @@ const UserDetailsPage = () => {
             forumId={item?.resource_id}
             numberOfLines={2}
           />
-          <Text style={styles.labelProduct}>{formattedDate || ""}</Text>
+          <Text style={commonStyles.labelProduct}>{formattedDate || ""}</Text>
 
         </View>
       </TouchableOpacity>
@@ -528,7 +515,7 @@ const UserDetailsPage = () => {
             forumId={item?.forum_id}
             numberOfLines={2}
           />
-          <Text style={styles.labelProduct}>{formattedDate || ""}</Text>
+          <Text style={commonStyles.labelProduct}>{formattedDate || ""}</Text>
 
         </View>
 
@@ -554,7 +541,7 @@ const UserDetailsPage = () => {
         }
         renderItem={activeTab === 'forum' ? renderItem : renderItemResources}
         numColumns={2}
-        columnWrapperStyle={{ justifyContent: 'space-between', paddingHorizontal: 10 }}
+        columnWrapperStyle={{ justifyContent: 'space-between', paddingHorizontal: 5 }}
         contentContainerStyle={{ paddingBottom: '20%', paddingTop: 10 }}
         onEndReached={() => {
           if (activeTab === 'forum') {
@@ -736,7 +723,7 @@ const styles = StyleSheet.create({
   },
   textContainer: {
     flex: 1,
-    paddingHorizontal: 10,
+    paddingHorizontal: 5,
 
   },
   card: {

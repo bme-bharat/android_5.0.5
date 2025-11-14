@@ -506,8 +506,6 @@ const CommentScreen = ({ route }) => {
             </View>
           </View>
 
-
-          <View style={{ marginHorizontal: 10, }}>
             <ForumBody
               html={normalizeHtml(post?.forum_body, '')}
               forumId={post?.forum_id}
@@ -515,8 +513,7 @@ const CommentScreen = ({ route }) => {
               toggleFullText={toggleFullText}
               ignoredDomTags={['font']}
             />
-          </View>
-
+       
           {mediaUrl ? (
             isVideo ? (
 
@@ -529,7 +526,7 @@ const CommentScreen = ({ route }) => {
                 controls
                 repeat={true}
                 paused={false}
-                resizeMode="cover"
+                resizeMode="contain"
                 poster={url ? { uri: url } : undefined} // ✅ ensure poster is an object
                 posterResizeMode="cover"
               />
@@ -590,7 +587,7 @@ const CommentScreen = ({ route }) => {
 
                 activeOpacity={0.7}
                 style={{
-                  paddingHorizontal: 10,
+                  
                   padding: 4,
                   flexDirection: 'row',
                   alignItems: 'center',
@@ -599,8 +596,8 @@ const CommentScreen = ({ route }) => {
               >
                 {selectedReaction ? (
                   <>
-                    <Text style={{ fontSize: 18 }}>{selectedReaction.emoji} </Text>
-                    <Text style={{ fontSize: 12, color: '#777' }}>{selectedReaction.label}</Text>
+                    <Text style={{ fontSize: 16 }}>{selectedReaction.emoji} </Text>
+                    {/* <Text style={{ fontSize: 12, color: '#777' }}>{selectedReaction.label}</Text> */}
                   </>
                 ) : (
                   <>
@@ -784,11 +781,10 @@ const styles = StyleSheet.create({
   },
 
   scrollViewContent: {
-
-    top: 20,
+    top: 10,
     flexGrow: 1,
     paddingBottom: '20%',
-
+paddingHorizontal:5
   },
 
   headerContainer: {
@@ -796,7 +792,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     marginBottom: 5,
-    marginHorizontal: 10,
 
   },
   headerContainer1: {
@@ -831,9 +826,9 @@ const styles = StyleSheet.create({
 
   // Author styling
   author: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '600',
-    alignSelf: 'flex-start',
+    color:colors.text_primary,
     color: 'black'
   },
 
@@ -874,7 +869,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between', // Space out the icons
     paddingVertical: 10,
-    marginHorizontal: 10,
 
   },
 

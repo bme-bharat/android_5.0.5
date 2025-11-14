@@ -74,6 +74,7 @@ class BMEVideoPlayerView(context: Context) : FrameLayout(context),LifecycleEvent
         playerView.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_ZOOM
         playerView.setBackgroundColor(Color.WHITE)
         addView(playerView)
+        playerView.keepScreenOn = true
 
         // Poster overlay
         posterView.layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT)
@@ -209,10 +210,13 @@ private fun startProgressUpdates() {
                 lastUpdateTime = now
                 lastPlayerTime = p.currentPosition
                 lastDuration = p.duration.takeIf { it > 0 } ?: lastDuration
+
+                // 🔹 Emit progress event to JS (so React can update loading/progress)
+                emitPlayback("progress", lastPlayerTime, lastDuration)
             }
 
-            // interpolate smoothly
-            val predicted = lastPlayerTime + (SystemClock.elapsedRealtime() - lastUpdateTime)
+            // interpolate smoothly for SeekBar
+            val predicted = lastPlayerTime + (now - lastUpdateTime)
             if (lastDuration > 0) {
                 val progress = ((predicted.toFloat() / lastDuration) * 1000)
                     .toInt()
@@ -226,6 +230,7 @@ private fun startProgressUpdates() {
 
     choreographer.postFrameCallback(frameCallback!!)
 }
+
 
 
     private fun stopProgressUpdates() {
@@ -305,7 +310,6 @@ override fun onHostPause() {
         exoPlayer?.playWhenReady = false
         emitPlayback("paused", exoPlayer?.currentPosition, exoPlayer?.duration)
         stopProgressUpdates()
-        showPosterImmediately()
     }
 }
 
@@ -315,6 +319,21 @@ override fun onHostPause() {
         // Release player if the view is destroyed
         releasePlayer()
     }
+override fun onAttachedToWindow() {
+    super.onAttachedToWindow()
+    (playerView.videoSurfaceView as? android.view.SurfaceView)?.let {
+        exoPlayer?.setVideoSurfaceView(it)
+    }
+    if (!paused && !backgroundPaused) {
+        exoPlayer?.playWhenReady = true
+    }
+}
+
+
+override fun onDetachedFromWindow() {
+    super.onDetachedFromWindow()
+    exoPlayer?.setVideoSurfaceView(null)
+}
 
     fun setResizeMode(mode: String?) {
     playerView.resizeMode = when (mode) {
@@ -380,7 +399,7 @@ override fun onHostPause() {
         if (paused) {
             emitPlayback("paused", exoPlayer?.currentPosition, exoPlayer?.duration)
             stopProgressUpdates()
-            showPosterImmediately()
+            
         } else {
             if (exoPlayer?.playbackState == Player.STATE_READY) {
                 exoPlayer?.playWhenReady = true

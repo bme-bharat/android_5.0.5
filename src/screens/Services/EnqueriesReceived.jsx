@@ -11,6 +11,7 @@ import { useNetwork } from '../AppUtils/IdProvider';
 import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
 
 import { colors, dimensions } from '../../assets/theme.jsx';
+import { commonStyles } from '../AppUtils/AppStyles.js';
 const CompanyGetallEnquiries = ({ navigation }) => {
   const route = useRoute();
 
@@ -157,27 +158,24 @@ const CompanyGetallEnquiries = ({ navigation }) => {
       }}>
 
         <View style={styles.postContainer}>
-          <View style={styles.textContainer}>
-
-            <View style={styles.title1}>
-              <Text style={styles.label}>Enquired by      </Text>
-              <Text style={styles.colon}>:</Text>
-              <Text style={styles.value}>{item?.first_name || ""}</Text>
+            <View style={commonStyles.valContainer}>
+              <Text style={commonStyles.label}>Enquired by      </Text>
+              <Text style={commonStyles.colon}>:</Text>
+              <Text style={commonStyles.value}>{item?.first_name || ""}</Text>
             </View>
 
-            <View style={styles.title1}>
-              <Text style={styles.label}>Enquiry description              </Text>
-              <Text style={styles.colon}>:</Text>
-              <Text style={styles.value}>{item?.enquiry_description || ""}</Text>
+            <View style={commonStyles.valContainer}>
+              <Text style={commonStyles.label}>Enquiry description              </Text>
+              <Text style={commonStyles.colon}>:</Text>
+              <Text style={commonStyles.value}>{item?.enquiry_description || ""}</Text>
             </View>
 
-            <View style={styles.title1}>
-              <Text style={styles.label}>Enquired on   </Text>
-              <Text style={styles.colon}>:</Text>
-              <Text style={styles.value}>{formattedDate || ""}</Text>
+            <View style={commonStyles.valContainer}>
+              <Text style={commonStyles.label}>Enquired on   </Text>
+              <Text style={commonStyles.colon}>:</Text>
+              <Text style={commonStyles.value}>{formattedDate || ""}</Text>
             </View>
 
-          </View>
         </View>
       </TouchableOpacity>
     );
@@ -250,16 +248,16 @@ const styles = StyleSheet.create({
     marginVertical: 10
   },
   postContainer: {
-    flexDirection: 'row',
     marginBottom: 10,
-    marginHorizontal: 10,
+    marginHorizontal: 5,
     backgroundColor: 'white',
     justifyContent: 'center',
     borderRadius: 10,
     borderWidth: 0.5,
     borderColor: '#ddd',
     shadowColor: '#000',
-    top: 10
+    top: 10,
+    padding:10
   },
   noPostsContainer: {
     flex: 1,
@@ -370,8 +368,6 @@ const styles = StyleSheet.create({
 
   textContainer: {
     flex: 2,
-    gap: 8,
-    padding: 10
   },
 
   title: {

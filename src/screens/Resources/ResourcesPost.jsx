@@ -38,6 +38,10 @@ async function uriToBlob(uri) {
   return blob;
 }
 
+const calculateAspectRatio = (width, height) => {
+  if (!width || !height || height <= 0) return 1;
+  return width / height;
+};
 
 const ResourcesPost = () => {
   const navigation = useNavigation();
@@ -389,11 +393,10 @@ useEffect(() => {
         return;
       }
 
+      const aspectRatio = calculateAspectRatio(file.width, file.height);
       // 3️⃣ Save file and metadata like your old pattern
       const meta = {
-        width: compressedImage.width,
-        height: compressedImage.height,
-        size: compressedImage.size,
+        aspectRatio,
         name: file.name,
         type: file.mime
       };
@@ -635,7 +638,7 @@ useEffect(() => {
       </View>
 
       <KeyboardAwareScrollView
-        contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 10, paddingBottom: '20%' }}
+        contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 10, paddingBottom: '40%' }}
         keyboardShouldPersistTaps="handled"
         extraScrollHeight={20}
         showsVerticalScrollIndicator={false}
@@ -695,10 +698,9 @@ useEffect(() => {
 
         <RichEditor
           ref={bodyEditorRef}
-          useContainer={false}
+          useContainer={true}
           style={{
             minHeight: 250,
-            maxHeight: 400,
             borderRadius: 10,
             borderWidth: 1,
             borderColor: '#ccc',
@@ -965,7 +967,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 10,
+    paddingRight: 10,
     borderBottomWidth: 1,
     borderBottomColor: '#ccc',
   },
@@ -973,8 +975,7 @@ const styles = StyleSheet.create({
 
   disabledButton: {
     backgroundColor: '#ccc',
-    borderColor: '#ccc',
-    borderWidth: 0.5,
+    
   },
 
   buttonText: {

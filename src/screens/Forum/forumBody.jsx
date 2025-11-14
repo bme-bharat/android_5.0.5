@@ -29,17 +29,17 @@ const stripInlineStyles = (domNode) => {
 };
 
 // ========== Shared styling ==========
-const baseStyle = { fontSize: 15 };
+const baseStyle = { fontSize: 14, };
 
 const defaultTextProps = {
-  selectable: true,
+  selectable: false,
   style: {
     fontSize: 14,
     marginTop: 0,
     marginBottom: 0,
     // fontWeight: '400',
     lineHeight: 20,
-    color:colors.text_primary,
+    // color:colors.text_secondary,
     letterSpacing: 0.2, 
   },
 };
@@ -59,9 +59,13 @@ const tagStyles = {
   h4: { marginTop: 0, marginBottom: 0 },
   h5: { marginTop: 0, marginBottom: 0 },
   h6: { marginTop: 0, marginBottom: 0 },
-  b: { fontWeight: 'bold' },
+  b: { fontWeight: 'bold',  },
   strong: { fontWeight: 'bold' },
-
+  a: {
+    color: '#075cab', // link color
+    textDecorationLine: 'underline',
+  },
+  
 };
 
 // ========== RenderHTML Wrapper (memoized) ==========

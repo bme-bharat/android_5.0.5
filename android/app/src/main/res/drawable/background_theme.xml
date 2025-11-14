@@ -1,0 +1,13 @@
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Background color -->
+    <item android:drawable="@color/white"/>
+
+    <!-- Centered custom image -->
+    <item>
+        <bitmap
+            android:gravity="fill"
+            android:filter="true"
+            android:src="@drawable/bg"
+            android:tileMode="disabled"/>
+    </item>
+</layer-list>

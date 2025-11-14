@@ -130,6 +130,7 @@ const styles = StyleSheet.create({
     zIndex: 10,
     borderRadius: 40,
     padding: 5,
+    backgroundColor: 'rgba(255, 255, 255, 0.7)',
   },
   documentContainer: {
     flex: 1,

@@ -445,9 +445,10 @@ const ProductsList = () => {
                         <Text numberOfLines={1} style={styles.category}>{highlightMatch(item.specifications.model_name || '', searchQuery)}</Text>
                         <Text numberOfLines={2} style={styles.description}>{highlightMatch(item.description || '', searchQuery)}</Text>
                         {/* <Text numberOfLines={1} style={styles.companyName}>{highlightMatch(job.company_name || '', searchQuery)}</Text> */}
-                        <TouchableOpacity activeOpacity={0.8} style={styles.headerRow} >
-                            <Company width={dimensions.icon.small} height={dimensions.icon.small} color={colors.secondary} /><Text style={styles.companyName} > {highlightMatch(item.company_name || '', searchQuery)}</Text>
-                        </TouchableOpacity>
+                        {/* <TouchableOpacity activeOpacity={0.8} style={styles.headerRow} >
+                            <Company width={dimensions.icon.small} height={dimensions.icon.small} color={colors.secondary} />
+                        </TouchableOpacity> */}
+                        <Text style={styles.companyName} >{highlightMatch(item.company_name || '', searchQuery)}</Text>
 
                         <Text numberOfLines={1} style={styles.price}>
                             ₹ {item.price !== undefined && item.price !== null && item.price !== '' ? item.price : "N/A"}
@@ -511,7 +512,7 @@ const ProductsList = () => {
                 </View>
                 {isConnected && (
                     <TouchableOpacity onPress={handleFilterClick} style={AppStyles.circle}>
-                        <Filter width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
+                        <Filter width={dimensions.icon.ml} height={dimensions.icon.ml} color={colors.primary} />
 
                     </TouchableOpacity>
                 )}
@@ -632,7 +633,7 @@ const ProductsList = () => {
                                             <Check
                                                 width={dimensions.icon.small}
                                                 height={dimensions.icon.small}
-                                                color={colors.text_secondary}
+                                                color={colors.success}
                                             />
                                         )}
                                     </View>
@@ -713,7 +714,7 @@ const styles = StyleSheet.create({
 
     container: {
         flex: 1,
-        backgroundColor: 'whitesmoke',
+        backgroundColor: colors.app_background
     },
 
     companyCount: {
@@ -791,7 +792,6 @@ const styles = StyleSheet.create({
         maxWidth: 140, // Restricts width to avoid overflow
         justifyContent: 'center',
         alignItems: 'center',
-
         borderRightWidth: 0.5,
         borderColor: '#eee',
 
@@ -823,7 +823,7 @@ const styles = StyleSheet.create({
     description: {
         color: colors.text_primary,
         fontWeight: '400',
-        fontSize: 13,
+        fontSize: 14,
         marginBottom: 5
 
     },
@@ -831,7 +831,7 @@ const styles = StyleSheet.create({
     companyName: {
         color: colors.text_primary,
         fontWeight: '500',
-        fontSize: 13,
+        fontSize: 14,
     
 
     },
@@ -847,8 +847,8 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     price: {
-        color: colors.text_primary,
-        fontWeight: '500',
+        color: colors.primary,
+        fontWeight: '600',
         fontSize: 15,
 
     },
@@ -960,7 +960,7 @@ const styles = StyleSheet.create({
     checkboxLabel: {
         color: colors.text_secondary,
         fontWeight: '500',
-        fontSize: 13,
+        fontSize: 14,
     },
 
 

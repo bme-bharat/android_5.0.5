@@ -161,10 +161,17 @@ const NotificationHandler = () => {
       waitForNavigation(() => navigateToForumComment(parsedData));
     } else if (notificationType === "job_application") {
       waitForNavigation(() => navigateToAppliedJobs(parsedData));
-    } else if (notificationType === "job_suggestion") {
+    } else if (notificationType === "contact_alert") {
+      waitForNavigation(() => navigateToContactViewed(parsedData));
+    }else if (notificationType === "job_suggestion") {
       waitForNavigation(() => {
-        navigationRef.navigate("JobDetail", parsedData);
+        const params = {
+          ...parsedData,
+          post_id: parsedData.job_post_id, // ✅ map job_post_id → post_id
+        };
+        navigationRef.navigate("JobDetail", params);
       });
+
     } else if (notificationType === "service_enquiry") {
       waitForNavigation(() => {
         const params = {

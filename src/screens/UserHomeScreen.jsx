@@ -1,12 +1,9 @@
 
 
 import React, { useRef, useState, useEffect, useCallback, memo } from 'react';
-import { ScrollView, Animated, View, Linking, TextInput, StyleSheet, FlatList, Image, Alert, TouchableOpacity, Text, Dimensions, BackHandler, RefreshControl, Keyboard, ActivityIndicator, requireNativeComponent } from 'react-native';
+import { View, FlatList, Image, TouchableOpacity, Text, BackHandler, RefreshControl, Keyboard } from 'react-native';
 
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useNavigation, useFocusEffect, useScrollToTop, useNavigationState } from '@react-navigation/native';
-import Video from 'react-native-video';
-
 
 import apiClient from './ApiClient';
 import { useDispatch, useSelector } from 'react-redux';
@@ -34,6 +31,7 @@ import Name from '../assets/svgIcons/id-card.svg';
 import Description from '../assets/svgIcons/description.svg';
 import Company from '../assets/svgIcons/company.svg';
 import Money from '../assets/svgIcons/money.svg';
+import AnimatedTextSequence from './animations/AnimatedTextSequence';
 
 import { colors, dimensions } from '../assets/theme';
 import LinearGradient from 'react-native-linear-gradient';
@@ -422,17 +420,15 @@ const UserHomeScreen = React.memo(() => {
   };
 
   const handleAddservice = (service) => {
-    setTimeout(() => {
-      navigation.navigate('ServiceDetails', { service_id: service.service_id, company_id: service.company_id });
 
-    }, 100);
+    navigation.navigate('ServiceDetails', { service_id: service.service_id, company_id: service.company_id });
+
   };
 
   const handleAddProduct = (product) => {
-    setTimeout(() => {
-      navigation.navigate('ProductDetails', { product_id: product.product_id, company_id: product.company_id });
 
-    }, 100);
+    navigation.navigate('ProductDetails', { product_id: product.product_id, company_id: product.company_id });
+
   };
 
 
@@ -547,14 +543,28 @@ const UserHomeScreen = React.memo(() => {
 
   const viewabilityConfig = { viewAreaCoveragePercentThreshold: 50 };
 
+  useFocusEffect(
+    useCallback(() => {
+      const onBackPress = () => {
+        BackHandler.exitApp();
+        return true;
+      };
+
+      const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+
+      // ✅ Correct cleanup
+      return () => subscription.remove();
+    }, [])
+  );
+
 
 
   return (
-    <View style={{ backgroundColor: 'whitesmoke', flex: 1 }}>
+    <View style={{ backgroundColor: '#f0f0f0', flex: 1 }}>
 
       <View style={styles.headerContainer}>
         <TouchableOpacity onPress={handleMenuPress} style={AppStyles.menuContainer}>
-          <Menu width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.secondary} />
+          <Menu width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.text_primary} />
 
         </TouchableOpacity>
         <View style={styles.rightContainer}>
@@ -562,7 +572,7 @@ const UserHomeScreen = React.memo(() => {
             style={styles.notificationContainer}
             onPress={() => navigation.navigate('AllNotification', { userId: myId })}
           >
-            <Notification width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.secondary} />
+            <Notification width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.text_primary} />
 
             {unreadCount > 0 && (
               <View style={styles.notificationBadge}>
@@ -572,23 +582,23 @@ const UserHomeScreen = React.memo(() => {
           </TouchableOpacity>
 
           <TouchableOpacity onPress={handleProfile} style={styles.profileContainer} activeOpacity={0.8}>
-        
-              {profile?.imageUrl ? (
-                <FastImage
-                  source={{ uri: profile?.imageUrl, }}
 
-                  style={styles.detailImage}
-                  resizeMode='contain'
-                  onError={() => { }}
-                />
-              ) : (
-                <View style={[styles.avatarContainer, { backgroundColor: profile?.companyAvatar?.backgroundColor }]}>
-                  <Text style={[styles.avatarText, { color: profile?.companyAvatar?.textColor }]}>
-                    {profile?.companyAvatar?.initials}
-                  </Text>
-                </View>
-              )}
-          
+            {profile?.imageUrl ? (
+              <FastImage
+                source={{ uri: profile?.imageUrl, }}
+
+                style={styles.detailImage}
+                resizeMode='contain'
+                onError={() => { }}
+              />
+            ) : (
+              <View style={[styles.avatarContainer, { backgroundColor: profile?.companyAvatar?.backgroundColor }]}>
+                <Text style={[styles.avatarText, { color: profile?.companyAvatar?.textColor }]}>
+                  {profile?.companyAvatar?.initials}
+                </Text>
+              </View>
+            )}
+
           </TouchableOpacity>
 
         </View>
@@ -603,7 +613,7 @@ const UserHomeScreen = React.memo(() => {
         onViewableItemsChanged={onViewableItemsChanged}
         viewabilityConfig={viewabilityConfig}
         onScrollBeginDrag={() => Keyboard.dismiss()}
-        contentContainerStyle={{ paddingBottom: '20%', backgroundColor: colors.app_background, }}
+        contentContainerStyle={{ paddingBottom: '20%', }}
         refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />}
         data={[
           { type: 'banner1' },
@@ -616,25 +626,19 @@ const UserHomeScreen = React.memo(() => {
           { type: 'services', data: services },
         ]}
         keyExtractor={(item, index) => `${item.type || 'unknown'}-${index}`}
-        removeClippedSubviews={false}
+
         renderItem={({ item }) => {
           switch (item.type) {
             case 'banner1':
               return (
-                <LinearGradient
-                  colors={['#3093cc', '#e7ebfc']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 0, y: 1 }}
-                  style={{ flex: 1, paddingBottom:10 }}
-                >
-                  <View>
-                    {/* <Banner01 bannerId="ban01" activeBannerId={activeBannerId} /> */}
-                  </View>
-                </LinearGradient>
+                <>
+                  <Banner01 bannerId="ban01" activeBannerId={activeBannerId} />
+                  <AnimatedTextSequence />
+                </>
               );
-              
 
             case 'jobs':
+              //  if (!item.data || item.data.length === 0) return null;
               return (
                 <View style={[styles.cards,]}>
                   <View style={styles.headingContainer}>
@@ -680,33 +684,59 @@ const UserHomeScreen = React.memo(() => {
               );
 
             case 'banner2':
-              // return <Banner02 bannerId="adban01" activeBannerId={activeBannerId} />
+              return <Banner02 bannerId="adban01" activeBannerId={activeBannerId} />
 
 
             case 'trendingPosts':
-            case 'latestPosts':
               if (!item.data || item.data.length === 0) return null;
-              const isTrending = item.type === 'trendingPosts';
               return (
                 <View style={styles.cards}>
                   <View style={styles.headingContainer}>
                     <View style={styles.headingWrapper}>
-                      <Text style={styles.headingText}>{isTrending ? 'Trending posts ' : 'Latest posts '}</Text>
-                      {isTrending ? (
-                        <Fire
-                          width={dimensions.icon.small}
-                          height={dimensions.icon.small}
-                          color={colors.primary}
-                        />
-                      ) : (
-                        <Latest
-                          width={dimensions.icon.small}
-                          height={dimensions.icon.small}
-                          color={colors.primary}
-                        />
-                      )}
+                      <Text style={styles.headingText}>Trending posts</Text>
+
+                      <Fire
+                        width={dimensions.icon.small}
+                        height={dimensions.icon.small}
+                        color={colors.primary}
+                      />
+
                     </View>
-                    <TouchableOpacity onPress={isTrending ? goToTrending : goToLatest}>
+                    <TouchableOpacity onPress={goToTrending}>
+                      <Text style={styles.seeAllText}>see more ...</Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  <FlatList
+                    data={item.data}
+                    renderItem={({ item }) => renderForumCard({ item })}
+                    keyExtractor={(forum, index) =>
+                      forum.forum_id?.toString() || forum.post_id?.toString() || `fallback-${index}`
+                    }
+                    scrollEnabled={false}
+                    nestedScrollEnabled
+
+                  />
+                </View>
+              );
+
+            case 'latestPosts':
+              if (!item.data || item.data.length === 0) return null;
+
+              return (
+                <View style={styles.cards}>
+                  <View style={styles.headingContainer}>
+                    <View style={styles.headingWrapper}>
+                      <Text style={styles.headingText}>Latest posts</Text>
+
+                      <Latest
+                        width={dimensions.icon.small}
+                        height={dimensions.icon.small}
+                        color={colors.primary}
+                      />
+
+                    </View>
+                    <TouchableOpacity onPress={goToLatest}>
                       <Text style={styles.seeAllText}>see more ...</Text>
                     </TouchableOpacity>
                   </View>
@@ -725,43 +755,69 @@ const UserHomeScreen = React.memo(() => {
               );
 
             case 'banner3':
-              // return <Banner02 bannerId="adban02" activeBannerId={activeBannerId} />;
+              return <Banner02 bannerId="adban02" activeBannerId={activeBannerId} />;
 
             case 'products':
-            case 'services':
               if (!item.data || item.data.length === 0) return null;
-              const isProduct = item.type === 'products';
+
               return (
                 <View style={styles.cards}>
                   <View style={styles.headingContainer}>
 
                     <View style={styles.headingWrapper}>
-                      <Text style={styles.headingText}>{isProduct ? 'Products' : 'Services'}</Text>
-                      {isProduct ? (
-                        <Product
-                          width={dimensions.icon.small}
-                          height={dimensions.icon.small}
-                          color={colors.primary}
-                        />
-                      ) : (
-                        <Service
-                          width={dimensions.icon.small}
-                          height={dimensions.icon.small}
-                          color={colors.primary}
-                        />
-                      )}
+                      <Text style={styles.headingText}>Products</Text>
+
+                      <Product
+                        width={dimensions.icon.small}
+                        height={dimensions.icon.small}
+                        color={colors.primary}
+                      />
+
                     </View>
-                    <TouchableOpacity onPress={isProduct ? allProducts : allServices}>
+                    <TouchableOpacity onPress={allProducts}>
                       <Text style={styles.seeAllText}>see more ...</Text>
                     </TouchableOpacity>
                   </View>
 
                   <FlatList
                     data={item.data}
-                    renderItem={({ item }) =>
-                      isProduct ? renderProductCard({ item }) : renderServiceCard({ item })
-                    }
-                    keyExtractor={(d) => (isProduct ? `product-${d.product_id}` : `service-${d.service_id}`)}
+                    renderItem={({ item }) => renderProductCard({ item })}
+                    keyExtractor={(d) => `product-${d.product_id}`}
+                    numColumns={2}
+                    contentContainerStyle={styles.flatListContainer}
+                    columnWrapperStyle={styles.columnWrapper}
+                    scrollEnabled={false}
+                    nestedScrollEnabled
+
+                  />
+                </View>
+              );
+
+            case 'services':
+              if (!item.data || item.data.length === 0) return null;
+
+              return (
+                <View style={styles.cards}>
+                  <View style={styles.headingContainer}>
+
+                    <View style={styles.headingWrapper}>
+                      <Text style={styles.headingText}>Services</Text>
+                      <Service
+                        width={dimensions.icon.small}
+                        height={dimensions.icon.small}
+                        color={colors.primary}
+                      />
+
+                    </View>
+                    <TouchableOpacity onPress={allServices}>
+                      <Text style={styles.seeAllText}>see more ...</Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  <FlatList
+                    data={item.data}
+                    renderItem={({ item }) => renderServiceCard({ item })}
+                    keyExtractor={(d) => (`service-${d.service_id}`)}
                     numColumns={2}
                     contentContainerStyle={styles.flatListContainer}
                     columnWrapperStyle={styles.columnWrapper}

@@ -274,7 +274,7 @@ const ResourcesDetails = () => {
             <View style={styles.divider} />
 
             <ScrollView
-                contentContainerStyle={{ paddingBottom: "20%", paddingHorizontal: 10 }}
+                contentContainerStyle={{ paddingBottom: "20%", paddingHorizontal: 5 }}
                 showsVerticalScrollIndicator={false}
             >
                 <View style={styles.container}>
@@ -483,9 +483,9 @@ const styles = StyleSheet.create({
     },
     title: {
         fontSize: 14,
-        fontWeight: '600',
+        fontWeight: '500',
         marginBottom: 10,
-        color: '#000',
+        color: colors.text_primary,
         lineHeight: 21,
 
     },

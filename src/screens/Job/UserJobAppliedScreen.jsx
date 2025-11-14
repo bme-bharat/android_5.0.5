@@ -236,10 +236,6 @@ const UserJobAppliedScreen = () => {
     marginBottom: 5,
     borderWidth: 0.5,
     borderColor: '#ddd',
-    shadowColor: '#0d6efd',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
     elevation: 5,
   },
   loaderContainer: {

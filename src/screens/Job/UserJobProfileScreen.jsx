@@ -221,16 +221,26 @@ const UserJobProfilescreen = () => {
         </TouchableOpacity>
 
         {/* Profile Exists? Show Update Button; Otherwise, Show Create Profile Button */}
-        <TouchableOpacity
-          style={profile ? styles.circle : styles.circle}
-          onPress={profile ? handleUpdate : () => navigation.navigate('UserJobProfileCreate')}
-        >
+        {profile !== null && (
+          <TouchableOpacity
+            style={styles.circle}
+            onPress={
+              profile
+                ? handleUpdate
+                : () => navigation.navigate('UserJobProfileCreate')
+            }
+          >
+            <Edit
+              width={dimensions.icon.medium}
+              height={dimensions.icon.medium}
+              color={colors.primary}
+            />
+            <Text style={styles.shareText}>
+              {profile ? "Update" : "Create"}
+            </Text>
+          </TouchableOpacity>
+        )}
 
-
-          <Edit width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-
-          <Text style={styles.shareText}> {profile ? "Update" : "Create"}</Text>
-        </TouchableOpacity>
       </View>
 
       {profile ? (
@@ -398,7 +408,7 @@ const UserJobProfilescreen = () => {
             </View>
 
 
-            <TouchableOpacity onPress={handleOpenResume} disabled={loading} style={{ alignItems: 'center' }}>
+            <TouchableOpacity onPress={handleOpenResume} disabled={loading} style={{ alignItems: 'center', padding: 10, }}>
               {loading ? (
                 <ActivityIndicator size="small" color="#075cab" style={styles.viewResumeText} />
               ) : (
@@ -474,7 +484,6 @@ const styles = StyleSheet.create({
     height: '100%',
     borderRadius: 80,
     overflow: 'hidden',
-    backgroundColor: '#ccc',
     alignItems: 'center',
     justifyContent: 'center'
   },
@@ -544,7 +553,6 @@ const styles = StyleSheet.create({
     color: '#075cab',
     fontSize: 16,
     fontWeight: "500",
-    marginTop: 20
   },
   resumeButtonText: {
     color: '#075cab',

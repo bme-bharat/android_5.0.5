@@ -488,7 +488,7 @@ const ProductDetails = () => {
             <TouchableOpacity activeOpacity={1} >
               <Text style={styles.title}>{product?.title}</Text>
               <Text style={styles.category}>{product?.category}</Text>
-              <TouchableOpacity onPress={toggleFullText} activeOpacity={1}>
+              <TouchableOpacity onPress={toggleFullText} activeOpacity={1} >
                 <Text style={styles.description}>
                   {showFullText ? product?.description.trim() : getText1(product?.description.trimStart().trimEnd().slice(0, 200))}
                   {product?.description.length > 200 && !showFullText && (
@@ -500,7 +500,7 @@ const ProductDetails = () => {
               <View style={{
                 width: width,
                 height: width,
-                marginBottom: 20,
+                marginBottom: 10,
                 overflow: 'hidden',
                 alignSelf: 'center'
               }}>
@@ -592,19 +592,17 @@ const ProductDetails = () => {
 
 
               <TouchableOpacity activeOpacity={0.8} style={styles.headerRow} onPress={() => handleNavigate(product.company_id)}>
-                <Company width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.secondary} /><Text style={styles.company} > {product.company_name}</Text>
+                <Company width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.secondary} /><Text style={styles.company} >{product.company_name}</Text>
               </TouchableOpacity>
 
-              <View style={styles.priceRow}>
-                {product?.price?.trim() && (
-                  // <Text style={styles.price}>₹ {product?.price}</Text>
-                  <View style={styles.priceItem}>
-                    <Text style={styles.priceLabel}>Price   :    ₹ {product?.price}</Text> 
-                    {/* <Text style={styles.pricevalue}>₹ {product?.price}</Text> */}
-  
-                  </View>
-                )}
-              </View>
+
+              {product?.price?.trim() && (
+                // <Text style={styles.price}>₹ {product?.price}</Text>
+
+                <Text style={styles.priceLabel}>₹ {product?.price}</Text>
+
+              )}
+
 
               <Text style={styles.specTitle}>Specifications </Text>
 
@@ -759,7 +757,7 @@ const styles = StyleSheet.create({
     color: '#075cab',
     fontSize: 16,
     fontWeight: '600',
-    paddingHorizontal: 10
+    padding: 10
 
   },
   imageContainer: {
@@ -859,6 +857,8 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '500',
     color: '#000',
+    flexWrap: 'wrap',
+    flexShrink: 1,
     // letterSpacing: 1.2,
     // textTransform: 'uppercase',
     // marginBottom: 3,
@@ -866,36 +866,44 @@ const styles = StyleSheet.create({
 
   category: {
     fontSize: 13,
-    color: '#777',
+    color: colors.text_secondary,
     fontWeight: '300',
     paddingHorizontal: 10
 
   },
 
   title: {
-    fontSize: 15,
-    fontWeight: '500',
-    color: '#000',
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text_primary,
     marginTop: 10,
-    letterSpacing: 0.8,
+    letterSpacing: 0.2,
     paddingHorizontal: 10
   },
 
   description: {
-    color: 'black',
-    fontSize: 15,
+    color: colors.text_secondary,
+    fontSize: 14,
+    fontWeight: '400',
+    letterSpacing: 0.2,
     lineHeight: 20,
-    marginBottom: 18,
-    textAlign: 'justify',
-    paddingHorizontal: 10
+    marginVertical: 5,
+    paddingHorizontal: 10,
 
   },
-  productDescription: {
-    color: '#000',
+  priceLabel: {
+    color: colors.primary,
     fontSize: 15,
+    fontWeight: '600',
+    paddingHorizontal:10,
+    marginBottom:10
+  },
+
+  productDescription: {
+    color: colors.text_primary,
+    fontSize: 14,
+    fontWeight: '400',
     lineHeight: 20,
-    // marginTop: 5,
-    textAlign: 'justify',
 
   },
   description1: {
@@ -903,7 +911,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 24,
     marginTop: 5,
-    textAlign: 'justify',
     paddingHorizontal: 10
 
   },

@@ -324,15 +324,20 @@ const EditService = () => {
                 return;
             }
 
+            const maxWidth = 1080;   // max Instagram feed width
+            const maxHeight = 1350;  // max portrait height
+            const ratio = Math.min(maxWidth / file.width, maxHeight / file.height, 1);
+
+            const resizedWidth = Math.round(file.width * ratio);
+            const resizedHeight = Math.round(file.height * ratio);
             // Resize image
             const resizedImage = await ImageResizer.createResizedImage(
                 file.uri,
-                800,
-                600,
+                resizedWidth,
+                resizedHeight,
                 'JPEG',
                 80
             );
-            console.log('Resized image:', resizedImage);
 
             const resizedSizeMB = resizedImage.size / 1024 / 1024;
             if (resizedSizeMB > 5) {
@@ -551,7 +556,7 @@ const EditService = () => {
                 setRemovedMedia([]);
             }
 
-            showToast("Uploading media...", "info");
+            // showToast("Uploading media...", "info");
 
             // Directly upload without compression
             const uploadedImages = await Promise.all(
@@ -674,7 +679,7 @@ const EditService = () => {
             </View>
 
             <KeyboardAwareScrollView
-                contentContainerStyle={{ flexGrow: 1, backgroundColor: "#f8f9fa", paddingHorizontal: 10, }}
+                contentContainerStyle={{ flexGrow: 1, backgroundColor: "#f8f9fa", paddingHorizontal: 5, }}
                 keyboardShouldPersistTaps="handled"
                 extraScrollHeight={20}
                 onScrollBeginDrag={() => Keyboard.dismiss()}
@@ -718,7 +723,7 @@ const EditService = () => {
                     />
                 </View>
 
-                <View style={[styles.inputContainer, { marginBottom: 0 }]}>
+                <View style={[styles.inputContainer]}>
                     <Text style={styles.label}>Category <Text style={{ color: 'red' }}>*</Text></Text>
                     <CustomDropdown
 
@@ -731,7 +736,7 @@ const EditService = () => {
                     />
                 </View>
 
-                <View style={[styles.inputContainer, { marginBottom: 0 }]}>
+                <View style={[styles.inputContainer]}>
                     <Text style={styles.label}>Sub category <Text style={{ color: 'red' }}>*</Text></Text>
                     <CustomDropdown
                         data={cities}
@@ -934,12 +939,11 @@ const styles = StyleSheet.create({
     },
     addMediaButton: {
         // width: "100%",
-        padding: 12,
+        paddingHorizontal: 5,
         // backgroundColor: "#e0e0e0",
         borderRadius: 10,
         alignItems: "flex-start",
         justifyContent: "flex-start",
-        marginVertical: 8,
         // borderWidth: 1,
         // borderColor: "#ccc",
         alignSelf: 'flex-start'
@@ -949,7 +953,8 @@ const styles = StyleSheet.create({
         fontSize: 15,
         color: "#000",
         fontWeight: "500",
-        alignSelf: 'flex-start'
+        alignSelf: 'flex-start',
+        paddingBottom:5
     },
     inputContainer: {
         marginBottom: 15,
@@ -984,20 +989,17 @@ const styles = StyleSheet.create({
         fontSize: 15,
         fontWeight: '500',
         marginBottom: 5,
-        color: '#000',
+        color: colors.text_primary,
     },
     input: {
-        minHeight: 50,
+        minHeight: 40,
         maxHeight: 150,
         backgroundColor: '#fff',
         paddingHorizontal: 15,
         borderRadius: 8,
-        fontSize: 16,
-        color: '#222',
-        shadowColor: '#000',
-        shadowOpacity: 0.05,
-        shadowOffset: { width: 0, height: 2 },
-        shadowRadius: 4,
+        fontSize: 13,
+        fontWeight: '500',
+        color: colors.text_primary,
         elevation: 2,
         borderWidth: 1,
         borderColor: '#ddd'
@@ -1009,8 +1011,9 @@ const styles = StyleSheet.create({
         color: "#075cab",
     },
     mediaContainer: {
-        flexDirection: "row",
-        flexWrap: "wrap",
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        marginBottom: 10,
     },
     mediaWrapper: {
         position: "relative",
@@ -1090,7 +1093,7 @@ const styles = StyleSheet.create({
     },
 
     dropdownButton: {
-        height: 50,
+        height: 40,
         backgroundColor: '#fff',
         borderRadius: 8,
         flexDirection: 'row',
@@ -1129,9 +1132,11 @@ const styles = StyleSheet.create({
     },
 
     dropdownButtonText: {
-        fontSize: 16,
-        color: '#333',
+        fontSize: 13,
+        fontWeight: '500',
+        color:colors.text_primary,
         flex: 1,
+        padding: 5
     },
     dropdownItem: {
         paddingVertical: 10,

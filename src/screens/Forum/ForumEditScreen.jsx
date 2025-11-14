@@ -26,6 +26,10 @@ import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
 import { colors, dimensions } from '../../assets/theme.jsx';
 
 const { DocumentPicker } = NativeModules;
+const calculateAspectRatio = (width, height) => {
+  if (!width || !height || height <= 0) return 1;
+  return width / height;
+};
 
 const ForumEditScreen = () => {
 
@@ -154,12 +158,10 @@ const ForumEditScreen = () => {
         showToast("Image size shouldn't exceed 5MB", 'error');
         return;
       }
-
+      const aspectRatio = calculateAspectRatio(file.width, file.height);
       // 3️⃣ Save file and metadata like your old pattern
       const meta = {
-        width: compressedImage.width,
-        height: compressedImage.height,
-        size: compressedImage.size,
+        aspectRatio,
         name: file.name,
         type: file.type || 'image/jpeg',
       };
@@ -389,7 +391,7 @@ const ForumEditScreen = () => {
         </View>
       </View>
       <KeyboardAwareScrollView
-        contentContainerStyle={{ flexGrow: 1 }}
+        contentContainerStyle={{ flexGrow: 1, paddingHorizontal:5, paddingBottom:'40%' }}
         keyboardShouldPersistTaps="handled"
         extraScrollHeight={20}
         onScrollBeginDrag={() => Keyboard.dismiss()}
@@ -438,13 +440,12 @@ const ForumEditScreen = () => {
 
         </View>
 
-        <View style={styles.inputContainer}>
+      
           <RichEditor
             ref={richText}
-            useContainer={false}
+          useContainer={true}
             style={{
               minHeight: 250,
-              maxHeight: 450,
               borderRadius: 8,
               borderWidth: 1,
               borderColor: '#ccc',
@@ -492,7 +493,6 @@ const ForumEditScreen = () => {
             selectedButtonStyle={{ backgroundColor: "#eee" }}
 
           />
-        </View>
 
 
         <PlayOverlayThumbnail
@@ -541,7 +541,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: 'whitesmoke',
-    marginHorizontal: 10
   },
 
   profileContainer: {
@@ -605,7 +604,7 @@ const styles = StyleSheet.create({
 
   buttonContainer: {
     width: 80,
-    paddingVertical: 10,
+    height: 35,
     borderRadius: 10,
     // backgroundColor: '#075CAB',
     alignItems: 'center',

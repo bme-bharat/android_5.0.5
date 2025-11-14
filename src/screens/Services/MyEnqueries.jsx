@@ -184,8 +184,6 @@ const MyEnqueries = () => {
             year: 'numeric',
         }).replace(/\//g, '-');
 
-
-
         return (
             <TouchableOpacity
                 activeOpacity={1} onPress={() => {
@@ -223,7 +221,7 @@ const MyEnqueries = () => {
                                 style={styles.deleteButton}
                                 onPress={() => {
                                     EnquiryDetails(item?.enquiry_id,);
-                                }} >
+                                }} activeOpacity={1}>
                                 <Text style={[styles.deleteButtonText, { color: '#075cab' }]}>
                                     View Enquiry
                                 </Text>
@@ -232,6 +230,7 @@ const MyEnqueries = () => {
                                 style={styles.deleteButton}
                                 onPress={() => handleRevokePress(item.service_id, item.enquiry_fileKey)}
                                 disabled={revokingId === item.service_id}
+                                activeOpacity={1}
                             >
                                 <Text style={styles.deleteButtonText}>
                                     {revokingId === item.service_id ? 'Revoke' : 'Revoke'}
@@ -239,7 +238,6 @@ const MyEnqueries = () => {
                             </TouchableOpacity>
 
                         </View>
-
 
                     </View>
           
@@ -327,8 +325,8 @@ const styles = StyleSheet.create({
         backgroundColor: '#f5f5f5',
     },
     textContainer: {
-        marginBottom: 10,
-        marginHorizontal: 10,
+        marginBottom: 5,
+        marginHorizontal: 5,
         backgroundColor: 'white',
         justifyContent: 'center',
         borderRadius: 10,

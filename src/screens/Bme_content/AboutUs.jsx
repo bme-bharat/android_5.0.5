@@ -40,12 +40,12 @@ const AboutUs = () => {
           </Text>
 
           <Text style={styles.sectionHeading}>Biomedical Engineering</Text>
-          <Text style={styles.value}>
+          <Text style={styles.subValue}>
             Biomedical Engineering is an exciting and rapidly evolving field that combines the principles of engineering and medical sciences to innovate, design, and develop cutting-edge solutions that revolutionize healthcare and improve people's lives. At its core, biomedical engineering seeks to bridge the gap between medicine and technology, empowering healthcare professionals with advanced tools and techniques to diagnose, treat, and prevent diseases. It plays a pivotal role in developing new medical devices, diagnostic tools, therapies, and treatment methods, ultimately advancing healthcare and enhancing patient care.
           </Text>
 
           <Text style={styles.sectionHeading}>Why Choose BME Bharat App?</Text>
-          <Text style={styles.value}>
+          <Text style={styles.subValue}>
             BME Bharat app is your gateway to the fascinating realm of biomedical engineering. Whether you are an aspiring biomedical engineer, a medical healthcare professional, or just a curious individual intrigued by the intersection of technology and medicine, you've come to the right place, this app is tailored to meet your needs.
           </Text>
           <Text style={styles.subValue}>At BME India we have developed an easy-to-use mobile application where:</Text>
@@ -68,21 +68,21 @@ const AboutUs = () => {
 
           <Text style={styles.sectionHeading}>Who Can Benefit from the App?</Text>
           <Text style={styles.featureTitle}>Students:</Text>
-          <Text style={styles.value}>Our app is an invaluable resource for students pursuing degrees in biomedical engineering or related fields. It enhances the learning experience by offering hands-on experiences and access to valuable resources. Whether you're a medical student, engineering student, or a student in a related discipline, this app can supplement your education and help you stay up-to-date with the latest developments in the field.</Text>
+          <Text style={styles.subValue}>Our app is an invaluable resource for students pursuing degrees in biomedical engineering or related fields. It enhances the learning experience by offering hands-on experiences and access to valuable resources. Whether you're a medical student, engineering student, or a student in a related discipline, this app can supplement your education and help you stay up-to-date with the latest developments in the field.</Text>
           <Text style={styles.featureTitle}>Medical Professionals:</Text>
-          <Text style={styles.value}>For healthcare practitioners, this app is a gateway to staying informed about the latest technologies and medical advancements. It offers a curated feed of information on groundbreaking medical innovations, which can transform the way you diagnose and treat patients. As a medical professional, you can benefit from the app's continuous updates and expert insights to deliver the best care to your patients.</Text>
+          <Text style={styles.subValue}>For healthcare practitioners, this app is a gateway to staying informed about the latest technologies and medical advancements. It offers a curated feed of information on groundbreaking medical innovations, which can transform the way you diagnose and treat patients. As a medical professional, you can benefit from the app's continuous updates and expert insights to deliver the best care to your patients.</Text>
           <Text style={styles.featureTitle}>Researchers:</Text>
-          <Text style={styles.value}>Access to a wealth of knowledge and data is crucial for researchers in the biomedical engineering and related areas. Our app provides a platform for researchers to stay updated with the most recent studies, breakthroughs, and datasets. It's an invaluable tool to support your research efforts, helping you make advancements in your chosen field.</Text>
+          <Text style={styles.subValue}>Access to a wealth of knowledge and data is crucial for researchers in the biomedical engineering and related areas. Our app provides a platform for researchers to stay updated with the most recent studies, breakthroughs, and datasets. It's an invaluable tool to support your research efforts, helping you make advancements in your chosen field.</Text>
           <Text style={commonStyles.label}>Enthusiasts:</Text>
-          <Text style={styles.value}>If you're someone with a passion for learning about groundbreaking medical technologies and innovations, this app caters to your curiosity. You don't need a formal background in biomedical engineering to benefit from the app. It's designed to be user-friendly and informative, making it easy for enthusiasts to explore and understand the exciting developments in the field.</Text>
+          <Text style={styles.subValue}>If you're someone with a passion for learning about groundbreaking medical technologies and innovations, this app caters to your curiosity. You don't need a formal background in biomedical engineering to benefit from the app. It's designed to be user-friendly and informative, making it easy for enthusiasts to explore and understand the exciting developments in the field.</Text>
           <Text style={styles.featureTitle}>Job Seekers:</Text>
-          <Text style={styles.value}>Job seekers looking for opportunities in the biomedical engineering and related industries can utilize the app to find job listings, stay updated on industry trends, and access resources that will help them prepare for interviews. It serves as a valuable tool in your job search and career development.</Text>
+          <Text style={styles.subValue}>Job seekers looking for opportunities in the biomedical engineering and related industries can utilize the app to find job listings, stay updated on industry trends, and access resources that will help them prepare for interviews. It serves as a valuable tool in your job search and career development.</Text>
           <Text style={styles.featureTitle}>Buyers:</Text>
-          <Text style={styles.value}>Individuals and organizations looking to purchase medical equipment, devices, or related products can use the app to discover and compare options. It provides a marketplace for buyers to browse a wide range of products and make informed decisions.</Text>
+          <Text style={styles.subValue}>Individuals and organizations looking to purchase medical equipment, devices, or related products can use the app to discover and compare options. It provides a marketplace for buyers to browse a wide range of products and make informed decisions.</Text>
           <Text style={styles.featureTitle}>Companies:</Text>
-          <Text style={styles.value}>For businesses operating in the biomedical engineering and medical technology sectors, the app offers a platform to showcase and list their products and services. By doing so, they can reach a vast audience of potential customers and clients, ultimately expanding their reach and increasing their sales.</Text>
+          <Text style={styles.subValue}>For businesses operating in the biomedical engineering and medical technology sectors, the app offers a platform to showcase and list their products and services. By doing so, they can reach a vast audience of potential customers and clients, ultimately expanding their reach and increasing their sales.</Text>
           <Text style={styles.featureTitle}>How to Contribute:</Text>
-          <Text style={styles.value}>We welcome contributions from our community. If you have an article, research paper, case study, or opinion piece you'd like to share, please submit your content through our submission portal. Our editorial team will review your submission and publish it if it meets our quality standards.</Text>
+          <Text style={styles.subValue}>We welcome contributions from our community. If you have an article, research paper, case study, or opinion piece you'd like to share, please submit your content through our submission portal. Our editorial team will review your submission and publish it if it meets our quality standards.</Text>
         </View>
       </ScrollView>
     </View>
@@ -119,35 +119,32 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   sectionHeading: {
-    fontSize: 15,
+    fontSize: 13,
     fontWeight: '500',
-    color: "black",
-    marginBottom: 12,
+    color: colors.text_primary,
+    marginBottom: 5,
   },
   value: {
     flex: 2, // Take the remaining space
     flexShrink: 1,
-    color: "#5F6368",
-    fontWeight: '500',
+    color: colors.text_primary,
+    fontWeight: '400',
     fontSize: 13,
     textAlign: 'left', // Align text to the left
     alignSelf: 'flex-start',
-    marginBottom:20,
-    letterSpacing:0.2,
-    lineHeight:20
+    marginBottom:10,
 
   },
   subValue: {
     flex: 2, // Take the remaining space
     flexShrink: 1,
-    color: "#5F6368",
-    fontWeight: '500',
+    color: colors.text_secondary,
+    fontWeight: '300',
     fontSize: 13,
     textAlign: 'left', // Align text to the left
     alignSelf: 'flex-start',
     marginBottom:10,
-    letterSpacing:0.2,
-    lineHeight:20
+
   },
   container: {
     width: '100%',
@@ -164,7 +161,7 @@ const styles = StyleSheet.create({
   },
   featureTitle: {
     color: colors.text_primary,
-    fontWeight: '500',
+    fontWeight: '400',
     fontSize: 13,
     textAlign: 'left',
     marginBottom: 10,

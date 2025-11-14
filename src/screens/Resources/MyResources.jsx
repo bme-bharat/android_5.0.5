@@ -505,15 +505,15 @@ const styles = StyleSheet.create({
 
   postContainer: {
     flexDirection: 'row',
-    marginBottom: 10,
-    marginHorizontal: 10,
+    marginBottom: 5,
+    marginHorizontal: 5,
     backgroundColor: 'white',
     justifyContent: 'center',
     borderRadius: 10,
     borderWidth: 0.5,
     borderColor: '#ddd',
     shadowColor: '#000',
-    top: 10
+    top: 5
   },
   imageContainer: {
     flex: 1,

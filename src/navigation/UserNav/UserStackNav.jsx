@@ -182,6 +182,7 @@ const UserCompanyListNav = () => {
       <Stack.Screen name="RelatedProductDetails" component={RelatedProductDetails} options={screenOption} />
       <Stack.Screen name="ResourceDetails" component={ResourceDetails} options={screenOption} />
       <Stack.Screen name="InlineVideo" component={InlineVideo} options={screenOption} />
+      <Stack.Screen name="Comment" component={CommentScreen} options={screenOption} />
 
     </Stack.Navigator>
   )
@@ -299,6 +300,7 @@ const UserResources = () => (
     <Stack.Screen name="RelatedProductDetails" component={RelatedProductDetails} options={screenOption} />
     <Stack.Screen name="ResourceDetails" component={ResourceDetails} options={screenOption} />
     <Stack.Screen name="InlineVideo" component={InlineVideo} options={screenOption} />
+    <Stack.Screen name="Comment" component={CommentScreen} options={screenOption} />
 
   </Stack.Navigator>
 
@@ -323,6 +325,7 @@ const UserProducts = () => {
       <Stack.Screen name="RelatedProductDetails" component={RelatedProductDetails} options={screenOption} />
       <Stack.Screen name="ResourceDetails" component={ResourceDetails} options={screenOption} />
       <Stack.Screen name="InlineVideo" component={InlineVideo} options={screenOption} />
+      <Stack.Screen name="Comment" component={CommentScreen} options={screenOption} />
 
 
     </Stack.Navigator>
@@ -344,6 +347,7 @@ const CompanyServices = () => {
       <Stack.Screen name="RelatedServicesDetails" component={RelatedServicesDetails} options={screenOption} />
       <Stack.Screen name="RelatedProductDetails" component={RelatedProductDetails} options={screenOption} />
       <Stack.Screen name="ResourceDetails" component={ResourceDetails} options={screenOption} />
+      <Stack.Screen name="Comment" component={CommentScreen} options={screenOption} />
 
     </Stack.Navigator>
   )

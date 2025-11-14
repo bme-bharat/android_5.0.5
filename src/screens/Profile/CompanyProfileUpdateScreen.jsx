@@ -26,7 +26,6 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { stateCityData } from '../../assets/Constants';
 import Toast from 'react-native-toast-message';
 
-import CustomDropdown1 from '../../components/userSignupdropdown';
 import RNFS from 'react-native-fs';
 
 
@@ -44,6 +43,7 @@ import AppStyles from '../AppUtils/AppStyles';
 import apiClient from '../ApiClient';
 import { Image as FastImage } from 'react-native';
 import CustomDropdown from '../../components/CustomDropDown';
+import CustomDropdown1 from '../../components/DropDownMenu';
 import ImageCropPicker from 'react-native-image-crop-picker';
 import { PERMISSIONS, RESULTS, request, check } from 'react-native-permissions';
 import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
@@ -71,12 +71,13 @@ const CompanyUserSignupScreen = () => {
   const [fileUri, setFileUri] = useState(null);
   const [fileType, setFileType] = useState('');
   const [file, setFile] = useState(null);
+  const [pdf, setPdf] = useState(null);
+
 
   const [isStateChanged, setIsStateChanged] = useState(false);
   const [isCityChanged, setIsCityChanged] = useState(false);
   const [brochureKey, setBrochureKey] = useState(profile?.brochureKey || null);
-  const [selectedState, setSelectedState] = useState(profile.company_located_state || '');
-  const [selectedCity, setSelectedCity] = useState(profile.company_located_city || '');
+
   const [isModalVisiblephone, setModalVisiblePhone] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState(""); // Phone number state
   const [countryCode, setCountryCode] = useState("+91"); // Default country code
@@ -86,11 +87,6 @@ const CompanyUserSignupScreen = () => {
   const [otpSent, setOtpSent] = useState(false); // Track OTP sent status
   const [timer, setTimer] = useState(30);  // Timer state (30 seconds)
   const [isResendEnabled, setIsResendEnabled] = useState(true);
-  const states = Object.keys(stateCityData).map((state) => state);
-  const cities = selectedState && stateCityData[selectedState]
-    ? stateCityData[selectedState]
-    : [];
-
   const [otpTimer, setOtpTimer] = useState(30); // Time left for resend OTP
   const [isOtpSent, setIsOtpSent] = useState(false); // Track if OTP is sent
   const [modalVisibleemail, setModalVisibleemail] = useState(false); // Modal visibility for OTP verification
@@ -102,21 +98,69 @@ const CompanyUserSignupScreen = () => {
   const [selectedProfile, setSelectedProfile] = useState(profile?.select_your_profile || "");
   const [selectedCategory, setSelectedCategory] = useState(profile?.category || "");
 
+
+  const [hasChanges, setHasChanges] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+
+  const [pendingAction, setPendingAction] = React.useState(null);
+  const [verifiedEmail, setVerifiedEmail] = useState(() => {
+    return profile?.is_email_verified && postData?.company_email_id ? postData.company_email_id : '';
+  });
+
+
+  
+  const [postData, setPostData] = useState({
+    company_name: profile.company_name || "",
+    business_registration_number: profile.business_registration_number || "",
+    company_contact_number: profile.company_contact_number || "",
+    company_email_id: profile.company_email_id || "",
+    is_email_verified: profile.is_email_verified || false,
+    company_located_city: profile.company_located_city || "",
+    company_located_state: profile.company_located_state || "",
+    Website: profile.Website || "",
+    company_address: profile.company_address || "",
+    company_description: profile.company_description || "",
+    fileKey: profile.fileKey || null,
+    brochureKey: profile.brochureKey || "",
+    select_your_profile: profile.select_your_profile || "",
+    category: profile.category || "",
+  });
+
+  // 🔍 Detect unsaved changes
   useEffect(() => {
-    if (!selectedProfile) return;
+    const hasChanges = Object.keys(postData).some(
+      key => postData[key] !== (profile[key] ?? "")
+    ) || isImageChanged;
 
-    const categories = [
-      ...(ProfileSelect.normalProfiles[selectedProfile] || []),
-      ...(ProfileSelect.companyProfiles[selectedProfile] || []),
-    ];
+    setHasChanges(hasChanges);
+  }, [postData, isImageChanged, profile]);
 
-    // Reset category if it's not valid for the current profile
-    if (selectedCategory && !categories.includes(selectedCategory)) {
-      setSelectedCategory("");
+  // 🚪 Prevent navigation if unsaved changes exist
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('beforeRemove', e => {
+      if (!hasChanges) return;
+      e.preventDefault();
+      setPendingAction(e.data.action);
+      setShowModal(true);
+    });
+
+    return unsubscribe;
+  }, [hasChanges, navigation]);
+
+
+  const handleLeave = () => {
+    setHasChanges(false);
+    setShowModal(false);
+
+    if (pendingAction) {
+      navigation.dispatch(pendingAction);
+      setPendingAction(null);
     }
-  }, [selectedProfile, selectedCategory, ProfileSelect]);
+  };
 
-
+  const handleStay = () => {
+    setShowModal(false);
+  };
 
   const inputRefs = useRef([]);
   // Generic focus function for any field
@@ -126,24 +170,66 @@ const CompanyUserSignupScreen = () => {
     }
   };
 
+  const [availableCategories, setAvailableCategories] = useState([]);
 
-  const handleStateSelect = (item) => {
+  useEffect(() => {
+    if (selectedProfile) {
+      const categories =
+        ProfileSelect.normalProfiles[selectedProfile] ||
+        ProfileSelect.companyProfiles[selectedProfile] ||
+        [];
+      setAvailableCategories(categories);
 
-    if (selectedState !== item) {
-      setSelectedState(item);
-      setIsStateChanged(true);
-      setIsCityChanged(false);
-      setSelectedCity('');
-      handleInputChange('company_located_state', item);
+      // Reset category if it's not valid for the new profile
+      if (!categories.includes(selectedCategory)) {
+
+        setSelectedCategory("");
+      } else {
+
+      }
     }
+  }, [selectedProfile]);
+
+  const handleProfileSelect = (item) => {
+
+    setSelectedProfile(item.label); // store only the label string
+    setHasChanges(true);
   };
 
-  // Handle city selection
-  const handleCitySelect = (item) => {
+  const handleCategorySelect = (item) => {
 
-    setIsCityChanged(true);
-    setSelectedCity(item);
-    handleInputChange('company_located_city', item);
+    setSelectedCategory(item.label); // store only the label string
+    setHasChanges(true);
+  };
+
+
+  const states = Object.keys(stateCityData).map((state) => ({
+    label: state,
+    key: state,
+  }));
+
+  const cities =
+    postData.company_located_state && stateCityData[postData.company_located_state]
+      ? stateCityData[postData.company_located_state].map((city) => ({
+        label: city,
+        key: city,
+      }))
+      : [];
+
+  const handleStateSelect = (item) => {
+    setPostData({
+      ...postData,
+      company_located_state: item.label,
+      company_located_city: "", // reset city when state changes
+    });
+    showToast('Please select city', 'info');
+  };
+
+  const handleCitySelect = (item) => {
+    setPostData({
+      ...postData,
+      company_located_city: item.label,
+    });
   };
 
 
@@ -348,121 +434,6 @@ const CompanyUserSignupScreen = () => {
 
 
 
-  const [hasChanges, setHasChanges] = useState(false);
-  const [showModal, setShowModal] = useState(false);
-  const [verifiedEmail, setVerifiedEmail] = useState(() => {
-    return profile?.is_email_verified && postData?.company_email_id ? postData.company_email_id : '';
-  });
-
-
-  const [postData, setPostData] = useState({
-
-    company_name: profile.company_name || "",
-    business_registration_number: profile.business_registration_number || "",
-    company_contact_number: profile.company_contact_number || "",
-    company_email_id: profile.company_email_id || "",
-    is_email_verified: profile.is_email_verified || false,
-    company_located_city: profile.company_located_city || "",
-    company_located_state: profile.company_located_state || "",
-    Website: profile.Website || '',
-    company_address: profile.company_address || "",
-    company_description: profile.company_description || "",
-    fileKey: profile.fileKey || null,
-    brochureKey: profile.brochureKey || "",
-    select_your_profile: profile.select_your_profile,
-    category: profile.category,
-
-  });
-
-  useEffect(() => {
-    setPostData((prev) => ({
-      ...prev,
-      select_your_profile: selectedProfile || prev.select_your_profile,
-      category: selectedCategory || prev.category,
-    }));
-  }, [selectedProfile, selectedCategory]);
-
-
-
-  useEffect(() => {
-    const initialPostData = {
-      company_name: profile.company_name || "",
-      business_registration_number: profile.business_registration_number || "",
-      company_contact_number: profile.company_contact_number || "",
-      company_email_id: profile.company_email_id || "",
-      is_email_verified: profile.is_email_verified || false,
-      company_located_city: profile.company_located_city || "",
-      company_located_state: profile.company_located_state || "",
-      Website: profile.Website || "",
-      company_address: profile.company_address || "",
-      company_description: profile.company_description || "",
-      fileKey: profile.fileKey || null,
-      brochureKey: profile.brochureKey || "",
-      select_your_profile: profile.select_your_profile || "",
-      category: profile.category || "",
-    };
-
-
-    const hasAnyChanges =
-      Object.keys(initialPostData).some((key) => {
-        const initialValue = initialPostData[key];
-        const currentValue = postData[key];
-
-        let isDifferent;
-
-        if (Array.isArray(initialValue) && Array.isArray(currentValue)) {
-          isDifferent =
-            JSON.stringify(initialValue) !== JSON.stringify(currentValue);
-        } else {
-          isDifferent = initialValue !== currentValue;
-        }
-
-        if (isDifferent) {
-          console.log(
-            `⚠️ Difference found in "${key}" → Initial:`,
-            initialValue,
-            "| Current:",
-            currentValue
-          );
-        }
-
-        return isDifferent;
-      }) || isImageChanged;
-
-    setHasChanges(hasAnyChanges);
-  }, [postData, isImageChanged, profile, verifiedEmail]);
-
-
-  const hasUnsavedChanges = Boolean(hasChanges);
-  const [pendingAction, setPendingAction] = React.useState(null);
-
-
-  React.useEffect(() => {
-    const unsubscribe = navigation.addListener('beforeRemove', (e) => {
-      if (!hasUnsavedChanges) return;
-
-      e.preventDefault();
-
-      setPendingAction(e.data.action);
-      setShowModal(true);
-    });
-
-    return unsubscribe;
-  }, [hasUnsavedChanges, navigation]);
-
-  const handleLeave = () => {
-    setHasChanges(false);
-    setShowModal(false);
-
-    if (pendingAction) {
-      navigation.dispatch(pendingAction);
-      setPendingAction(null);
-    }
-  };
-
-  const handleStay = () => {
-    setShowModal(false);
-  };
 
   const startOtpTimer = () => {
     if (intervalRef.current) {
@@ -754,7 +725,7 @@ const CompanyUserSignupScreen = () => {
       const resizedImage = await ImageResizer.createResizedImage(
         croppedImage.path,
         800,
-        600,
+        800,
         'JPEG',
         80
       );
@@ -854,13 +825,17 @@ const CompanyUserSignupScreen = () => {
         includeBase64: false,
       });
 
-      console.log(`Cropped image size: ${(croppedImage.size / 1024 / 1024).toFixed(2)} MB`);
+      const maxWidth = 1080;   // max Instagram feed width
+      const maxHeight = 1350;  // max portrait height
+      const ratio = Math.min(maxWidth / file.width, maxHeight / file.height, 1);
 
+      const resizedWidth = Math.round(file.width * ratio);
+      const resizedHeight = Math.round(file.height * ratio);
       // 3️⃣ Optionally resize further using ImageResizer
       const resizedImage = await ImageResizer.createResizedImage(
         croppedImage.path,
-        800, // maxWidth
-        600, // maxHeight
+        resizedWidth, // maxWidth
+        resizedHeight, // maxHeight
         'JPEG',
         80   // quality %
       );
@@ -1030,7 +1005,7 @@ const CompanyUserSignupScreen = () => {
     }
   };
   const handleRemoveMedia = () => {
-    setFile(null);
+    setPdf(null);
     setFileType('');
 
   };
@@ -1044,23 +1019,24 @@ const CompanyUserSignupScreen = () => {
 
       if (!pickedFiles || pickedFiles.length === 0) return;
 
-      const file = pickedFiles[0];
-      const fileSize = file.size;
+      const pdf = pickedFiles[0];
+      const fileSize = pdf.size;
       const MAX_SIZE = 5 * 1024 * 1024; // 5MB
-      const mimeType = file.mime || file.type || 'application/octet-stream';
+      const mimeType = pdf.mime || pdf.type || 'application/octet-stream';
 
       if (mimeType === 'application/pdf') {
         if (fileSize <= MAX_SIZE) {
-          setFile(file);
+          setPdf(pdf);
+          setHasChanges(true);
           setFileType(mimeType);
         } else {
           showToast("File size must be less than 5MB.", "error");
-          setFile(null);
+          setPdf(null);
           setFileType(null);
         }
       } else {
         showToast("Please upload a PDF file.", "error");
-        setFile(null);
+        setPdf(null);
         setFileType(null);
       }
     } catch (err) {
@@ -1130,7 +1106,7 @@ const CompanyUserSignupScreen = () => {
     console.log('🟡 handleUploadFile started');
     setLoading(true);
 
-    if (!file) {
+    if (!pdf) {
 
       setLoading(false);
       return null;
@@ -1138,9 +1114,9 @@ const CompanyUserSignupScreen = () => {
 
     try {
       // Get the actual file size
-      const fileStat = await RNFS.stat(file.uri);
+      const fileStat = await RNFS.stat(pdf.uri);
       const fileSize = fileStat.size;
-      console.log('📏 File size:', fileSize, 'bytes', 'File URI:', file.uri);
+      console.log('📏 File size:', fileSize, 'bytes', 'File URI:', pdf.uri);
 
       // Request upload URL from the backend
       console.log('🌐 Requesting upload URL from backend...');
@@ -1160,7 +1136,7 @@ const CompanyUserSignupScreen = () => {
         console.log('🆔 File key:', fileKey);
 
         // Convert the file to a Blob for upload
-        const fileBlob = await uriToBlob(file.uri);
+        const fileBlob = await uriToBlob(pdf.uri);
         console.log('📦 File converted to Blob:', fileBlob);
 
         // Upload the file to S3 using PUT
@@ -1243,20 +1219,10 @@ const CompanyUserSignupScreen = () => {
       return;
     }
 
-    if (isStateChanged && !isCityChanged) {
-      showToast("Select a city", 'info');
+    if (!postData.company_located_city) { // <-- City validation
+      showToast("Please select city", 'info');
       setIsLoading(false);
       return;
-    }
-
-    if (!postData.company_located_state.trim()) {
-      showToast("Select a state", 'info');
-      setIsLoading(false);
-      return;
-    }
-
-    if (!postData.company_located_city.trim() && isStateChanged) {
-      postData.company_located_city = '';
     }
 
     const FILE_SIZE_LIMIT_MB = 5;
@@ -1284,9 +1250,9 @@ const CompanyUserSignupScreen = () => {
 
     try {
       const imageFileKey = imageUri ? await handleUploadImage(imageUri, fileType) : postData.fileKey;
- 
+
       const uploadedFileKey = await handleUploadFile();
- 
+
       setHasChanges(false);
       const payload = {
         command: "updateCompanyProfile",
@@ -1322,6 +1288,7 @@ const CompanyUserSignupScreen = () => {
 
       if (response.data.status === 'success') {
         setIsImageChanged(false);
+        setHasChanges(false);
 
         showToast("Profile updated successfully", 'success');
 
@@ -1342,7 +1309,7 @@ const CompanyUserSignupScreen = () => {
 
     } finally {
       setIsLoading(false);
-      
+
     }
   };
 
@@ -1484,7 +1451,7 @@ const CompanyUserSignupScreen = () => {
 
               case 'formInputs':
                 return (
-                  <TouchableOpacity activeOpacity={1} style={{ paddingHorizontal: 10, paddingBottom: '20%' }}>
+                  <TouchableOpacity activeOpacity={1} style={{ paddingHorizontal: 5, paddingBottom: '20%' }}>
                     {[
                       {
                         placeholder: 'Company name',
@@ -1516,30 +1483,29 @@ const CompanyUserSignupScreen = () => {
                         multiline: true,
                       },
                     ].map((input, index) => (
-                      <View key={index}>
+
+
+                      <View key={index} style={styles.inputContainer}>
                         <Text style={styles.label}>
                           {input.placeholder} {input.required && <Text style={{ color: 'red' }}>*</Text>}
                         </Text>
-                        <View style={styles.inputContainer}>
-                          <TouchableOpacity style={styles.inputbox} onPress={() => focusInput(index)} >
-                            <TextInput
-                              ref={(el) => (inputRefs.current[index] = el)}
-                              style={[styles.inputText, input.multiline]}
-                              value={input.value}
-                              onChangeText={input.onChange}
-                              keyboardType={input.keyboardType || 'default'}
-                              multiline={input.multiline}
-                              placeholderTextColor="gray"
-                            />
-
-                          </TouchableOpacity>
-                        </View>
+                        <TextInput
+                          ref={(el) => (inputRefs.current[index] = el)}
+                          style={[styles.inputText, input.multiline]}
+                          value={input.value}
+                          onChangeText={input.onChange}
+                          keyboardType={input.keyboardType || 'default'}
+                          multiline={input.multiline}
+                          placeholderTextColor="gray"
+                        />
 
                       </View>
+
+
                     ))}
 
-                    <Text style={[styles.label, { color: "black", fontWeight: 500, fontSize: 15, }]}>Email ID <Text style={{ color: 'red' }}>*</Text></Text>
                     <View style={styles.inputContainer}>
+                      <Text style={[styles.label]}>Email ID <Text style={{ color: 'red' }}>*</Text></Text>
                       <View style={styles.inputWithButton}>
                         <TextInput
                           style={styles.inputemail1}
@@ -1569,51 +1535,48 @@ const CompanyUserSignupScreen = () => {
                       </View>
                     </View>
 
-
-                    <Text style={styles.label}>Profile type</Text>
-
-                    <CustomDropdown
-                      label="Profile Type"
-                      data={Object.keys(ProfileSelect.companyProfiles)}
-                      onSelect={(item) => {
-                        setSelectedProfile(item);
-                        if (item !== selectedProfile) {
-                          setSelectedCategory(""); // reset only when profile changes
-                        }
-                      }}
-                      selectedItem={selectedProfile}   // 👈 this comes from profile initially
-                      setSelectedItem={setSelectedProfile}
-                      placeholder="Select profile type"   // 👈 keep it generic
-                      buttonStyle={styles.dropdownButton}
-                      buttonTextStyle={styles.dropdownButtonText}
-                      placeholderTextColor="gray"
-                    />
-
+                    <View style={styles.inputContainer}>
+                      <Text style={styles.label}>Profile type</Text>
+                      <CustomDropdown1
+                        items={Object.keys({ ...ProfileSelect.companyProfiles }).map(p => ({
+                          label: p,
+                          key: p,
+                        }))}
+                        onSelect={handleProfileSelect}
+                        placeholder={selectedProfile || "Select Profile Type"}
+                        buttonStyle={styles.dropdownButton}
+                        buttonTextStyle={styles.dropdownButtonText}
+                        placeholderTextColor="gray"
+                      />
+                    </View>
                     {selectedProfile && (
-                      <>
+                      <View style={styles.inputContainer}>
+
                         <Text style={styles.label}>
                           Category <Text style={{ color: 'red' }}>*</Text>
                         </Text>
 
-                        <CustomDropdown
-                          label="Category"
-                          data={ProfileSelect.companyProfiles[selectedProfile] || []}
-                          onSelect={setSelectedCategory}
-                          selectedItem={selectedCategory}   // 👈 initialized from profile
-                          setSelectedItem={setSelectedCategory}
-                          placeholder="Select category"     // 👈 keep generic, won’t override selected
+                        <CustomDropdown1
+                          items={availableCategories.map((cat) => ({
+                            label: cat,
+                            key: cat,
+                          }))}
+                          onSelect={handleCategorySelect}
+                          placeholder={selectedCategory || "Select category"}
                           buttonStyle={styles.dropdownButton}
                           buttonTextStyle={styles.dropdownButtonText}
                           placeholderTextColor="gray"
                           disabled={!selectedProfile}
                         />
-                      </>
+                      </View>
+
                     )}
 
-                    <Text style={[styles.label, { color: "black", fontWeight: 500, fontSize: 15, }]}>Business phone no. <Text style={{ color: 'red' }}>*</Text></Text>
-
                     <View style={styles.inputContainer}>
-                      <TouchableOpacity style={styles.inputWrapper} onPress={() => setModalVisiblePhone(true)}>
+
+                      <Text style={[styles.label]}>Business phone no. <Text style={{ color: 'red' }}>*</Text></Text>
+
+                      <TouchableOpacity onPress={() => setModalVisiblePhone(true)} activeOpacity={1}>
                         <TextInput
                           onPress={() => setModalVisiblePhone(true)}
                           style={[styles.inputText]}
@@ -1625,26 +1588,30 @@ const CompanyUserSignupScreen = () => {
                       </TouchableOpacity>
                     </View>
 
-                    <Text style={[styles.label, { color: "black", fontWeight: 500, fontSize: 15, }]}>State <Text style={{ color: 'red' }}>*</Text></Text>
-                    <View style={styles.inputContainer}>
+
+                    <View style={[styles.inputContainer, {}]}>
+                      <Text style={[styles.label]}>State <Text style={{ color: 'red' }}>*</Text></Text>
                       <CustomDropdown1
-                        label="State"
-                        data={states}
+                        items={states}
                         onSelect={handleStateSelect}
-                        selectedItem={selectedState}
-                        setSelectedItem={setSelectedState}
+                        placeholder={postData.company_located_state || "Select State"}
+                        buttonStyle={styles.dropdownButton}
+                        buttonTextStyle={styles.dropdownButtonText}
+                        placeholderTextColor="gray"
+
                       />
                     </View>
+                    <View style={[styles.inputContainer, {}]}>
+                      <Text style={[styles.label]}>City <Text style={{ color: 'red' }}>*</Text></Text>
 
-                    <Text style={[styles.label, { color: "black", fontWeight: 500, fontSize: 15, }]}>City <Text style={{ color: 'red' }}>*</Text></Text>
-                    <View style={styles.inputContainer}>
                       <CustomDropdown1
-                        label="City"
-                        data={cities}
+                        items={cities}
                         onSelect={handleCitySelect}
-                        selectedItem={selectedCity}
-                        setSelectedItem={setSelectedCity}
-                        disabled={!selectedState}
+                        placeholder={postData.company_located_city || "Select City"}
+                        buttonStyle={styles.dropdownButton}
+                        buttonTextStyle={styles.dropdownButtonText}
+                        placeholderTextColor="gray"
+                        disabled={!postData.state}
                       />
                     </View>
 
@@ -1671,11 +1638,11 @@ const CompanyUserSignupScreen = () => {
                         </TouchableOpacity>
                       )}
 
-                      {!file?.mime?.startsWith('image') && (
+                      {!pdf?.mime?.startsWith('image') && (
                         <MediaPreview
-                          uri={file?.uri}
-                          mime={file?.mime || 'application/octet-stream'}
-                          name={file?.name}
+                          uri={pdf?.uri}
+                          mime={pdf?.mime || 'application/octet-stream'}
+                          name={pdf?.name}
                           onRemove={handleRemoveMedia}
                         />
                       )}
@@ -1690,7 +1657,7 @@ const CompanyUserSignupScreen = () => {
                       onPress={handlePostSubmission}
                     >
                       {isLoading ? (
-                        <ActivityIndicator size='small' color={'#075cab'}/>
+                        <ActivityIndicator size='small' color={'#075cab'} />
                       ) : (
                         <Text
                           style={[
@@ -2023,33 +1990,38 @@ const styles = StyleSheet.create({
   },
 
   dropdownButton: {
-    height: 50,
+    height: 40,
     backgroundColor: '#fff',
     borderRadius: 8,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 10,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
     elevation: 2,
-    marginBottom: 10,
     borderWidth: 1,
     borderColor: '#ddd'
   },
   dropdownButtonText: {
-    fontSize: 16,
-    color: '#333',
+    fontSize: 13,
+    fontWeight: '500',
+    color: colors.text_primary,
     flex: 1,
+    padding: 5
   },
   inputText: {
-    color: 'black',
-    minHeight: 50,
-    maxHeight: 200,
-    padding: 10,
-    fontSize: 15
+    height: 40,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    fontSize: 13,
+    fontWeight: '500',
+    color: colors.text_primary,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    paddingHorizontal: 15,
 
   },
   closeButton: {
@@ -2190,33 +2162,21 @@ const styles = StyleSheet.create({
     padding: 10,
   },
   inputContainer: {
-    backgroundColor: 'white',
-    borderRadius: 8,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
-    elevation: 2,
-    minHeight: 50,
-    maxHeight: 150,
     marginBottom: 10,
+    color: "black",
 
   },
   inputWithButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    height: 50,
+    height: 40,
     backgroundColor: '#fff',
     borderRadius: 8,
-    fontSize: 16,
-    color: '#222',
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     elevation: 2,
     borderWidth: 1,
-    borderColor: '#ddd'
+    borderColor: '#ddd',
+    paddingHorizontal: 12
   },
   modalTitleemail: {
     fontSize: 20,
@@ -2274,7 +2234,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 10,
-    fontSize: 15,
+    fontSize: 13,
+    fontWeight: '500',
+    color: colors.text_primary
 
   },
   buttonemailmain: {
@@ -2305,9 +2267,11 @@ const styles = StyleSheet.create({
 
   },
   label: {
-    marginBottom: 10,
+    color: colors.text_primary,
     fontSize: 15,
     fontWeight: '500',
+    marginVertical: 5,
+    paddingHorizontal: 5,
   },
 
   dropdownItemText: {
@@ -2358,7 +2322,7 @@ const styles = StyleSheet.create({
   },
   inputPhoneNumber: {
     width: '100%',
-    height: 50,
+    height: 40,
     borderRadius: 8,
     // paddingHorizontal: 15,
     fontSize: 16,

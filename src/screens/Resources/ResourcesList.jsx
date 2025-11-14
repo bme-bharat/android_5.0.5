@@ -49,7 +49,6 @@ const ResourcesList = ({ navigation, route }) => {
 
     const dispatch = useDispatch();
     const profile = useSelector(state => state.CompanyProfile.profile);
-
     const { isConnected } = useConnection();
     const videoRefs = useRef({});
     const [localPosts, setLocalPosts] = useState([]);
@@ -80,50 +79,57 @@ const ResourcesList = ({ navigation, route }) => {
 
     useEffect(() => {
         const listener = EventRegister.addEventListener('onResourcePostCreated', async ({ newPost }) => {
-
+        console.log('newPost',newPost)
             try {
+                // Author name from profile
                 const name = profile?.company_name
                     ? profile.company_name
                     : `${profile?.first_name || ''} ${profile?.last_name || ''}`;
-                const fileKey = newPost?.fileKey;
+    
                 const resourceId = newPost?.resource_id;
-                const authorFileKey = newPost?.author_fileKey;
-
+                const fileKey = newPost?.fileKey;
+                const authorFileKey = newPost?.author_fileKey || profile?.fileKey;
+    
+                // Get signed URLs
                 const fileKeySignedUrl = await getSignedUrl(resourceId, fileKey);
-
+    
                 let authorSignedUrl;
                 if (authorFileKey) {
                     authorSignedUrl = await getSignedUrl(resourceId, authorFileKey);
                 } else {
                     authorSignedUrl = generateAvatarFromName(name);
                 }
-
+    
+                // Construct new post with all required fields
                 const postWithMedia = {
                     ...newPost,
+                    author: name,
+                    author_category: profile?.category || '',
+                    author_fileKey: authorFileKey || null,
+                    user_type: profile?.user_type,
                     fileKeySignedUrl,
                     authorSignedUrl,
                 };
-
+    
+                // Update state, prevent duplicates
                 setLocalPosts((prevPosts) => {
                     const alreadyExists = prevPosts.some(p => p.resource_id === postWithMedia.resource_id);
                     if (alreadyExists) {
-
                         return prevPosts;
                     }
-
                     return [postWithMedia, ...prevPosts];
                 });
-
+    
             } catch (error) {
                 console.error('[onResourcePostCreated] Failed to fetch media for post:', error);
             }
         });
-
+    
         return () => {
             EventRegister.removeEventListener(listener);
-
         };
-    }, []);
+    }, [profile]);
+    
 
 
     const withTimeout = (promise, timeout = 10000) => {
@@ -264,52 +270,45 @@ const ResourcesList = ({ navigation, route }) => {
         return { ...post, ...mediaData };
     };
 
-
-
-
-
-
-
+    const videoExtensions = ['.mp4', '.mov', '.avi', '.mkv', '.flv', '.wmv', '.webm'];
+  
     const onViewableItemsChanged = useRef(({ viewableItems }) => {
-        if (!isFocused || viewableItems.length === 0) {
-            return;
+        if (!viewableItems?.length) {
+          setActiveVideo?.(null);
+          return;
         }
-
-        // Get all visible videos sorted by index
-        const visibleVideos = viewableItems
-            .filter((item) => item.item.videoUrl && item.item.resource_id)
-            .sort((a, b) => a.index - b.index);
-
-        if (visibleVideos.length > 0) {
-            const firstVisibleVideo = visibleVideos[0]; // Get the first visible video
-            const currentPlaying = viewableItems.find((item) => item.item.resource_id === activeVideo);
-
-            // **If the currently playing video is scrolled away, pause it**
-            if (activeVideo && !viewableItems.some((item) => item.item.resource_id === activeVideo)) {
-                setActiveVideo(null);
+    
+        if (isFocused ) {
+          const visibleItem = viewableItems.find(item => item.isViewable);
+          if (visibleItem) {
+            const { resource_id, fileKey } = visibleItem.item || {};
+            const isVideo = fileKey && videoExtensions.some(ext => fileKey.toLowerCase().endsWith(ext));
+    
+            if (resource_id && isVideo) {
+              setActiveVideo?.(resource_id);
+            } else {
+              setActiveVideo?.(null);
             }
-
-            // **Start the new video if needed**
-            if (!activeVideo || firstVisibleVideo.item.resource_id !== activeVideo) {
-                setActiveVideo(firstVisibleVideo.item.resource_id);
-            }
-        } else {
-            // **No videos in view, stop playback**
-            setActiveVideo(null);
+    
+          } else {
+            setActiveVideo?.(null);
+          }
         }
-    }).current;
+    
+      }).current;
 
 
-
-
-    useEffect(() => {
+      useEffect(() => {
         if (!isFocused) {
-            setActiveVideo(null);
+          // Pause all videos when screen loses focus
+          Object.values(videoRefs.current).forEach(ref => {
+            if (ref && typeof ref.pause === 'function') {
+              ref.pause(); // For players with a pause() method
+            }
+          });
         }
-    }, [isFocused]);
-
-
-
+      }, [isFocused]);
+      
 
     const toggleFullText = (forumId) => {
         setExpandedTexts((prev) => ({
@@ -317,7 +316,6 @@ const ResourcesList = ({ navigation, route }) => {
             [forumId]: !prev[forumId],
         }));
     };
-
 
 
     const handleNavigate = (item) => {
@@ -383,10 +381,8 @@ const ResourcesList = ({ navigation, route }) => {
 
     const MediaPreview = ({
         item,
-        handleOpenResume,
         openMediaViewer,
-        activeVideo,
-        videoRefs,
+        
         maxAllowedHeight
     }) => {
         const { Icon, color } = getFileIconData(item?.extraData?.name);
@@ -433,18 +429,18 @@ const ResourcesList = ({ navigation, route }) => {
                                 height: '100%',
                             }}
                             controls
-                            paused={activeVideo !== item.resource_id}
+                            paused={!isFocused || activeVideo !== item.resource_id }
                             repeat
 
                         />
                     </TouchableOpacity>
                 ) : (
-                    <View style={styles.documentContainer}>
+                    <TouchableOpacity style={styles.documentContainer} onPress={() => handleOpenResume(item.fileKey)}>
                         <Icon width={dimensions.icon.xl} height={dimensions.icon.xl} color={color} />
-                        <Text style={[styles.docText, { color: color }]} onPress={() => handleOpenResume(item.fileKey)}>
+                        <Text style={[styles.docText, { color: color }]} >
                             {item?.extraData?.name?.split(".")?.pop()?.toUpperCase() || "DOC"}
                         </Text>
-                    </View>
+                    </TouchableOpacity>
                 )}
             </View>
         );
@@ -512,7 +508,7 @@ const ResourcesList = ({ navigation, route }) => {
                     <View style={styles.textContainer}>
                         <View style={styles.title3}>
                             <TouchableOpacity onPress={() => handleNavigate(item)}>
-                                <Text style={{ flex: 1, alignSelf: 'flex-start', color: 'black', fontSize: 15, fontWeight: '500' }}>
+                                <Text style={{ flex: 1, alignSelf: 'flex-start', color: colors.text_primary, fontSize: 16, fontWeight: '600' }}>
                                     {(item.author || '').trim()}
                                 </Text>
                             </TouchableOpacity>
@@ -524,7 +520,7 @@ const ResourcesList = ({ navigation, route }) => {
                     </View>
                 </View>
 
-                <View style={{ paddingHorizontal: 15, marginVertical: 5 }}>
+                <View style={{ paddingHorizontal: 10, marginVertical: 5 }}>
                     <Text style={styles.title1}>{highlightMatch(item?.title || '', searchQuery)}</Text>
 
                     <ForumBody
@@ -536,10 +532,8 @@ const ResourcesList = ({ navigation, route }) => {
                 </View>
                 <MediaPreview
                     item={item}
-                    handleOpenResume={handleOpenResume}
                     openMediaViewer={openMediaViewer}
-                    activeVideo={activeVideo}
-                    videoRefs={videoRefs}
+                    
                     maxAllowedHeight={maxAllowedHeight}
                 />
 
@@ -697,7 +691,7 @@ const ResourcesList = ({ navigation, route }) => {
 
     return (
         <Profiler id="ForumListCompanylatest" onRender={onRender}>
-            <View style={{ flex: 1, backgroundColor: 'whitesmoke' }}>
+            <View style={{ flex: 1, backgroundColor: colors.app_background }}>
                 <View style={styles.searchContainer}>
                     <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
                         <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
@@ -754,59 +748,69 @@ const ResourcesList = ({ navigation, route }) => {
 
                     }}
                 >
-                    {!loading ? (
-                        <FlatList
-                            ref={listRef}
-                            data={!searchTriggered || searchQuery.trim() === '' ? localPosts : searchResults}
-                            renderItem={renderItem}
-                            showsVerticalScrollIndicator={false}
-                            keyboardShouldPersistTaps="handled"
-                            onScrollBeginDrag={() => {
-                                Keyboard.dismiss();
-                                searchInputRef.current?.blur?.();
-                            }}
-                            keyExtractor={(item, index) => `${item.resource_id}-${index}`}
-                            onViewableItemsChanged={onViewableItemsChanged}
-                            viewabilityConfig={{ itemVisiblePercentThreshold: 50 }}
-                            ListEmptyComponent={
-                                (searchTriggered && searchResults.length === 0) ? (
-                                    <View style={{ alignItems: 'center', marginTop: 40 }}>
-                                        <Text style={{ fontSize: 16, color: '#666' }}>No resources found</Text>
-                                    </View>
-                                ) : null
-                            }
-                            ListHeaderComponent={
-                                <View>
-                                    {searchTriggered && searchResults.length > 0 && (
-                                        <Text style={styles.companyCount}>
-                                            {searchResults.length} results found
-                                        </Text>
-                                    )}
-                                </View>
-                            }
-                            ListFooterComponent={
-                                loadingMore ? (
-                                    <ActivityIndicator size="small" color="#075cab" style={{ marginVertical: 20 }} />
-                                ) : null
-                            }
-                            refreshControl={
-                                <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />
-                            }
-                            onEndReached={() => {
-                                if (hasMorePosts) {
-                                    fetchPosts(lastEvaluatedKey);
+                    <View style={{ flex: 1 }}>
+                        {!loading ? (
+                            <FlatList
+                                ref={listRef}
+                                data={!searchTriggered || searchQuery.trim() === '' ? localPosts : searchResults}
+                                renderItem={renderItem}
+                                showsVerticalScrollIndicator={false}
+                                keyboardShouldPersistTaps="handled"
+                                onScrollBeginDrag={() => {
+                                    Keyboard.dismiss();
+                                    searchInputRef.current?.blur?.();
+                                }}
+                                keyExtractor={(item, index) => `${item.resource_id}-${index}`}
+                                onViewableItemsChanged={onViewableItemsChanged}
+                                viewabilityConfig={{ itemVisiblePercentThreshold: 50 }}
+                                ListEmptyComponent={
+                                    (searchTriggered && searchResults.length === 0) ? (
+                                        <View style={{ alignItems: 'center', marginTop: 40 }}>
+                                            <Text style={{ fontSize: 16, color: '#666' }}>No resources found</Text>
+                                        </View>
+                                    ) : null
                                 }
-                            }}
-                            onEndReachedThreshold={0.5}
-                            contentContainerStyle={{ paddingBottom: '20%', }}
+                                ListHeaderComponent={
+                                    <View>
+                                        {searchTriggered && searchResults.length > 0 && (
+                                            <Text style={styles.companyCount}>
+                                                {searchResults.length} results found
+                                            </Text>
+                                        )}
+                                    </View>
+                                }
+                                ListFooterComponent={
+                                    loadingMore ? (
+                                        <ActivityIndicator size="small" color="#075cab" style={{ marginVertical: 20 }} />
+                                    ) : null
+                                }
+                                refreshControl={
+                                    <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />
+                                }
+                                onEndReached={() => {
+                                    if (hasMorePosts) {
+                                        fetchPosts(lastEvaluatedKey);
+                                    }
+                                }}
+                                onEndReachedThreshold={0.5}
+                                contentContainerStyle={{ paddingBottom: '5%', }}
 
-                        />
-                    ) : (
-                        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                            <ActivityIndicator color={'#075cab'} size="large" />
-                        </View>
-                    )}
+                            />
+                        ) : (
+                            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                                <ActivityIndicator color={'#075cab'} size="large" />
+                            </View>
+                        )}
+
+                        {loading1 && (
+                            <View style={styles.overlay}>
+                                <ActivityIndicator size="large" color="#fff" />
+            
+                            </View>
+                        )}
+                    </View>
                 </TouchableWithoutFeedback>
+
             </View>
         </Profiler>
     );
@@ -835,8 +839,25 @@ const styles = StyleSheet.create({
         width: 100,
         height: 100,
 
-
     },
+    overlay: {
+        position: "absolute",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: "rgba(0, 0, 0, 0.5)",
+        justifyContent: "center",
+        alignItems: "center",
+        zIndex: 9999,
+      },
+    
+      overlayText: {
+        color: "#fff",
+        marginTop: 10,
+        fontSize: 16,
+      },
+
     documentContainer: {
         justifyContent: 'center',
         alignItems: 'center',
@@ -887,7 +908,7 @@ const styles = StyleSheet.create({
 
     title: {
         fontSize: 13,
-        color: 'black',
+        color: colors.text_secondary,
         fontWeight: '300',
         textAlign: 'justify',
         alignItems: 'center',
@@ -907,11 +928,9 @@ const styles = StyleSheet.create({
 
     },
     date1: {
-        fontSize: 13,
-        color: '#666',
-        // marginBottom: 5,
-        fontWeight: '300',
-
+        fontSize: 11,
+        fontWeight: "300",
+        color: colors.text_secondary,
 
     },
     title1: {
@@ -932,8 +951,8 @@ const styles = StyleSheet.create({
     dpContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        // marginBottom: 10,
-        paddingHorizontal: scale(15),
+        marginBottom: 5,
+        paddingHorizontal: 10,
 
     },
     dpContainer1: {
@@ -1036,7 +1055,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: 'whitesmoke',
+        backgroundColor: 'white',
 
     },
 

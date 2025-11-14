@@ -16,14 +16,27 @@ const VerifyOTPScreen = () => {
   const { selectedCategory, selectedProfile, userType, fullPhoneNumber } = route.params;
 
   const [otp, setOTP] = useState('');
-const otpRef = useRef('');
+  const otpRef = useRef('');
 
   const otpInputs = useRef([]);
   const [resendVisible, setResendVisible] = useState(false);
   const [timer, setTimer] = useState(30);
   const [loading, setLoading] = useState(false);
   const [isResendEnabled, setIsResendEnabled] = useState(false);
+  const otpInputRef = useRef(null); // 👈 reference to OTP input
 
+  useEffect(() => {
+    const keyboardDidHideListener = Keyboard.addListener('keyboardDidHide', () => {
+      // When keyboard hides, blur the input to remove focus
+      if (otpInputRef.current) {
+        otpInputRef.current.blur();
+      }
+    });
+
+    return () => {
+      keyboardDidHideListener.remove();
+    };
+  }, []);
 
   useEffect(() => {
     if (timer > 0) {
@@ -94,7 +107,7 @@ const otpRef = useRef('');
 
 
   const handleVerifyOTP = () => {
-    const enteredOTP = otpRef.current; 
+    const enteredOTP = otpRef.current;
     console.log('Entered OTP:', enteredOTP); // ✅ LOGGING
 
     if (enteredOTP.length !== 6 || !/^\d+$/.test(enteredOTP)) {
@@ -168,83 +181,95 @@ const otpRef = useRef('');
 
   return (
     <View style={styles.container}>
-   <StatusBar
-        barStyle='light-content'
-        backgroundColor="#075cab"
-      />
-      <View style={styles.headerContainer}>
+      <StatusBar barStyle="light-content" backgroundColor={colors.primary} />
 
-        <TouchableOpacity style={styles.backButton} onPress={() => navigation.navigate("ProfileType")}>
-         <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-         
-        </TouchableOpacity>
+      {/* ========== Header ========== */}
 
-      </View>
+      <TouchableOpacity
+        style={styles.backButton}
+        onPress={() => navigation.navigate('ProfileType')}
+      >
+        <ArrowLeftIcon
+          width={dimensions.icon.medium}
+          height={dimensions.icon.medium}
+          color={colors.primary}
+        />
+      </TouchableOpacity>
 
-      <View style={styles.scrollViewContainer} showsVerticalScrollIndicator={false}>
+
+      {/* ========== Main Content ========== */}
+      <View style={styles.content}>
+        <Text style={styles.title}>OTP Verification</Text>
+
         <Text style={styles.infoText}>
-          Enter the OTP sent to: {fullPhoneNumber || phone}
+          Enter OTP sent to <Text style={styles.phoneNumber}>{fullPhoneNumber || phone}</Text>
         </Text>
-        <View style={styles.inputContainer}>
-          <OtpInput
-            numberOfDigits={6}
-            focusColor="#075cab"
-            autoFocus={true}
-            // hideStick={true}
-            placeholder="•"
-            // blurOnFilled={true}
-            disabled={false}
-            type="numeric"
-            secureTextEntry={false}
-            focusStickBlinkingDuration={500}
-            onTextChange={(text) => {
-              setOTP(text);
-              otpRef.current = text; // ✅ latest OTP
-            }}
-            onFilled={(text) => {
-              setOTP(text);
-              otpRef.current = text;
-              handleVerifyOTP();
-            }}
 
-            textInputProps={{
-              accessibilityLabel: "One-Time Password",
-            }}
-            textProps={{
-              accessibilityRole: "text",
-              accessibilityLabel: "OTP digit",
-              allowFontScaling: false,
-            }}
-            theme={{
-              containerStyle: styles.otpContainer,
-              pinCodeContainerStyle: styles.pinCodeContainer,
-              pinCodeTextStyle: styles.pinCodeText,
-              focusStickStyle: styles.focusStick,
-              focusedPinCodeContainerStyle: styles.activePinCodeContainer,
-              placeholderTextStyle: styles.placeholderText,
-              filledPinCodeContainerStyle: styles.filledPinCodeContainer,
-              disabledPinCodeContainerStyle: styles.disabledPinCodeContainer,
-            }}
-          />
-        </View>
-        <View style={styles.actionsRow}>
-          {isResendEnabled ? (
-            <TouchableOpacity onPress={resendHandle} style={styles.resendButton}>
-              <Text style={styles.resendButtonText}>Resend OTP</Text>
-            </TouchableOpacity>
-          ) : (
-            <Text style={styles.timerText}>Resend in {timer}s</Text>
-          )}
+        {/* ========== OTP Input ========== */}
+        <OtpInput
+          ref={otpInputRef}
+          numberOfDigits={6}
+          focusColor={colors.primary}
+          autoFocus
+          placeholder="•"
+          type="numeric"
+          focusStickBlinkingDuration={500}
+          onTextChange={(text) => {
+            setOTP(text);
+            otpRef.current = text;
+          }}
+          onFilled={(text) => {
+            setOTP(text);
+            otpRef.current = text;
+            handleVerifyOTP();
+          }}
+          theme={{
+            containerStyle: styles.otpContainer,
+            pinCodeContainerStyle: styles.pinCodeContainer,
+            pinCodeTextStyle: styles.pinCodeText,
+            focusStickStyle: styles.focusStick,
+            // focusedPinCodeContainerStyle: styles.activePinCodeContainer,
+            // filledPinCodeContainerStyle: styles.filledPinCodeContainer,
+          }}
+        />
 
-          <TouchableOpacity onPress={handleVerifyOTP} style={styles.verifyButton}>
-          <ArrowRight width={dimensions.icon.xl} height={dimensions.icon.xl} color={colors.primary} />
-          
+        {/* ========== Actions Row ========== */}
+        <View style={styles.actionsContainer}>
+          <View style={styles.resendRow}>
+            <Text style={styles.subtitle}>Didn't receive OTP?</Text>
+
+            {isResendEnabled ? (
+              <TouchableOpacity onPress={resendHandle} style={styles.resendButton}>
+                <Text style={styles.resendText}>Resend OTP</Text>
+              </TouchableOpacity>
+            ) : (
+              <Text style={styles.timerText}>Resend in {timer}s</Text>
+            )}
+          </View>
+
+
+          <TouchableOpacity
+            onPress={handleVerifyOTP}
+            activeOpacity={0.8}
+            disabled={otp.length !== 6}
+            style={[
+              styles.verifyButton,
+              otp.length !== 6 && styles.disabledButton, // 🔒 apply dim style when not ready
+            ]}
+          >
+            <Text style={styles.verifyText}>Verify OTP</Text>
+            {/* <ArrowRight
+              width={dimensions.icon.medium}
+              height={dimensions.icon.medium}
+              color= {colors.primary}
+            /> */}
           </TouchableOpacity>
+
         </View>
       </View>
-
     </View>
   );
+
 };
 
 const styles = StyleSheet.create({
@@ -252,102 +277,146 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'whitesmoke',
   },
-  headerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: 'whitesmoke',
-    elevation: 1,  // for Android
-    shadowColor: '#000',  // shadow color for iOS
-    shadowOffset: { width: 0, height: 1 },  // shadow offset for iOS
-    shadowOpacity: 0.1,  // shadow opacity for iOS
-    shadowRadius: 2,  // shadow radius for iOS
 
-  },
   backButton: {
     alignSelf: 'flex-start',
+    backgroundColor: '#fff',
+    borderRadius: 10,
     padding: 10,
+    margin: 10,
+    elevation: 3,
   },
-  scrollViewContainer: {
-    flexGrow: 1,
-    paddingHorizontal: 20,
-    paddingTop: 80,
-    paddingBottom: 40,
-    justifyContent: 'flex-start',
-    
+
+  // ===== Main Content =====
+  content: {
+    flex: 1,
+    paddingVertical: 60,
+
   },
+  title: {
+    fontSize: 22,
+    fontWeight: '600',
+    color: colors.primary,
+    // textAlign: 'center',
+    paddingHorizontal: 15,
+
+  },
+
   infoText: {
     fontSize: 16,
-    textAlign: 'center',
-    marginBottom: 30,
-    color: '#333',
-    fontWeight:'500'
+    // textAlign: 'center',
+    color: '#555',
+    marginBottom: 24,
+    marginTop: 10,
+    paddingHorizontal: 15,
+
   },
-  inputContainer: {
-    marginBottom: 40,
+  resendRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
     alignItems: 'center',
+    marginBottom: 20,
+    gap: 6, // (React Native 0.71+)
   },
+
+  subtitle: {
+    fontSize: 15,
+    color: '#555',
+
+  },
+
+  phoneNumber: {
+    fontWeight: '600',
+    color: colors.text_secondary,
+    fontSize: 16,
+  },
+
+  // ===== OTP Input =====
   otpContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    width: '100%',
+    width: '90%',
+    marginVertical: 40,
+    alignSelf: 'center',
   },
   pinCodeContainer: {
+    width: 45,
+    height: 55,
     borderWidth: 1,
     borderColor: '#ccc',
-    borderRadius: 10,
-    width: 45,
-    height: 50,
+    borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
-    marginHorizontal: 5,
+    backgroundColor: '#fff',
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
   activePinCodeContainer: {
-    borderColor: '#075cab',
+    borderColor: colors.primary,
   },
   filledPinCodeContainer: {
-    backgroundColor: '#eaf4ff',
-    borderColor: '#075cab',
-  },
-  disabledPinCodeContainer: {
-    backgroundColor: '#f2f2f2',
+    borderColor: colors.primary,
+    backgroundColor: '#eaf3ff',
   },
   pinCodeText: {
     fontSize: 24,
-    color: '#000',
-    fontWeight: '400',
+    color: '#222',
+    fontWeight: '500',
   },
   focusStick: {
     width: 2,
     height: 25,
-    backgroundColor: '#075cab',
+    backgroundColor: colors.primary,
   },
-  placeholderText: {
-    color: '#aaa',
-  },
-  actionsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+
+  // ===== Actions =====
+  actionsContainer: {
+    width: '100%',
     alignItems: 'center',
-    marginTop: 10,
   },
   resendButton: {
-    padding:10
+    paddingHorizontal: 6,
   },
-  resendButtonText: {
-    color: '#075cab',
-    fontSize: 16,
+  resendText: {
+    fontSize: 15,
+    color: colors.primary,
     fontWeight: '500',
+    textDecorationLine: 'underline'
+
   },
   timerText: {
-    color: '#999',
-    fontSize: 13,
-    padding:10
+    color: colors.text_secondary,
+    fontSize: 14,
+    marginLeft: 6,
 
   },
   verifyButton: {
-    alignSelf: 'flex-end',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.primary,
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 15,
+    width: '90%',
+    // borderWidth:1,
+    // borderColor: colors.primary
+  },
+  disabledButton: {
+    opacity: 0.6,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  verifyText: {
+    color: colors.text_white,
+    fontSize: 16,
+    fontWeight: '600',
+
   },
 });
+
 
 export default VerifyOTPScreen;

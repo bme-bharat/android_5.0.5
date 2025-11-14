@@ -293,7 +293,7 @@ const CompanyJobPostScreen = () => {
         keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 60}
       >
         <KeyboardAwareScrollView
-          contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 10, paddingBottom: '30%', }}
+          contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 5, paddingBottom: '30%', }}
           keyboardShouldPersistTaps="handled"
           extraScrollHeight={20}
           onScrollBeginDrag={() => Keyboard.dismiss()}
@@ -306,7 +306,7 @@ const CompanyJobPostScreen = () => {
             <View style={styles.inputContainer}>
 
               <TextInput
-                style={[styles.input, { minHeight: 50, maxHeight: 150 }]}
+                style={[styles.input]}
                 onChangeText={text => { handleChange('job_title', text); }}
 
                 value={jobFormData.job_title || ""}
@@ -353,7 +353,7 @@ const CompanyJobPostScreen = () => {
             <View style={styles.inputContainer}>
               <Text style={styles.title}>Required qualification <Text style={{ color: 'red' }}>*</Text></Text>
               <TextInput
-                style={[styles.input, { minHeight: 50, maxHeight: 150 }]}
+                style={[styles.input,]}
                 onChangeText={text => handleChange('required_qualifications', text)}
                 placeholderTextColor="gray"
                 multiline
@@ -378,7 +378,7 @@ const CompanyJobPostScreen = () => {
             <View style={styles.inputContainer}>
               <Text style={styles.title}>Required specializations <Text style={{ color: 'red' }}>*</Text></Text>
               <TextInput
-                style={[styles.input, { minHeight: 50, maxHeight: 150 }]}
+                style={[styles.input]}
                 multiline
                 onChangeText={text => handleChange('speicializations_required', text)}
                 placeholderTextColor="gray"
@@ -395,7 +395,6 @@ const CompanyJobPostScreen = () => {
                 onSelect={handleCitySelect}
                 buttonStyle={styles.dropdownButton}
                 buttonTextStyle={styles.dropdownButtonText}
-                placeholderTextColor="gray"
                 placeholder="Select cities"
                 multiSelect
               />
@@ -414,14 +413,14 @@ const CompanyJobPostScreen = () => {
                 onSelect={Package}
                 buttonStyle={styles.dropdownButton}
                 buttonTextStyle={styles.dropdownButtonText}
-                placeholderTextColor="gray"
+              
               />
             </View>
 
             <View style={styles.inputContainer}>
               <Text style={styles.title}>Job description <Text style={{ color: 'red' }}>*</Text></Text>
               <TextInput
-                style={[styles.input, { minHeight: 50, maxHeight: 150 }]}
+                style={[styles.input,]}
                 multiline
                 onChangeText={text => handleChange('job_description', text)}
                 placeholderTextColor="gray"
@@ -432,7 +431,7 @@ const CompanyJobPostScreen = () => {
             <View style={styles.inputContainer}>
               <Text style={styles.title}>Required languages</Text>
               <TextInput
-                style={[styles.input, { minHeight: 50, maxHeight: 150 }]}
+                style={[styles.input, ]}
                 onChangeText={text => handleChange('preferred_languages', text)}
                 placeholderTextColor="gray"
                 multiline
@@ -488,7 +487,7 @@ const styles = StyleSheet.create({
 
   },
   inputContainer: {
-    marginBottom: 15,
+    marginBottom: 10,
   },
   header: {
     fontSize: 18,
@@ -512,8 +511,8 @@ const styles = StyleSheet.create({
     marginVertical: 20,
   },
   title: {
-    marginBottom: 10,
-    color: 'black',
+    marginBottom: 5,
+    color: colors.text_primary,
     fontSize: 15,
     fontWeight: '500',
   },
@@ -531,7 +530,7 @@ const styles = StyleSheet.create({
   },
 
   dropdownButton: {
-    height: 50,
+    height: 40,
     borderColor: '#ddd',
     borderWidth: 1,
     backgroundColor: '#fff',
@@ -540,31 +539,27 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 15,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
     elevation: 2,
   },
   dropdownButtonText: {
-    fontSize: 16,
-    color: '#333',
+    fontSize: 14,
+    fontWeight: '500',
+    color:colors.text_secondary,
     flex: 1,
+    padding:5,
   },
   input: {
+    minHeight:40,
+    maxHeight:150,
     borderWidth: 1,
     borderColor: '#ddd',
     backgroundColor: '#fff',
     paddingHorizontal: 15,
     paddingTop: 10, // Moves text down
     borderRadius: 8,
-    fontSize: 15,
-    color: '#222',
-    textAlignVertical: 'top', // Ensures text starts from the top
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
+    fontSize: 14,
+    fontWeight: '500',
+    color:colors.text_secondary,
     elevation: 2,
   },
 

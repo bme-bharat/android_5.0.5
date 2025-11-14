@@ -34,6 +34,10 @@ async function uriToBlob(uri) {
   return blob;
 }
 
+const calculateAspectRatio = (width, height) => {
+  if (!width || !height || height <= 0) return 1;
+  return width / height;
+};
 
 const ForumPostScreen = () => {
 
@@ -63,6 +67,7 @@ const ForumPostScreen = () => {
   useEffect(() => {
     setThumbnailUri(mediaMeta?.previewThumbnail)
   }, [mediaMeta])
+  
   useEffect(() => {
 
     const bodyChanged = postData.body.trim() !== '';
@@ -194,12 +199,10 @@ const ForumPostScreen = () => {
         showToast("Image size shouldn't exceed 5MB", 'error');
         return;
       }
-
+      const aspectRatio = calculateAspectRatio(file.width, file.height);
       // 3️⃣ Save file and metadata like your old pattern
       const meta = {
-        width: compressedImage.width,
-        height: compressedImage.height,
-        size: compressedImage.size,
+        aspectRatio,
         name: file.name,
         type: file.type || 'image/jpeg',
       };
@@ -388,7 +391,7 @@ const ForumPostScreen = () => {
 
 
       <KeyboardAwareScrollView
-        contentContainerStyle={{ flexGrow: 1, paddingBottom: '20%' }}
+        contentContainerStyle={{ flexGrow: 1,paddingHorizontal:10, paddingBottom: '40%' }}
         keyboardShouldPersistTaps="handled"
         extraScrollHeight={20}
         onScrollBeginDrag={() => Keyboard.dismiss()}
@@ -440,10 +443,9 @@ const ForumPostScreen = () => {
 
         <RichEditor
           ref={richText}
-          useContainer={false}
+          useContainer={true}
           style={{
             minHeight: 250,
-            maxHeight: 400,
             borderRadius: 8,
             borderWidth: 1,
             borderColor: '#ccc',
@@ -536,7 +538,7 @@ const ForumPostScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    marginHorizontal: 10,
+    
   },
 
   buttonText: {
@@ -588,14 +590,16 @@ const styles = StyleSheet.create({
     color: '#666',
   },
 
+  backButton: {
+    alignSelf: 'flex-start',
+    padding: 10
+  },
 
   headerContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingTop: 10,
-    paddingBottom: 5,
+    paddingRight: 10,
     borderBottomWidth: 1,
     borderBottomColor: '#ccc',
 

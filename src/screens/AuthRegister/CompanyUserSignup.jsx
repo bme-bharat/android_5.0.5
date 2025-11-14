@@ -761,8 +761,6 @@ const CompanyUserSignupScreen = () => {
 
       };
 
-      await AsyncStorage.setItem('CompanyUserData', JSON.stringify(payload));
-
       const response = await apiClient.post('/companySignUp', payload);
 
       if (response.data.status === 'success') {
@@ -780,7 +778,13 @@ const CompanyUserSignupScreen = () => {
           if (companyDetails) {
             await AsyncStorage.setItem('CompanyUserData', JSON.stringify(companyDetails));
 
-            await createUserSession(companyId);
+            const sessionCreated = await createUserSession(companyId);
+
+            if (!sessionCreated) {
+              showToast("Failed to create session. Please try again.", "error");
+              setLoading(false);
+              return;  // ⛔ STOP LOGIN HERE
+            }
 
             navigation.replace('CreateProduct', {
               showSkip: true,
@@ -851,13 +855,15 @@ const CompanyUserSignupScreen = () => {
         const sessionId = response.data.data.session_id;
         await AsyncStorage.setItem('userSession', JSON.stringify({ sessionId }));
         console.log('✅ [User Session Created Successfully]:', response.data);
+        return true;
       } else {
         showToast("Something went wrong", 'error');
-
+        return false;
       }
     } catch (error) {
 
       showToast("Session creation failed", 'error');
+      return false;
     }
   };
 
@@ -872,7 +878,7 @@ const CompanyUserSignupScreen = () => {
     <View style={{ backgroundColor: COLORS.white, flex: 1 }}>
 
       <TouchableOpacity onPress={() => navigation.replace("ProfileType")} style={styles.backButton}>
-        <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.gray} />
+        <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
 
       </TouchableOpacity>
 
@@ -1089,7 +1095,7 @@ const CompanyUserSignupScreen = () => {
             style={[
               styles.inputText,
               {
-                minHeight: 50,
+                minHeight: 40,
                 maxHeight: 200,
                 textAlignVertical: 'top',
                 flex: 1
@@ -1322,11 +1328,13 @@ const styles = StyleSheet.create({
   inputText: {
     flex: 1,
     paddingHorizontal: 10,
-    fontSize: 16,
+    fontSize: 13,
+    fontWeight: '500',
+    color:colors.text_primary,
+    flex: 1,
+    padding: 5,
     textAlignVertical: 'top',
-    color: 'black',
-    textAlign: 'justify',
-    minHeight: 50,
+    minHeight: 40,
     maxHeight: 200,
   },
   button: {
@@ -1353,7 +1361,7 @@ const styles = StyleSheet.create({
     borderBottomColor: 'green',
   },
   heading: {
-    color: "black",
+    color: colors.text_primary,
     fontSize: 15,
     fontWeight: "500",
     marginBottom: 10,
@@ -1527,7 +1535,7 @@ const styles = StyleSheet.create({
   },
 
   dropdownButton: {
-    height: 50,
+    height: 40,
     backgroundColor: '#fff',
     borderRadius: 8,
     flexDirection: 'row',
@@ -1544,9 +1552,11 @@ const styles = StyleSheet.create({
     marginBottom: 10
   },
   dropdownButtonText: {
-    fontSize: 16,
-    color: '#333',
+    fontSize: 13,
+    fontWeight: '500',
+    color:colors.text_primary,
     flex: 1,
+    padding: 5
   },
 
 });

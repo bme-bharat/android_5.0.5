@@ -129,7 +129,7 @@ export const settingStyles = StyleSheet.create({
     flex: 2, // Take the remaining space
     flexShrink: 1,
     color: 'black',
-    fontWeight: '400',
+    fontWeight: '500',
     fontSize: 15,
     textAlign: 'left', // Align text to the left
     alignSelf: 'flex-start',
@@ -141,9 +141,9 @@ export const settingStyles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: 'white',
     borderRadius: 5,
-    paddingHorizontal: 10,
+    paddingHorizontal: 5,
     paddingVertical: 5,
-    marginHorizontal: 10,
+    marginHorizontal: 5,
     shadowColor: '#ffffff',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -169,13 +169,12 @@ export const settingStyles = StyleSheet.create({
   },
 
   subItemsContainer: {
-    paddingHorizontal: 7,
     paddingVertical: 4,
-    marginHorizontal: 10,
+    marginHorizontal: 5,
     backgroundColor: 'white',
-    borderRadius: 5,
-    // borderBottomRightRadius: 5,
-    // borderBottomLeftRadius: 5,
+    // borderRadius: 5,
+    borderBottomRightRadius: 5,
+    borderBottomLeftRadius: 5,
   },
 
   appversion: {

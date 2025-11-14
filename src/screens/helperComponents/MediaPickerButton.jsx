@@ -81,7 +81,7 @@ const styles = StyleSheet.create({
     borderColor: 'gray',
     borderStyle: 'dotted',
     backgroundColor: 'white',
-    borderRadius: 15,
+    borderRadius: 8,
   },
   content: {
     alignItems: 'center',

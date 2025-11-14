@@ -384,11 +384,17 @@ const EditProduct = () => {
                 return;
             }
 
+            const maxWidth = 1080;   // max Instagram feed width
+            const maxHeight = 1350;  // max portrait height
+            const ratio = Math.min(maxWidth / file.width, maxHeight / file.height, 1);
+
+            const resizedWidth = Math.round(file.width * ratio);
+            const resizedHeight = Math.round(file.height * ratio);
             // Resize image
             const resizedImage = await ImageResizer.createResizedImage(
                 file.uri,
-                800,
-                600,
+                resizedWidth,
+                resizedHeight,
                 'JPEG',
                 80
             );
@@ -813,7 +819,7 @@ const EditProduct = () => {
 
             </TouchableOpacity>
             <KeyboardAwareScrollView
-                contentContainerStyle={{ flexGrow: 1, backgroundColor: "#f8f9fa", paddingHorizontal: 10,paddingBottom:'40%' }}
+                contentContainerStyle={{ flexGrow: 1, backgroundColor: "#f8f9fa", paddingHorizontal: 5, paddingBottom: '40%' }}
                 keyboardShouldPersistTaps="handled"
                 extraScrollHeight={20}
                 onScrollBeginDrag={() => Keyboard.dismiss()}
@@ -1220,11 +1226,10 @@ const styles = StyleSheet.create({
         backgroundColor: 'whitesmoke',
     },
     addMediaButton: {
-        padding: 12,
+        paddingHorizontal: 5,
         borderRadius: 10,
         alignItems: "flex-start",
         justifyContent: "flex-start",
-        marginVertical: 8,
         alignSelf: 'flex-start'
 
     },
@@ -1232,10 +1237,11 @@ const styles = StyleSheet.create({
         fontSize: 15,
         color: "#000",
         fontWeight: "500",
-        alignSelf: 'flex-start'
+        alignSelf: 'flex-start',
+        paddingBottom:5
     },
     inputContainer: {
-        marginBottom: 15,
+        marginBottom: 10,
 
     },
     backButton: {
@@ -1254,8 +1260,8 @@ const styles = StyleSheet.create({
     label: {
         fontSize: 15,
         fontWeight: '500',
-        marginBottom: 10,
-        color: '#000',
+        marginBottom: 5,
+        color: colors.text_primary,
     },
 
     title: {
@@ -1267,17 +1273,14 @@ const styles = StyleSheet.create({
         top: 10,
     },
     input: {
-        minHeight: 50,
+        minHeight: 40,
         maxHeight: 150,
         backgroundColor: '#fff',
         paddingHorizontal: 15,
         borderRadius: 8,
-        fontSize: 16,
-        color: '#222',
-        shadowColor: '#000',
-        shadowOpacity: 0.05,
-        shadowOffset: { width: 0, height: 2 },
-        shadowRadius: 4,
+        fontSize: 13,
+        fontWeight: '500',
+        color:colors.text_primary,
         elevation: 2,
         borderWidth: 1,
         borderColor: '#ddd'
@@ -1290,8 +1293,9 @@ const styles = StyleSheet.create({
         color: "#075cab",
     },
     mediaContainer: {
-        flexDirection: "row",
-        flexWrap: "wrap",
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        marginBottom: 10,
     },
     mediaWrapper: {
         position: "relative",
@@ -1373,7 +1377,7 @@ const styles = StyleSheet.create({
     },
 
     dropdownButton: {
-        height: 50,
+        height: 40,
         backgroundColor: '#fff',
         borderRadius: 8,
         flexDirection: 'row',
@@ -1389,7 +1393,7 @@ const styles = StyleSheet.create({
         borderColor: '#ddd'
     },
     textInput: {
-        minHeight: 50,
+        minHeight: 40,
         maxHeight: 150,
         backgroundColor: '#fff',
         paddingHorizontal: 15,
@@ -1405,9 +1409,10 @@ const styles = StyleSheet.create({
     },
 
     dropdownButtonText: {
-        fontSize: 16,
-        color: '#333',
-        flex: 1,
+        fontSize: 13,
+        fontWeight: '500',
+        color:colors.text_primary,
+        padding:5
     },
     dropdownItem: {
         paddingVertical: 10,

@@ -168,7 +168,7 @@ const styles = StyleSheet.create({
     companyName: {
         fontWeight: '600',
         fontSize: 16,
-        color: '#000',
+        color: colors.text_primary,
         textAlign: 'center',
     },
 
@@ -182,9 +182,9 @@ const styles = StyleSheet.create({
     },
 
     actionButtonText: {
-        color: '#075cab',
+        color: colors.primary,
         fontWeight: '600',
-        fontSize: 14,
+        fontSize: 16,
     },
 
     successMessageRow: {
@@ -197,11 +197,10 @@ const styles = StyleSheet.create({
     },
 
     contactModalMessage: {
-        fontSize: 12,
-        color: '#888',
+        fontSize: 13,
+        color: colors.text_secondary,
         textAlign: 'center',
         fontWeight: '500',
-        lineHeight: 16,
     },
 
     contactModalLoading: {

@@ -339,7 +339,7 @@ const UserSignupScreen = () => {
         DeviceInfo.getUserAgent(),
         DeviceInfo.getIpAddress(),
       ]);
-      
+
       const deviceInfo = {
         os: Platform.OS,
         deviceName: deviceName.status === 'fulfilled' ? deviceName.value : 'Unknown',
@@ -348,7 +348,7 @@ const UserSignupScreen = () => {
         userAgent: userAgent.status === 'fulfilled' ? userAgent.value : 'Unknown',
         ipAddress: ipAddress.status === 'fulfilled' ? ipAddress.value : '0.0.0.0',
       };
-      
+
 
       const payload = {
         command: 'createUserSession',
@@ -371,13 +371,15 @@ const UserSignupScreen = () => {
       if (response.data.status === 'success') {
         const sessionId = response.data.data.session_id;
         await AsyncStorage.setItem('userSession', JSON.stringify({ sessionId }));
-
+        return true
       } else {
         showToast("Session creation failed\nSomething went wrong", 'error');
-
+        return false
       }
     } catch (error) {
       showToast("Session creation failed\nSomething went wrong", 'error');
+      return false
+
     }
   };
 
@@ -664,7 +666,13 @@ const UserSignupScreen = () => {
           const parsedUserData = JSON.parse(userData);
           const userId = parsedUserData.user_id;
 
-          await createUserSession(userId);
+          const sessionCreated = await createUserSession(userId);
+
+          if (!sessionCreated) {
+            showToast("Failed to create session. Please try again.", "error");
+            
+            return;  // ⛔ STOP LOGIN HERE
+          }
 
           const sessionData = await AsyncStorage.getItem('userSession');
           if (sessionData) {
@@ -728,7 +736,7 @@ const UserSignupScreen = () => {
 
       {/* Back Button */}
       <TouchableOpacity onPress={() => navigation.replace("ProfileType")} style={styles.backButton}>
-        <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.gray} />
+        <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
 
       </TouchableOpacity>
       <ScrollView contentContainerStyle={{ paddingBottom: '20%', paddingHorizontal: 10, }}
@@ -774,9 +782,9 @@ const UserSignupScreen = () => {
           />
         </View>
 
-        <Text style={styles.heading}>Email ID <Text style={{ color: 'red' }}>*</Text></Text>
+        <Text style={styles.label}>Email ID <Text style={{ color: 'red' }}>*</Text></Text>
 
-        <View style={styles.inputbox1}>
+        <View style={styles.inputbox}>
           <Email width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.gray} />
 
           <TextInput
@@ -833,7 +841,7 @@ const UserSignupScreen = () => {
           <Text style={styles.dateText}>
             {dateOfBirth ? formatDate(dateOfBirth) : 'Select date of birth'}
           </Text>
-          <ArrowDown width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.gray} />
+          <ArrowDown width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
 
 
         </TouchableOpacity>
@@ -1007,8 +1015,9 @@ const styles = StyleSheet.create({
   },
   dateText: {
     color: 'black',
-    fontSize: 15,
-    paddingVertical: 12,
+    fontSize: 14,
+    fontWeight: '500',
+    paddingVertical: 8,
     // paddingHorizontal: 20,
     flex: 1,
 
@@ -1061,11 +1070,11 @@ const styles = StyleSheet.create({
     color: "black",
     fontSize: 15,
     fontWeight: "500",
-    marginBottom: 10,
+    marginBottom: 5,
 
   },
   inputbox: {
-    minHeight: 50,
+    minHeight: 40,
     maxHeight: 150,
     flexDirection: 'row',
     backgroundColor: '#fff',
@@ -1159,7 +1168,7 @@ const styles = StyleSheet.create({
   },
   inputText: {
     paddingHorizontal: 20,
-    height: Platform.OS === 'android' ? 50 : 50,
+    height: Platform.OS === 'android' ? 40 : 50,
     width: '80%',
     color: 'black',
   },
@@ -1212,7 +1221,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   dropdownButton: {
-    height: 50,
+    height: 40,
     backgroundColor: '#fff',
     borderRadius: 8,
     flexDirection: 'row',

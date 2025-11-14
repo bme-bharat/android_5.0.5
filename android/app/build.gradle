@@ -74,7 +74,6 @@ def jscFlavor = 'io.github.react-native-community:jsc-android:2026004.+'
 
 project.ext.react = [
         enableHermes: true,
-        nodeExecutableAndArgs: ["/Users/shwetha/.nvm/versions/node/v20.19.5/bin/node"]
 ]
 
 android {
@@ -87,8 +86,8 @@ android {
         applicationId "com.bmebharat.newapp"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 42
-        versionName "5.0.8"
+        versionCode 43
+        versionName "5.0.9"
     }
     signingConfigs {
 

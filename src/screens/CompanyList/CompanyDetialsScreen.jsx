@@ -353,7 +353,7 @@ const CompanyDetailsScreen = ({ route }) => {
       </View>
 
 
-      <ScrollView showsVerticalScrollIndicator={false} >
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{paddingHorizontal:5}}>
  
           <TouchableOpacity
             onPress={() => {
@@ -445,10 +445,10 @@ const CompanyDetailsScreen = ({ route }) => {
             ) : null}
 
             {profile?.company_description?.trimStart().trimEnd() ? (
-              <View style={[commonStyles.labValContainer, { textAlign: 'justify' }]}>
+              <View style={[commonStyles.labValContainer]}>
                 <Text style={commonStyles.label}>Description</Text>
                 <Text style={commonStyles.colon}>:</Text>
-                <Text style={[commonStyles.value, { textAlign: 'justify' }]}>{profile.company_description.trim()}</Text>
+                <Text style={[commonStyles.value]}>{profile.company_description.trim()}</Text>
               </View>
             ) : null}
 

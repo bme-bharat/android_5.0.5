@@ -239,7 +239,8 @@ const ReactionSheet = forwardRef(({ onClose }, ref) => {
             {
               flexDirection: 'row',
               alignItems: 'center',
-              padding: 8,
+              padding: 6,
+              paddingHorizontal: 10,
               borderRadius: 8,
             },
             animatedStyle,
@@ -275,8 +276,8 @@ const ReactionSheet = forwardRef(({ onClose }, ref) => {
           )}
 
           <View>
-            <Text style={{ fontWeight: '500', fontSize: 15, color: 'black' }}>{item.author}</Text>
-            <Text style={{ fontSize: 12, color: '#555' }}>
+            <Text style={{ fontWeight: '400', fontSize: 14, color: colors.text_primary }}>{item.author}</Text>
+            <Text style={{ fontSize: 12, color: colors.text_secondary }}>
               {(reactionType === 'All' || item.reaction_type !== reactionType)
                 ? `${getEmojiForReaction(item.reaction_type).label}  ${getEmojiForReaction(item.reaction_type).emoji}`
                 : ''}
@@ -297,111 +298,114 @@ const ReactionSheet = forwardRef(({ onClose }, ref) => {
         />
       </TouchableWithoutFeedback>
 
-      <GestureDetector gesture={gesture}>
-        <Animated.View style={[styles.sheet, animatedStyle]}>
+
+      <Animated.View style={[styles.sheet, animatedStyle]}>
+        <GestureDetector gesture={gesture}>
           <View style={styles.header}>
             <View style={styles.handle} />
             <View style={styles.titleRow}>
               <Text style={styles.title}>Reactions</Text>
 
-              <Pressable onPress={closeSheet}>
+              <TouchableOpacity onPress={closeSheet} activeOpacity={1} style={{ padding: 5,paddingHorizontal:10  }}> 
                 <Close width={dimensions.icon.small} height={dimensions.icon.small} color={colors.secondary} />
 
-              </Pressable>
+              </TouchableOpacity>
             </View>
+
           </View>
+        </GestureDetector>
 
-          <View style={styles.divider} />
+        <View style={styles.divider} />
 
-          {availableLabels.length > 0 && (
-            <View style={styles.reactionTabsContainer}>
-              {availableLabels.map((reaction) => (
-                <TouchableOpacity
-                  key={reaction.type}
-                  onPress={() => {
-                    setReactionType(reaction.type);
+        {availableLabels.length > 0 && (
+          <View style={styles.reactionTabsContainer}>
+            {availableLabels.map((reaction) => (
+              <TouchableOpacity
+                key={reaction.type}
+                onPress={() => {
+                  setReactionType(reaction.type);
 
-                    fetchUsers(reaction.type);
-                  }}
+                  fetchUsers(reaction.type);
+                }}
+                style={[
+                  styles.reactionTab,
+                  {
+                    backgroundColor: reactionType === reaction.type ? '#e6effa' : '#f5f5f5',
+                    borderColor: reactionType === reaction.type ? '#075cab' : '#ddd',
+                  },
+                ]}
+              >
+                <Text
                   style={[
-                    styles.reactionTab,
-                    {
-                      backgroundColor: reactionType === reaction.type ? '#e6effa' : '#f5f5f5',
-                      borderColor: reactionType === reaction.type ? '#075cab' : '#ddd',
-                    },
+                    styles.reactionTabText,
+                    { color: reactionType === reaction.type ? '#075cab' : '#555' },
                   ]}
                 >
-                  <Text
-                    style={[
-                      styles.reactionTabText,
-                      { color: reactionType === reaction.type ? '#075cab' : '#555' },
-                    ]}
-                  >
-                    {reaction.emoji} {reaction.label} ({reaction.count})
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          )}
+                  {reaction.emoji} {reaction.label} ({reaction.count})
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
 
 
 
-          <View style={styles.divider1} />
+        <View style={styles.divider1} />
 
-          {getting ? (
-            <View style={{ paddingTop: 50 }}>
-              <ActivityIndicator color="#075cab" size="small" />
+        {getting ? (
+          <View style={{ paddingTop: 50 }}>
+            <ActivityIndicator color="#075cab" size="small" />
 
-            </View>
-          ) : usersByReaction.length === 0 ? (
-            <View style={{ padding: 24, alignItems: 'center' }}>
-              <Text style={{ fontSize: 14, color: '#666' }}>
-                No reactions found for "{reactionType}"
-              </Text>
-            </View>
-          ) : (
-            <FlatList
-              ref={flatListRef}
-              data={usersByReaction}
-              keyExtractor={(item, index) => item.user_id + index}
-              contentContainerStyle={{ paddingHorizontal: 10, paddingBottom: '55%' }}
-              onEndReachedThreshold={0.4}
-              onEndReached={() => {
-                if (!gettingMore && hasMore) {
-                  fetchUsers(reactionType, null, true); // ✅ only use reactionType and loadMore = true
-                }
-              }}
+          </View>
+        ) : usersByReaction.length === 0 ? (
+          <View style={{ padding: 24, alignItems: 'center' }}>
+            <Text style={{ fontSize: 14, color: '#666' }}>
+              No reactions found for "{reactionType}"
+            </Text>
+          </View>
+        ) : (
+          <FlatList
+            ref={flatListRef}
+            data={usersByReaction}
+            keyExtractor={(item, index) => item.user_id + index}
+            contentContainerStyle={{ paddingBottom: '55%' }}
+            onEndReachedThreshold={0.4}
+            onEndReached={() => {
+              if (!gettingMore && hasMore) {
+                fetchUsers(reactionType, null, true); // ✅ only use reactionType and loadMore = true
+              }
+            }}
 
-              ListFooterComponent={() => {
-                if (!gettingMore) return null;
-                return (
-                  <View style={{ padding: 10, alignItems: 'center' }}>
-                    <ActivityIndicator color="#075cab" size="small" />
-                  </View>
-                );
-              }}
+            ListFooterComponent={() => {
+              if (!gettingMore) return null;
+              return (
+                <View style={{ padding: 10, alignItems: 'center' }}>
+                  <ActivityIndicator color="#075cab" size="small" />
+                </View>
+              );
+            }}
 
-              renderItem={({ item, index }) => {
-                const isHighlighted = item.reaction_id === highlightReactId;
+            renderItem={({ item, index }) => {
+              const isHighlighted = item.reaction_id === highlightReactId;
 
-                return (
-                  <ReactionItem
-                    item={item}
-                    isHighlighted={isHighlighted}
-                    highlightedFlash={highlightedFlash}
-                    onPress={() => handleNavigate(item)}
-                    getEmojiForReaction={getEmojiForReaction}
-                    reactionType={reactionType}
-                  />
-                );
-              }}
+              return (
+                <ReactionItem
+                  item={item}
+                  isHighlighted={isHighlighted}
+                  highlightedFlash={highlightedFlash}
+                  onPress={() => handleNavigate(item)}
+                  getEmojiForReaction={getEmojiForReaction}
+                  reactionType={reactionType}
+                />
+              );
+            }}
 
-            />
+          />
 
-          )}
+        )}
 
-        </Animated.View>
-      </GestureDetector>
+      </Animated.View>
+
     </>
   );
 });
@@ -410,13 +414,13 @@ const styles = StyleSheet.create({
   reactionTabsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    paddingHorizontal: 15,
     paddingVertical: 5,
+    paddingHorizontal: 8,
   },
 
   reactionTab: {
     padding: 6,
-    borderRadius: 20,
+    borderRadius: 8,
     marginRight: 6,
     margin: 2,
   },
@@ -451,8 +455,7 @@ const styles = StyleSheet.create({
   },
   header: {
     justifyContent: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 8
+    paddingHorizontal: 10,
   },
 
   divider: {
@@ -464,17 +467,17 @@ const styles = StyleSheet.create({
     borderBottomColor: '#f0f0f0',
     marginBottom: 5
   },
+
   titleRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-
+    
   },
 
   title: {
-    fontSize: 15,
-    fontWeight: '500',
-    color: '#000',
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text_primary,
   },
 });
 

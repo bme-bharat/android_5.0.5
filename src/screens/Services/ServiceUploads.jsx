@@ -115,12 +115,17 @@ const CreateService = () => {
         showToast('Please select an image file', 'error');
         return;
       }
+      const maxWidth = 1080;   // max Instagram feed width
+      const maxHeight = 1350;  // max portrait height
+      const ratio = Math.min(maxWidth / file.width, maxHeight / file.height, 1);
 
+      const resizedWidth = Math.round(file.width * ratio);
+      const resizedHeight = Math.round(file.height * ratio);
       // Resize image
       const resizedImage = await ImageResizer.createResizedImage(
         file.uri,
-        800,
-        600,
+        resizedWidth,
+        resizedHeight,
         'JPEG',
         80
       );
@@ -369,7 +374,7 @@ const CreateService = () => {
     }
 
     setLoading(true);
-    showToast("Uploading media...", 'info');
+    // showToast("Uploading media...", 'info');
 
     try {
       const uploadedImageKeys = await Promise.all(
@@ -429,8 +434,8 @@ const CreateService = () => {
           },
         });
 
-          navigation.goBack();
-       
+        navigation.goBack();
+
       } else {
         throw new Error(response.data.errorMessage || 'Service creation failed');
       }
@@ -460,7 +465,7 @@ const CreateService = () => {
           keyboardShouldPersistTaps="handled"
           extraScrollHeight={20}
           onScrollBeginDrag={() => Keyboard.dismiss()}
-          contentContainerStyle={{ paddingBottom: '20%', top: 15, paddingHorizontal: 10, }} showsVerticalScrollIndicator={false}>
+          contentContainerStyle={{ paddingBottom: '20%', top: 15, paddingHorizontal: 5, }} showsVerticalScrollIndicator={false}>
           <Text style={styles.header}>Add a service</Text>
 
           <View style={styles.inputContainer}>
@@ -489,7 +494,7 @@ const CreateService = () => {
             <Text style={styles.label}>Price:</Text>
             <TextInput
               style={styles.input}
-              multiline
+              multilinedropdownButton
               placeholderTextColor="gray"
               value={productData.price}
               onChangeText={(text) => handleInputChange("price", text)}
@@ -702,22 +707,19 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 15,
     fontWeight: '500',
-    marginBottom: 10,
-    color: '#000',
+    marginBottom: 5,
+    color: colors.text_primary,
   },
 
   input: {
-    minHeight: 50,
+    minHeight: 40,
     maxHeight: 250,
     backgroundColor: '#fff',
     paddingHorizontal: 15,
     borderRadius: 8,
-    fontSize: 16,
-    color: '#222',
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
+    fontSize: 13,
+    fontWeight: '500',
+    color:colors.text_primary,
     elevation: 2,
     borderWidth: 1,
     borderColor: '#ddd'
@@ -738,12 +740,12 @@ const styles = StyleSheet.create({
   },
   addMediaButton: {
     // width: "100%",
-    padding: 12,
+    paddingHorizontal: 5,
     // backgroundColor: "#e0e0e0",
     borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
-    marginVertical: 8,
+    
     // borderWidth: 1,
     // borderColor: "#ccc",
     alignSelf: 'flex-start'
@@ -769,7 +771,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start'
   },
   dropdownButton: {
-    height: 50,
+    height: 40,
     backgroundColor: '#fff',
     borderRadius: 8,
     flexDirection: 'row',
@@ -785,14 +787,15 @@ const styles = StyleSheet.create({
     borderColor: '#ddd'
   },
   dropdownButtonText: {
-    fontSize: 16,
-    color: '#333',
+    fontSize: 13,
+    color: colors.text_primary,
     flex: 1,
+    padding:5
   },
   mediaContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginVertical: 10,
+    marginBottom: 10,
   },
   mediaWrapper: {
     position: 'relative',

@@ -7,7 +7,7 @@ import axios from 'axios';
 import { useNavigation } from '@react-navigation/native';
 import { COLORS, CountryCodes } from '../../assets/Constants';
 import MerticalIcon from 'react-native-vector-icons/MaterialCommunityIcons';
-import logo_png from '../../images/homepage/logo.jpeg';
+import logo_png from '../../images/homepage/bmelogo.jpeg';
 import { Keyboard } from 'react-native';
 import { Image as FastImage } from 'react-native';
 import { showToast } from '../AppUtils/CustomToast';
@@ -31,24 +31,28 @@ const LoginPhoneScreen = () => {
   const [phoneError, setPhoneError] = useState('');
   const [isPhoneLogin, setIsPhoneLogin] = useState(true);
   const [phone, setPhone] = useState('');
+
   const { fcmToken, refreshFcmToken } = useFcmToken();
   const [message, setMessage] = useState('');
-  
+
   useEffect(() => {
     // Subscribe to Phone Hint events
-    const removeListener = addPhoneHintListener((number) => {
-      console.log('Selected number:', number);
+    const removeListener = addPhoneHintListener(async (number) => {
       setPhone(number);
-      if (phone) sendOTPHandle(); 
+  
+      if (number) {
+        await sendOTPHandle(number); // pass number directly or use state after it's set
+      }
     });
-
+  
     // Auto trigger the phone hint picker on mount
     requestPhoneNumber();
-
+  
     // Cleanup listener on unmount
     return () => removeListener();
   }, []);
   
+
 
   const handleCountrySelection = (country) => {
     setCountryCode(country.value);
@@ -56,10 +60,12 @@ const LoginPhoneScreen = () => {
     setCountryVerify(country.value !== '');
     setModalVisible(false);
   };
-  
 
-  const sendOTPHandle = async () => {
-    if (!phone) {
+
+  const sendOTPHandle = async (selectedNumber) => {
+    const currentPhone = selectedNumber || phone; // ✅ use param if provided
+
+    if (!currentPhone) {
       showToast("Please enter a valid phone number or email Id", 'error');
       return;
     }
@@ -70,8 +76,9 @@ const LoginPhoneScreen = () => {
       let loginData, otpData;
 
       if (isPhoneLogin) {
-        const fullPhoneNumber = `${countryCode}${phone}`;
-
+        const fullPhoneNumber = `${countryCode}${currentPhone}`; // ✅ use currentPhone, not phone
+        console.log('[sendOTPHandle] 📱 Phone login flow started with:', fullPhoneNumber);
+      
         loginData = await apiClient.post('/loginUser', {
           command: 'loginUser',
           user_phone_number: fullPhoneNumber,
@@ -148,184 +155,343 @@ const LoginPhoneScreen = () => {
 
 
   return (
-    <View style={styles.container}>
-      <StatusBar
-        barStyle='light-content'
-        backgroundColor="#075cab"
-      />
+    <View style={styles.safeArea}>
+      <StatusBar barStyle="light-content" backgroundColor={colors.primary} />
+
+      <View style={styles.headerContainer}>
+          <FastImage source={logo_png} style={styles.logo} resizeMode="contain" />
+       
+        <Text style={styles.headerTitle}>Welcome Back!</Text>
+        {/* <Text style={styles.headerSubtitle}>Login to continue</Text> */}
+      </View>
+
       <ScrollView
         contentContainerStyle={styles.scrollContainer}
-        showsVerticalScrollIndicator={false}
-        onScrollBeginDrag={() => Keyboard.dismiss()}
+        keyboardShouldPersistTaps="handled"
       >
-        {/* Logo */}
-        <View style={styles.logoContainer}>
-          <FastImage source={logo_png} style={styles.logo} resizeMode="contain" />
-        </View>
+        <View style={styles.formCard}>
+          <Text style={styles.formTitle}>Login</Text>
 
-        {/* Form */}
-        <View style={styles.formContainer}>
-          <Text style={styles.title}>Login</Text>
-
-          {/* Input Container */}
-          <View style={styles.phoneInputContainer}>
+          {/* Input Section */}
+          <View style={styles.inputWrapper}>
             {isPhoneLogin && (
-              <View style={styles.countryCodeContainer}>
-                <TouchableOpacity style={styles.countrySelector} onPress={() => setModalVisible(true)}>
-                  <Text style={styles.countryCodeText}>
-                    {selectedCountry} <ArrowDown width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-                  </Text>
-                </TouchableOpacity>
-              </View>
+              <TouchableOpacity
+                style={styles.countrySelector}
+                onPress={() => setModalVisible(true)}
+              >
+                <Text style={styles.countryCodeText}>{selectedCountry}</Text>
+                <ArrowDown
+                  width={dimensions.icon.small}
+                  height={dimensions.icon.small}
+                  color={colors.primary}
+                />
+              </TouchableOpacity>
             )}
 
-            <View style={styles.phoneInputFlex}>
+            <View style={styles.inputContainer}>
               {isPhoneLogin ? (
-                <Phone width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
+                <Phone
+                  width={dimensions.icon.medium}
+                  height={dimensions.icon.medium}
+                  color={colors.primary}
+                />
               ) : (
-                <Email width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
+                <Email
+                  width={dimensions.icon.medium}
+                  height={dimensions.icon.medium}
+                  color={colors.primary}
+                />
               )}
-
               <TextInput
                 style={styles.input}
-                placeholder={isPhoneLogin ? "Phone number" : "Enter your email"}
+                placeholder={isPhoneLogin ? 'Phone number' : 'Email address'}
+                keyboardType={isPhoneLogin ? 'numeric' : 'email-address'}
+                placeholderTextColor="#9e9e9e"
+                value={phone}
                 onChangeText={(text) => {
                   if (isPhoneLogin) {
-                    const formattedText = text.replace(/\D/g, '').slice(0, 10);
-                    setPhone(formattedText);
-                    if (formattedText.length === 10) Keyboard.dismiss();
+                    const formatted = text.replace(/\D/g, '').slice(0, 10);
+                    setPhone(formatted);
+                    if (formatted.length === 10) Keyboard.dismiss();
                   } else {
                     setPhone(text.trim());
                   }
                 }}
-                keyboardType={isPhoneLogin ? "numeric" : "email-address"}
-                placeholderTextColor="gray"
-                value={phone}
-                textContentType="oneTimeCode"
-                
               />
             </View>
-
-            {/* Country Modal */}
-            <Modal
-              transparent={true}
-              visible={modalVisible}
-              animationType="slide"
-              onRequestClose={() => setModalVisible(false)}
-            >
-              <TouchableWithoutFeedback onPress={() => setModalVisible(false)}>
-                <View style={styles.modalBackground}>
-                  <View style={styles.modalContainer}>
-                    <FlatList
-                      data={CountryCodes}
-                      keyExtractor={(item, index) => `${item.label}-${item.value}-${index}`}
-                      renderItem={({ item }) => (
-                        <TouchableOpacity
-                          style={styles.countryItem}
-                          onPress={() => handleCountrySelection(item)}
-                        >
-                          <Text style={styles.countryItemText}>{item.label} ({item.value})</Text>
-                        </TouchableOpacity>
-                      )}
-                    />
-                  </View>
-                </View>
-              </TouchableWithoutFeedback>
-            </Modal>
           </View>
 
           {/* Error Messages */}
-          {isPhoneLogin ? (
-            phoneError ? <Text style={styles.errorText}>{phoneError}</Text> : null
-          ) : (
-            emailError ? <Text style={styles.errorText}>{emailError}</Text> : null
+          {!!phoneError && isPhoneLogin && (
+            <Text style={styles.errorText}>{phoneError}</Text>
+          )}
+          {!!emailError && !isPhoneLogin && (
+            <Text style={styles.errorText}>{emailError}</Text>
           )}
 
           {/* Switch Login */}
-          <TouchableOpacity onPress={handleLoginMethodSwitch} style={styles.switchLoginButton}>
+          <TouchableOpacity
+            onPress={handleLoginMethodSwitch}
+            style={styles.switchLoginButton}
+          >
             <Text style={styles.switchLoginText}>
-              Login with <Text style={styles.switchLoginHighlight}>{isPhoneLogin ? 'Email' : 'phone number'}</Text> instead
+              Login with{' '}
+              <Text style={styles.switchLoginHighlight}>
+                {isPhoneLogin ? 'Phone number' : 'Email'}
+              </Text>{' '}
+              instead
             </Text>
           </TouchableOpacity>
 
           {/* Send OTP */}
-          <TouchableOpacity onPress={sendOTPHandle} disabled={loading} style={styles.sendOtpButton}>
-            <Text style={[styles.sendOtpText, loading && { opacity: 0.5 }]}>
+          <TouchableOpacity
+            onPress={() => sendOTPHandle()}
+            disabled={loading}
+            style={[styles.sendOtpButton, loading && styles.disabledButton]}
+          >
+            <Text style={styles.sendOtpText}>
               {loading ? 'Sending...' : 'Send OTP'}
             </Text>
           </TouchableOpacity>
 
           {/* Register */}
-          <TouchableOpacity style={styles.registerButton} activeOpacity={1}>
+          <TouchableOpacity style={styles.registerButton} activeOpacity={0.9}>
             <Text style={styles.registerText}>
-              Don't have an account? <Text style={styles.registerLink} onPress={() => navigation.navigate('Register')}>Register</Text>
+              Don’t have an account?{' '}
+              <Text
+                style={styles.registerLink}
+                onPress={() => navigation.navigate('Register')}
+              >
+                Register
+              </Text>
             </Text>
           </TouchableOpacity>
+        </View>
 
-          {/* Policy Links */}
-          <View style={styles.policyContainer}>
-            <TouchableOpacity style={styles.policyButton} onPress={() => navigation.navigate('PrivacyPolicy')}>
-              <Text style={styles.policyText}>Privacy Policy</Text>
-            </TouchableOpacity>
+        {/* Policy Links */}
+        <View style={styles.policyContainer}>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('PrivacyPolicy')}
+          >
+            <Text style={styles.policyText}>Privacy Policy</Text>
+          </TouchableOpacity>
 
-            <View style={styles.divider} />
+          <View style={styles.policyDivider} />
 
-            <TouchableOpacity style={styles.policyButton} onPress={() => navigation.navigate('TermsAndConditions')}>
-              <Text style={styles.policyText}>Terms And Conditions</Text>
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('TermsAndConditions')}
+          >
+            <Text style={styles.policyText}>Terms & Conditions</Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
+
+      {/* Country Picker Modal */}
+      <Modal
+        transparent
+        visible={modalVisible}
+        animationType="slide"
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <TouchableWithoutFeedback onPress={() => setModalVisible(false)}>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <FlatList
+                data={CountryCodes}
+                keyExtractor={(item, index) => `${item.value}-${index}`}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    style={styles.modalItem}
+                    onPress={() => handleCountrySelection(item)}
+                  >
+                    <Text style={styles.modalItemText}>
+                      {item.label} ({item.value})
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              />
+            </View>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
     </View>
   );
+
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.white },
-  scrollContainer: { paddingTop: 50, paddingHorizontal: 20 },
-  logoContainer: { alignItems: 'center', marginBottom: 30 },
-  logo: { width: 200, height: 200 },
-  formContainer: { paddingHorizontal: 10 },
-  title: { color: '#075cab', fontSize: 23, fontWeight: '500', textAlign: 'center', marginBottom: 15 },
-
-  phoneInputContainer: {
+  safeArea: {
+    flex: 1,
+    backgroundColor: colors.primary,
+  },
+  headerContainer: {
+    alignItems: 'center',
+    paddingTop: 40,
+    paddingBottom: 20,
+    backgroundColor: colors.primary,
+  },
+  logo: {
+    width: 120,
+    height: 120,
+    marginBottom: 12,
+    backgroundColor: colors.text_white,
+    borderRadius: 60,
+  },
+  headerTitle: {
+    color: '#fff',
+    fontSize: 22,
+    fontWeight: '700',
+  },
+  headerSubtitle: {
+    color: '#f1f1f1',
+    fontSize: 14,
+    marginTop: 4,
+  },
+  scrollContainer: {
+    flexGrow: 1,
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingHorizontal: 15,
+    paddingVertical: 40,
+    marginTop:10,
+  },
+  formCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 24,
+    paddingVertical:30,
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  formTitle: {
+    fontSize: 24,
+    fontWeight: '600',
+    color: colors.primary,
+    textAlign: 'center',
+    marginBottom: 28,
+  },
+  inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
+    borderColor: '#dcdcdc',
+    borderWidth: 1,
+    borderRadius: 12,
+    backgroundColor: '#fff',
+    overflow: 'hidden',
+    height: 50,
+
+  },
+  countrySelector: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    borderRightColor: '#dcdcdc',
+    borderRightWidth: 1,
+  },
+  countryCodeText: {
+    fontSize: 16,
+    color: colors.primary,
+    marginRight: 4,
+  },
+  inputContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+  },
+  input: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight:'500',
+    paddingVertical: 10,
+    paddingHorizontal:15,
+    color: '#333',
+    
+  },
+  errorText: {
+    color: 'red',
+    fontSize: 13,
+    marginTop: 6,
+  },
+  switchLoginButton: {
+    marginTop: 16,
+  },
+  switchLoginText: {
+    textAlign: 'center',
+    color: '#555',
+  },
+  switchLoginHighlight: {
+    color: colors.primary,
+    fontWeight: '600',
+  },
+  sendOtpButton: {
+    backgroundColor: colors.primary,
+    paddingVertical: 12,
+    borderRadius: 10,
+    marginTop: 24,
+    alignItems: 'center',
+  },
+  disabledButton: {
+    opacity: 0.6,
+  },
+  sendOtpText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  registerButton: {
+    marginTop: 20,
+    alignItems: 'center',
+  },
+  registerText: {
+    color: '#555',
+  },
+  registerLink: {
+    color: colors.primary,
+    fontWeight: '600',
+  },
+  policyContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: 24,
+    alignItems: 'center',
+  },
+  policyText: {
+    fontSize: 13,
+    color: '#777',
+  },
+  policyDivider: {
+    width: 1,
+    height: 14,
+    backgroundColor: '#ccc',
+    marginHorizontal: 10,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'center',
+    paddingHorizontal: 30,
+  },
+  modalContent: {
     backgroundColor: '#fff',
     borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#075cab',
-    height: 50,
-    marginBottom: 10,
+    maxHeight: '70%',
   },
-  countryCodeContainer: { width: '20%', alignItems: 'center', justifyContent: 'center', borderRightWidth: 1, borderRightColor: '#075cab', height: '100%' },
-  countrySelector: { width: '100%', alignItems: 'center', justifyContent: 'center' },
-  countryCodeText: { fontSize: 16, color: 'black', textAlign: 'center' },
-  phoneInputFlex: { flex: 1, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10 },
-  input: { flex: 1, fontSize: 14, fontWeight: '500', color: 'black', paddingHorizontal: 10, height: '100%' },
-
-  errorText: { color: 'red', textAlign: 'center', marginVertical: 8 },
-
-  switchLoginButton: { alignSelf: 'center', marginTop: 15 },
-  switchLoginText: { fontSize: 15, color: 'black' },
-  switchLoginHighlight: { color: '#075cab', fontWeight: '500' },
-
-  sendOtpButton: { alignSelf: 'center', marginTop: 20 },
-  sendOtpText: { fontSize: 20, color: '#075cab', fontWeight: '500', padding: 14, borderRadius: 10, textAlign: 'center' },
-
-  registerButton: { alignSelf: 'center', marginTop: 15 },
-  registerText: { color: 'black', fontSize: 15 },
-  registerLink: { color: '#075cab', fontWeight: '500' },
-
-  policyContainer: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginVertical: 20 },
-  policyButton: { paddingHorizontal: 10 },
-  policyText: { color: '#075cab', fontSize: 16, textAlign: 'center' },
-  divider: { width: 1, height: 20, backgroundColor: '#075cab', marginHorizontal: 10 },
-
-  modalBackground: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.5)' },
-  modalContainer: { width: '70%', backgroundColor: 'white', borderRadius: 10, maxHeight: 300 },
-  countryItem: { padding: 12, borderBottomWidth: 1, borderBottomColor: '#ccc' },
-  countryItemText: { fontSize: 16, color: 'black' },
+  modalItem: {
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  modalItemText: {
+    fontSize: 15,
+    color: '#333',
+  },
 });
+
+
 
 export default LoginPhoneScreen;

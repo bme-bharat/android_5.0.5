@@ -10,7 +10,7 @@ export const colors = {
   gray: '#9E9E9E',
 
   text_primary: '#212121',
-  text_secondary: '#757575',
+  text_secondary: '#5F6368',
   text_accent: '#FF4081',
   text_white: '#FFFFFF',
   app_background: "#e9e6df"
@@ -20,7 +20,7 @@ export const colors = {
 
 export const dimensions = {
   icon: {
-    small: 16,
+    small: 18,
     medium: 20,
     ml: 28,
     large: 32,

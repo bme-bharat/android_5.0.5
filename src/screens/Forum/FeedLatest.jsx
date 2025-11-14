@@ -259,7 +259,7 @@ const LatestPosts = () => {
 
     return (
         <Profiler id="ForumListCompanylatest" onRender={onRender}>
-            <View style={{ flex: 1, backgroundColor: 'whitesmoke', }}>
+            <View style={{ flex: 1, backgroundColor: colors.app_background }}>
                 <Animated.View style={[AppStyles.headerContainer, headerStyle]}>
                     <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
                         <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />

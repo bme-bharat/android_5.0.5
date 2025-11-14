@@ -13,7 +13,7 @@ const CustomDropdown = ({
     selectedItem,
     onSelect,
     buttonStyle,
-    buttonTextStyle,
+    
     itemStyle,
     itemTextStyle,
     placeholder = ""
@@ -33,18 +33,18 @@ const CustomDropdown = ({
     return (
         <View style={styles.dropdownContainer}>
             <TouchableOpacity style={[styles.dropdown, buttonStyle]} onPress={toggleDropdown}>
-                <Text style={[styles.selectedText, buttonTextStyle]} numberOfLines={1}  ellipsizeMode="tail" >{selectedItem || placeholder}</Text>
+                <Text style={[styles.selectedText]} numberOfLines={1}  ellipsizeMode="tail" >{selectedItem || placeholder}</Text>
                 {visible ? (
                     <ArrowUp
-                        width={dimensions.icon.medium}
-                        height={dimensions.icon.medium}
-                        color={colors.gray}
+                        width={dimensions.icon.small}
+                        height={dimensions.icon.small}
+                        color={colors.primary}
                     />
                 ) : (
                     <ArrowDown
-                        width={dimensions.icon.medium}
-                        height={dimensions.icon.medium}
-                        color={colors.gray}
+                        width={dimensions.icon.small}
+                        height={dimensions.icon.small}
+                        color={colors.primary}
                     />
                 )}
             </TouchableOpacity>
@@ -57,6 +57,7 @@ const CustomDropdown = ({
                 <TouchableOpacity style={styles.overlay} onPress={toggleDropdown}>
                     <View style={styles.modalContent}>
                         <FlatList
+                        showsVerticalScrollIndicator={false}    
                             data={data}
                             keyExtractor={(item) => item}
                             renderItem={({ item }) => (
@@ -81,13 +82,16 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        paddingVertical: 10,  // Increased vertical padding to adjust height
+        
         paddingHorizontal: 12,
         borderRadius: 15,
+        
     },
     selectedText: {
-        fontSize: 16,
-        color: "black"
+        fontSize: 14,
+        fontWeight:'500',
+        color: colors.text_primary,
+        padding:5
     },
     overlay: {
         flex: 1,
@@ -97,7 +101,7 @@ const styles = StyleSheet.create({
     modalContent: {
         backgroundColor: 'white',
         margin: 20,
-        padding: 20,
+        paddingHorizontal: 20,
         borderRadius: 10,
         maxHeight: '50%'  // Limit modal content height (optional)
     },

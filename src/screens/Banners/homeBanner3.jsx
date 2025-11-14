@@ -122,8 +122,8 @@ const HomeBanner = ({bannerId}) => {
         }}
         mode="parallax"
         modeConfig={{
-          parallaxScrollingScale: 0.95,
-          parallaxScrollingOffset: 20,
+          parallaxScrollingScale: 0.98,
+          parallaxScrollingOffset: 0,
         }}
         renderItem={({ item, index }) => (
 
@@ -132,7 +132,7 @@ const HomeBanner = ({bannerId}) => {
             onPress={() => onPressBanner(item)}
             style={{
               flex: 1,
-              borderRadius: 16,
+              borderRadius: 8,
               overflow: 'hidden',
               elevation: 3,
               backgroundColor: '#fff',

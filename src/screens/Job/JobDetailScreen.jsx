@@ -332,7 +332,9 @@ const JobDetailScreen = ({ route }) => {
       if (response.data.status === 'success') {
         setIsApplied(false);
         showToast('The application has been successfully revoked', 'success');
-
+        setTimeout(() => {
+          navigation.goBack()
+        },100)
       } else {
         showToast('Something went wrong', 'error');
 
@@ -438,7 +440,7 @@ const JobDetailScreen = ({ route }) => {
 
       <>
         {post ? (
-          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: '30%', paddingTop: 5 }}>
+          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: '30%', paddingTop: 5, paddingHorizontal:5 }}>
 
             <TouchableOpacity
               onPress={() => {
@@ -599,7 +601,7 @@ const JobDetailScreen = ({ route }) => {
 
                 <Text style={[commonStyles.label]}>Required languages</Text>
 
-                <Text style={commonStyles.label}>:</Text>
+                <Text style={commonStyles.colon}>:</Text>
 
                 <View style={{ flexDirection: "column", flex: 2 }}>
                   {post.preferred_languages

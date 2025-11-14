@@ -161,11 +161,17 @@ const CreateProduct = () => {
         return;
       }
 
+      const maxWidth = 1080;   // max Instagram feed width
+      const maxHeight = 1350;  // max portrait height
+      const ratio = Math.min(maxWidth / file.width, maxHeight / file.height, 1);
+
+      const resizedWidth = Math.round(file.width * ratio);
+      const resizedHeight = Math.round(file.height * ratio);
       // Resize image
       const resizedImage = await ImageResizer.createResizedImage(
         file.uri,
-        800,
-        600,
+        resizedWidth,
+        resizedHeight,
         'JPEG',
         80
       );
@@ -616,7 +622,7 @@ const CreateProduct = () => {
       </View>
 
       <ScrollView
-        contentContainerStyle={{ paddingBottom: '40%', paddingHorizontal: 10, backgroundColor: 'whitesmoke' }}
+        contentContainerStyle={{ paddingBottom: '40%', paddingHorizontal: 5, backgroundColor: 'whitesmoke' }}
         keyboardShouldPersistTaps="handled"
       >
         <Text style={styles.title}>Add a product</Text>
@@ -913,7 +919,7 @@ const CreateProduct = () => {
           )}
         </View>
 
-        <View style={styles.inputContainer}>
+        <TouchableOpacity style={styles.inputContainer} activeOpacity={1}>
           <Text style={styles.label}>Tags <Text style={{ color: 'red' }}>*</Text></Text>
           <TextInput
             style={styles.input}
@@ -921,10 +927,9 @@ const CreateProduct = () => {
             value={productData.tags}
             placeholderTextColor='gray'
             onChangeText={(text) => handleInputChange('tags', text)}
-
           />
 
-        </View>
+        </TouchableOpacity>
 
         <TouchableOpacity onPress={openGallery} style={styles.addMediaButton}>
           <Text style={styles.addMediaText}>Upload product image <Text style={{ color: 'red' }}>*</Text></Text>
@@ -1101,28 +1106,25 @@ const styles = StyleSheet.create({
     color: '#222',
   },
   inputContainer: {
-    marginBottom: 15,
+    marginBottom: 10,
 
   },
   label: {
     fontSize: 15,
     fontWeight: '500',
-    marginBottom: 10,
-    color: '#444',
+    marginBottom: 5,
+    color: colors.text_primary,
   },
 
   input: {
-    minHeight: 50,
+    minHeight: 40,
     maxHeight: 150,
     backgroundColor: '#fff',
     paddingHorizontal: 15,
     borderRadius: 8,
-    fontSize: 15,
-    color: '#222',
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
+    fontSize: 13,
+    fontWeight: '500',
+    color:colors.text_primary,
     elevation: 2,
     borderWidth: 1,
     borderColor: '#ddd'
@@ -1147,12 +1149,11 @@ const styles = StyleSheet.create({
 
   addMediaButton: {
     // width: "100%",
-    padding: 12,
+    paddingHorizontal: 5,
     // backgroundColor: "#e0e0e0",
     borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
-    marginVertical: 8,
     // borderWidth: 1,
     // borderColor: "#ccc",
     alignSelf: 'flex-start'
@@ -1178,30 +1179,29 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start'
   },
   dropdownButton: {
-    height: 50,
+    height: 40,
     backgroundColor: '#fff',
     borderRadius: 8,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 15,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowOffset: { width: 0, height: 2 },
     shadowRadius: 4,
     elevation: 2,
     borderWidth: 1,
     borderColor: '#ddd'
   },
   dropdownButtonText: {
-    fontSize: 16,
-    color: '#333',
+    fontSize: 13,
+    fontWeight: '500',
+    color:colors.text_primary,
     flex: 1,
+    padding:5
+    
   },
   mediaContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginVertical: 10,
+    marginBottom: 10,
   },
   mediaWrapper: {
     position: 'relative',

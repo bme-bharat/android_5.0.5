@@ -134,7 +134,7 @@ const HomeBanner = ({bannerId}) => {
               onPress={() => onPressBanner(item)}
               style={{
                 flex: 1,
-                borderRadius: 16,
+                borderRadius: 8,
                 overflow: 'hidden',
                 // elevation: 3,
                 backgroundColor: '#fff',

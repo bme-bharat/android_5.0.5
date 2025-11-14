@@ -141,26 +141,24 @@ const HomeBanner = () => {
     return () => clearTimeout(timerRef.current);
   }, [currentIndex, moveToNext]);
 
-  // 🔹 Cleanup on unmount
-  useEffect(() => {
-    return () => clearTimeout(timerRef.current);
-  }, []);
 
   useFocusEffect(
     useCallback(() => {
-      // 🔹 When screen is focused again, play the current video
-      const ref = videoRefs.current[currentIndex];
-      if (ref && typeof ref.play === 'function') {
-        ref.seekTo?.(0); // optional: restart from beginning
-        ref.play();
+      // When screen focuses, resume current timer
+      if (!timerRef.current) {
+        timerRef.current = setTimeout(() => moveToNext(), 15000);
       }
   
-      // 🔹 Optional: pause all when leaving the screen
+      // When screen blurs, clear the timer
       return () => {
-        videoRefs.current.forEach(v => v?.pause && v.pause());
+        if (timerRef.current) {
+          clearTimeout(timerRef.current);
+          timerRef.current = null;
+        }
       };
-    }, [currentIndex])
+    }, [currentIndex, moveToNext])
   );
+  
   
   return (
     <View style={{ alignItems: 'center' }}>
@@ -190,7 +188,7 @@ const HomeBanner = () => {
               source={item.url}
               paused={currentIndex !== index}
               muted={true}
-              showProgressBar={true}  
+              // showProgressBar={true}  
               resizeMode="cover"
               style={{ width: '100%', height: '100%' }}
               repeat={false}

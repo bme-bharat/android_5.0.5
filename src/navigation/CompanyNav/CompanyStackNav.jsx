@@ -129,6 +129,7 @@ const CompanyStackNav = () => {
       <Stack.Screen name="RelatedServicesDetails" component={RelatedServicesDetails} options={screenOption} />
       <Stack.Screen name="RelatedProductDetails" component={RelatedProductDetails} options={screenOption} />
       <Stack.Screen name="ResourceDetails" component={ResourceDetails} options={screenOption} />
+      <Stack.Screen name="InlineVideo" component={InlineVideo} options={screenOption} />
 
     </Stack.Navigator>
   )
@@ -150,6 +151,7 @@ const CompanyListNav = () => {
       <Stack.Screen name="RelatedServicesDetails" component={RelatedServicesDetails} options={screenOption} />
       <Stack.Screen name="RelatedProductDetails" component={RelatedProductDetails} options={screenOption} />
       <Stack.Screen name="ResourceDetails" component={ResourceDetails} options={screenOption} />
+      <Stack.Screen name="Comment" component={CommentScreen} options={screenOption} />
 
     </Stack.Navigator>
   )
@@ -173,6 +175,7 @@ const CompanyJobNav = () => {
       <Stack.Screen name="RelatedServicesDetails" component={RelatedServicesDetails} options={screenOption} />
       <Stack.Screen name="RelatedProductDetails" component={RelatedProductDetails} options={screenOption} />
       <Stack.Screen name="ResourceDetails" component={ResourceDetails} options={screenOption} />
+      <Stack.Screen name="Comment" component={CommentScreen} options={screenOption} />
 
     </Stack.Navigator>
   )
@@ -207,6 +210,7 @@ const CompanyForumNav = () => (
     <Stack.Screen name="RelatedServicesDetails" component={RelatedServicesDetails} options={screenOption} />
     <Stack.Screen name="RelatedProductDetails" component={RelatedProductDetails} options={screenOption} />
     <Stack.Screen name="ResourceDetails" component={ResourceDetails} options={screenOption} />
+    <Stack.Screen name="InlineVideo" component={InlineVideo} options={screenOption} />
 
   </Stack.Navigator>
 
@@ -299,6 +303,7 @@ const CompanyResources = () => (
     <Stack.Screen name="RelatedProductDetails" component={RelatedProductDetails} options={screenOption} />
     <Stack.Screen name="ResourceDetails" component={ResourceDetails} options={screenOption} />
     <Stack.Screen name="InlineVideo" component={InlineVideo} options={screenOption} />
+    <Stack.Screen name="Comment" component={CommentScreen} options={screenOption} />
 
   </Stack.Navigator>
 
@@ -321,6 +326,7 @@ const CompanyProducts = () => {
       <Stack.Screen name="RelatedServicesDetails" component={RelatedServicesDetails} options={screenOption} />
       <Stack.Screen name="RelatedProductDetails" component={RelatedProductDetails} options={screenOption} />
       <Stack.Screen name="ResourceDetails" component={ResourceDetails} options={screenOption} />
+      <Stack.Screen name="Comment" component={CommentScreen} options={screenOption} />
 
     </Stack.Navigator>
   )
@@ -349,6 +355,7 @@ const CompanyServices = () => {
       <Stack.Screen name="RelatedServicesDetails" component={RelatedServicesDetails} options={screenOption} />
       <Stack.Screen name="RelatedProductDetails" component={RelatedProductDetails} options={screenOption} />
       <Stack.Screen name="ResourceDetails" component={ResourceDetails} options={screenOption} />
+      <Stack.Screen name="Comment" component={CommentScreen} options={screenOption} />
 
     </Stack.Navigator>
   )
@@ -356,7 +363,7 @@ const CompanyServices = () => {
 
 const EventsDrawer = () => (
 
-  <Stack.Navigator screenOptions={screenOptionStyle} initialRouteName='Event'>
+  <Stack.Navigator screenOptions={[screenOptionStyle,{unmountOnBlur: true}]} initialRouteName='Event'>
     <Stack.Screen name="Event" component={AllEvents} options={screenOption} />
   </Stack.Navigator>
 

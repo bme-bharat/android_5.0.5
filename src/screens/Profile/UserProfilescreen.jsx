@@ -301,7 +301,7 @@ const UserProfileScreen = () => {
       </View>
 
       <ScrollView keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: '20%' }}>
+        showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: '20%', paddingHorizontal:5 }}>
 
 
         <TouchableOpacity activeOpacity={1} onPress={() => openMediaViewer([{ type: 'image', url: profile?.imageUrl }])}
@@ -310,7 +310,7 @@ const UserProfileScreen = () => {
 
           {profile?.imageUrl ? (
             <FastImage
-              source={{ uri: profile?.imageUrl, }}
+              source={{ uri: profile?.imageUrl || defaultImage }}
 
               style={styles.detailImage}
               resizeMode='contain'
@@ -634,8 +634,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#075cab"
   },
   signOutButton: {
-    paddingVertical: 10,
-    paddingHorizontal: 15,
+    padding:10,
     justifyContent: "center",
     alignItems: 'center',
     flexDirection: 'row',
@@ -649,7 +648,6 @@ const styles = StyleSheet.create({
     color: "#075cab",
     fontSize: 16,
     fontWeight: '600',
-    padding: 5,
     alignSelf: 'center'
 
   },
@@ -658,10 +656,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
     borderRadius: 5,
-    marginTop: 10,
+    padding: 10,
     alignSelf: 'center',
     minWidth: 120,
     maxWidth: 200,
+    marginTop:5,
   },
   deleteAccountButtonText: {
     color: "red",

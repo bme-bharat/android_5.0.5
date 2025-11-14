@@ -147,11 +147,7 @@ export const compressVideo = async (videoAsset, attempt = 1) => {
     if (targetBitrate > 1_200_000) targetBitrate = 1_200_000;
 
     const compressionSettings = {
-      compressionMethod: 'manual',
-      bitrate: targetBitrate,
-      maxWidth: targetWidth,
-      maxHeight: targetHeight,
-      fps,
+      compressionMethod: 'auto',
       progressDivider: 5,
     };
 
