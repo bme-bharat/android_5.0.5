@@ -839,8 +839,6 @@ const CompanyUserSignupScreen = () => {
 
       };
 
-      console.log("📦 [Payload Sent to API]:", payload);
-
       const response = await axios.post(
         'https://h7l1568kga.execute-api.ap-south-1.amazonaws.com/dev/createUserSession',
         payload,
@@ -854,7 +852,7 @@ const CompanyUserSignupScreen = () => {
       if (response.data.status === 'success') {
         const sessionId = response.data.data.session_id;
         await AsyncStorage.setItem('userSession', JSON.stringify({ sessionId }));
-        console.log('✅ [User Session Created Successfully]:', response.data);
+        
         return true;
       } else {
         showToast("Something went wrong", 'error');

@@ -53,8 +53,8 @@ const HelpCenter = () => {
           onPress={() => navigation.goBack()}
           style={styles.backButton}>
           <ArrowLeftIcon
-            width={dimensions.icon.ml}
-            height={dimensions.icon.ml}
+            width={dimensions.icon.medium}
+            height={dimensions.icon.medium}
             color={colors.primary}
           />
         </TouchableOpacity>

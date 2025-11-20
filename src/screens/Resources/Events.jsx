@@ -406,7 +406,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 6,
     overflow: 'hidden',
-    marginBottom: 8,
+    marginBottom: 5,
     padding: 8,
     paddingBottom: 5,
     borderWidth: 0.5,

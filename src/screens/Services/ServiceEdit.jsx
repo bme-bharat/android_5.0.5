@@ -997,7 +997,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#fff',
         paddingHorizontal: 15,
         borderRadius: 8,
-        fontSize: 13,
+        fontSize: 14,
         fontWeight: '500',
         color: colors.text_primary,
         elevation: 2,
@@ -1132,7 +1132,7 @@ const styles = StyleSheet.create({
     },
 
     dropdownButtonText: {
-        fontSize: 13,
+        fontSize: 14,
         fontWeight: '500',
         color:colors.text_primary,
         flex: 1,

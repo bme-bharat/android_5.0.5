@@ -27,7 +27,6 @@ import Service from '../../assets/svgIcons/services.svg';
 
 
 
-
 const ProductsList = React.lazy(() => import('../Products/ProductsList'));
 const JobListScreen = React.lazy(() => import('../Job/JobListScreen'));
 const CompanyHomeScreen = React.lazy(() => import('../CompanyHomeScreen'));

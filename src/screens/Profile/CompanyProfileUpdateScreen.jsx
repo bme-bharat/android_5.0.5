@@ -42,7 +42,7 @@ import { showToast } from '../AppUtils/CustomToast';
 import AppStyles from '../AppUtils/AppStyles';
 import apiClient from '../ApiClient';
 import { Image as FastImage } from 'react-native';
-import CustomDropdown from '../../components/CustomDropDown';
+
 import CustomDropdown1 from '../../components/DropDownMenu';
 import ImageCropPicker from 'react-native-image-crop-picker';
 import { PERMISSIONS, RESULTS, request, check } from 'react-native-permissions';
@@ -208,8 +208,7 @@ const CompanyUserSignupScreen = () => {
     key: state,
   }));
 
-  const cities =
-    postData.company_located_state && stateCityData[postData.company_located_state]
+  const cities = postData.company_located_state && stateCityData[postData.company_located_state]
       ? stateCityData[postData.company_located_state].map((city) => ({
         label: city,
         key: city,
@@ -1516,11 +1515,7 @@ const CompanyUserSignupScreen = () => {
                         />
 
                         {profile.is_email_verified && postData.company_email_id === profile.company_email_id ? (
-                          <Success
-                            width={dimensions.icon.small}
-                            height={dimensions.icon.small}
-                            color={colors.success}
-                          />
+                          <Success width={dimensions.icon.small} height={dimensions.icon.small} color={colors.success}/>
                         ) : (
                           <TouchableOpacity
                             style={styles.buttonemailmain}
@@ -2002,7 +1997,7 @@ const styles = StyleSheet.create({
     borderColor: '#ddd'
   },
   dropdownButtonText: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '500',
     color: colors.text_primary,
     flex: 1,
@@ -2012,7 +2007,7 @@ const styles = StyleSheet.create({
     height: 40,
     backgroundColor: '#fff',
     borderRadius: 8,
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '500',
     color: colors.text_primary,
     flexDirection: 'row',
@@ -2234,7 +2229,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 10,
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '500',
     color: colors.text_primary
 

@@ -386,9 +386,6 @@ console.log('allForumPost',allForumPost)
         />
       )}
 
-
-      <Toast />
-
     </View>
 
 
@@ -697,6 +694,7 @@ const styles = StyleSheet.create({
 
 
 });
+
 export default YourForumListScreen;
 
 

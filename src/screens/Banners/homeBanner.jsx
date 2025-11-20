@@ -6,7 +6,7 @@ import {
   ActivityIndicator,
   TouchableOpacity,
 } from 'react-native';
-import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useIsFocused, useNavigation } from '@react-navigation/native';
 import apiClient from '../ApiClient';
 import BMEVideoPlayer from '../BMEVideoPlayer';
 
@@ -20,6 +20,7 @@ const HomeBanner = () => {
   const navigation = useNavigation();
   const [videoLoading, setVideoLoading] = useState({});
   const timerRef = useRef(null); // ⏱️ fallback timer
+  const isFocused = useIsFocused();
 
   // 🔹 Fetch video banners
   const fetchBanners = useCallback(async () => {
@@ -74,14 +75,21 @@ const HomeBanner = () => {
     (item) => {
       if (item.id) {
         navigation.navigate('CompanyDetails', { userId: item.id });
-      } else if (item.redirect?.target_url) {
+        return;
+      }
+  
+      if (item.redirect?.target_url) {
         const url = item.redirect.target_url;
+    
+        // Extract ID safely
         try {
-          const pathname = new URL(url).pathname;
-          const segments = pathname.split('/').filter(Boolean);
+          const segments = url.split('/').filter(Boolean);
           const companyId = segments[segments.length - 1];
+  
           if (companyId) {
             navigation.navigate('CompanyDetails', { userId: companyId });
+          } else {
+            console.warn('No company id found in URL');
           }
         } catch (err) {
           console.warn('Invalid URL:', err);
@@ -90,6 +98,7 @@ const HomeBanner = () => {
     },
     [navigation]
   );
+  
 
   // 🔹 Move to next video manually or after video ends
   const moveToNext = useCallback(() => {
@@ -186,7 +195,7 @@ const HomeBanner = () => {
             <BMEVideoPlayer
               ref={(ref) => (videoRefs.current[index] = ref)}
               source={item.url}
-              paused={currentIndex !== index}
+              paused={!isFocused || currentIndex !== index}
               muted={true}
               // showProgressBar={true}  
               resizeMode="cover"

@@ -276,6 +276,7 @@ const CompanyJobEditScreen = ({ route }) => {
         contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 5, paddingBottom: '30%' }}
         keyboardShouldPersistTaps="handled"
         extraScrollHeight={20}  // Adjust for better visibility when keyboard opens
+        showsVerticalScrollIndicator={false}
       >
         <TouchableOpacity activeOpacity={1}>
           <View style={styles.inputstyle}>

@@ -222,7 +222,6 @@ const AppContent = () => {
   }, []);
 
 
-
   const checkUserSession = async () => {
 
     try {

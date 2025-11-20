@@ -86,8 +86,8 @@ android {
         applicationId "com.bmebharat.newapp"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 43
-        versionName "5.0.9"
+        versionCode 44
+        versionName "5.0.10"
     }
     signingConfigs {
 

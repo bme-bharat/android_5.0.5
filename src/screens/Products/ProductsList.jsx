@@ -429,7 +429,7 @@ const ProductsList = () => {
                     <View style={styles.productImageContainer}>
 
                         <FastImage
-                            source={{ uri: imageUrl, }}
+                            source={ imageUrl ? { uri: imageUrl } : null }
 
                             style={styles.productImage}
                             onError={() => { }}

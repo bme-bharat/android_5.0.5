@@ -787,7 +787,8 @@ const styles = StyleSheet.create({
     borderColor: '#ddd'
   },
   dropdownButtonText: {
-    fontSize: 13,
+    fontSize: 14,
+    fontWeight:'500',
     color: colors.text_primary,
     flex: 1,
     padding:5

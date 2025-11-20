@@ -386,7 +386,6 @@ const MyServices = () => {
                     <TouchableOpacity style={styles.addProductButton} onPress={handleAddProduct}>
                         <Add width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
 
-
                         <Text style={styles.addProductText}>Add Service</Text>
                     </TouchableOpacity>
 
@@ -582,7 +581,7 @@ const styles = StyleSheet.create({
     productCard1: {
         marginBottom: 10,
         marginHorizontal: 5,
-        top: 10,
+        top: 5,
         backgroundColor: 'white',
         borderRadius: 10,
         borderWidth: 0.5,

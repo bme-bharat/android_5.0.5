@@ -27,12 +27,17 @@ const HomeBanner = ({bannerId}) => {
     (item) => {
       if (item.id) {
         navigation.navigate('CompanyDetails', { userId: item.id });
-      } else if (item.redirect?.target_url) {
+        return;
+      }
+  
+      if (item.redirect?.target_url) {
         const url = item.redirect.target_url;
+  
         try {
-          const pathname = new URL(url).pathname;
-          const segments = pathname.split('/').filter(Boolean);
+          // Extract last segment manually (no URL API)
+          const segments = url.split('/').filter(Boolean);
           const companyId = segments[segments.length - 1];
+  
           if (companyId) {
             navigation.navigate('CompanyDetails', { userId: companyId });
           }
@@ -43,6 +48,7 @@ const HomeBanner = ({bannerId}) => {
     },
     [navigation]
   );
+  
 
   // Fetch only video banners
   const fetchBanners = useCallback(async () => {

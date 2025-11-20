@@ -1092,7 +1092,8 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 1 },  // shadow offset for iOS
     shadowOpacity: 0.1,  // shadow opacity for iOS
     shadowRadius: 2,  // shadow radius for iOS
-
+ borderBottomWidth: 1,
+    borderColor: '#f0f0f0'
   },
   backButton: {
     alignSelf: 'flex-start',
@@ -1122,7 +1123,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     paddingHorizontal: 15,
     borderRadius: 8,
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '500',
     color:colors.text_primary,
     elevation: 2,
@@ -1191,7 +1192,7 @@ const styles = StyleSheet.create({
     borderColor: '#ddd'
   },
   dropdownButtonText: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '500',
     color:colors.text_primary,
     flex: 1,

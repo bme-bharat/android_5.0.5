@@ -814,10 +814,13 @@ const EditProduct = () => {
     return (
 
         <View style={styles.container} >
-            <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-                <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
+            <View style={styles.searchContainer}>
 
-            </TouchableOpacity>
+                <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+                    <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
+
+                </TouchableOpacity>
+            </View>
             <KeyboardAwareScrollView
                 contentContainerStyle={{ flexGrow: 1, backgroundColor: "#f8f9fa", paddingHorizontal: 5, paddingBottom: '40%' }}
                 keyboardShouldPersistTaps="handled"
@@ -1238,11 +1241,24 @@ const styles = StyleSheet.create({
         color: "#000",
         fontWeight: "500",
         alignSelf: 'flex-start',
-        paddingBottom:5
+        paddingBottom: 5
     },
     inputContainer: {
         marginBottom: 10,
 
+    },
+    searchContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        backgroundColor: 'white',
+        elevation: 1,  // for Android
+        shadowColor: '#000',  // shadow color for iOS
+        shadowOffset: { width: 0, height: 1 },  // shadow offset for iOS
+        shadowOpacity: 0.1,  // shadow opacity for iOS
+        shadowRadius: 2,  // shadow radius for iOS
+        borderBottomWidth: 1,
+        borderColor: '#f0f0f0'
     },
     backButton: {
         alignSelf: 'flex-start',
@@ -1278,9 +1294,9 @@ const styles = StyleSheet.create({
         backgroundColor: '#fff',
         paddingHorizontal: 15,
         borderRadius: 8,
-        fontSize: 13,
+        fontSize: 14,
         fontWeight: '500',
-        color:colors.text_primary,
+        color: colors.text_primary,
         elevation: 2,
         borderWidth: 1,
         borderColor: '#ddd'
@@ -1409,10 +1425,10 @@ const styles = StyleSheet.create({
     },
 
     dropdownButtonText: {
-        fontSize: 13,
+        fontSize: 14,
         fontWeight: '500',
-        color:colors.text_primary,
-        padding:5
+        color: colors.text_primary,
+        padding: 5
     },
     dropdownItem: {
         paddingVertical: 10,

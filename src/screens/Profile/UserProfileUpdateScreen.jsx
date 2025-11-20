@@ -2001,9 +2001,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12
   },
   datePickerButtonText: {
-    fontSize: 15,
-    color: 'black',
-    fontWeight: '400'
+    fontSize: 14,
+    color: colors.text_secondary,
+    fontWeight: '500'
   },
 });
 

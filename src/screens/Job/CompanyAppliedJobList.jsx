@@ -10,6 +10,7 @@ import { useNetwork } from '../AppUtils/IdProvider';
 import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
 
 import { colors, dimensions } from '../../assets/theme.jsx';
+import { commonStyles } from '../AppUtils/AppStyles.js';
 
 const CompanyAppliedJobScreen = () => {
   const { myId, myData } = useNetwork();
@@ -78,45 +79,41 @@ const CompanyAppliedJobScreen = () => {
         navigation.navigate('CompanyGetAppliedJobs', { userId: item.user_id, post: item });
       }}
       activeOpacity={1}
+      style={styles.jobCard}
     >
-      <View style={{ paddingHorizontal: 10, paddingBottom: 10 }}>
-        <View style={styles.jobCard}>
-          <View style={styles.jobDetails}>
-            <View style={styles.detailRow}>
-              <Text style={styles.label}>First name        </Text>
-              <Text style={styles.colon}>:</Text>
 
-              <Text style={styles.value} numberOfLines={1}>{(getSlicedTitle(item.first_name || "").trimStart().trimEnd())}</Text>
-            </View>
-            <View style={styles.detailRow}>
-              <Text style={styles.label}>Last name         </Text>
-              <Text style={styles.colon}>:</Text>
+        <View style={commonStyles.valContainer}>
+          <Text style={commonStyles.label}>First name        </Text>
+          <Text style={commonStyles.colon}>:</Text>
 
-              <Text style={styles.value}>{(item.last_name).trimStart().trimEnd()}</Text>
-            </View>
-            <View style={styles.detailRow}>
-              <Text style={styles.label}>Email ID                 </Text>
-              <Text style={styles.colon}>:</Text>
+          <Text style={commonStyles.value} numberOfLines={1}>{(getSlicedTitle(item.first_name || "").trimStart().trimEnd())}</Text>
+        </View>
+        <View style={commonStyles.valContainer}>
+          <Text style={commonStyles.label}>Last name         </Text>
+          <Text style={commonStyles.colon}>:</Text>
 
-              <Text style={styles.value} numberOfLines={1}>{((item.user_email_id).trimStart().trimEnd())}</Text>
-            </View>
-            <View style={styles.detailRow}>
-              <Text style={styles.label}>Phone no.    </Text>
-              <Text style={styles.colon}>:</Text>
+          <Text style={commonStyles.value}>{(item.last_name).trimStart().trimEnd()}</Text>
+        </View>
+        <View style={commonStyles.valContainer}>
+          <Text style={commonStyles.label}>Email ID                 </Text>
+          <Text style={commonStyles.colon}>:</Text>
 
-              <Text style={styles.value}>{item.user_phone_number}</Text>
-            </View>
+          <Text style={commonStyles.value} numberOfLines={1}>{((item.user_email_id).trimStart().trimEnd())}</Text>
+        </View>
+        <View style={commonStyles.valContainer}>
+          <Text style={commonStyles.label}>Phone no.    </Text>
+          <Text style={commonStyles.colon}>:</Text>
 
-            <TouchableOpacity onPress={() => {
-              navigation.navigate('CompanyGetAppliedJobs', { userId: item.user_id, post: item });
-            }} activeOpacity={0.8}>
-              <Text style={styles.applyButton}>View profile</Text>
-            </TouchableOpacity>
-
-          </View>
+          <Text style={commonStyles.value}>{item.user_phone_number}</Text>
         </View>
 
-      </View>
+        <TouchableOpacity onPress={() => {
+          navigation.navigate('CompanyGetAppliedJobs', { userId: item.user_id, post: item });
+        }} activeOpacity={0.8} 
+        style={styles.applyButton}>
+          <Text style={styles.buttonText}>View profile</Text>
+        </TouchableOpacity>
+
     </TouchableOpacity>
   );
 
@@ -144,11 +141,12 @@ const CompanyAppliedJobScreen = () => {
   }
   return (
     <View style={styles.container}>
-      <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-        <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
+      <View style={styles.headerContainer}>
+        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+          <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
 
-      </TouchableOpacity>
-
+        </TouchableOpacity>
+      </View>
       {loading ? (
         <View style={styles.centeredContainer}>
           <ActivityIndicator size="large" color="#075cab" />
@@ -191,24 +189,27 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     padding: 10,
 
+  },
 
-
-  }
-  ,
-  jobCard: {
+  headerContainer: {
     flexDirection: 'row',
-    padding: 15,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: 'white',
+    borderBottomWidth: 1,
+    borderColor: '#f0f0f0'
+  },
+
+  jobCard: {
+    top: 5,
+    marginHorizontal: 5,
+    padding: 10,
     borderWidth: 1,
     borderColor: '#ddd',
     borderRadius: 10,
     backgroundColor: '#fff',
-    // marginBottom: 15,
+  },
 
-  },
-  jobDetails: {
-    flex: 1,
-    justifyContent: 'center',
-  },
   detailRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -245,13 +246,24 @@ const styles = StyleSheet.create({
   },
 
   applyButton: {
-    alignSelf: 'flex-end',
-    color: '#075cab',
+    flexDirection: 'row',
+    // alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 8,
+    borderRadius: 5,
+    backgroundColor: '#fff',
+    elevation:2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 2,
+    alignSelf:'flex-end'
+  },
+  buttonText: {
+    marginLeft: 5,
+    fontSize: 15,
     fontWeight: '500',
-    fontSize: 16,
-    padding: 10,
-
-    // textDecorationLine: 'underline',
+    color: "#075cab",
   },
   centeredContainer: {
     flex: 1,

@@ -617,7 +617,6 @@ useEffect(() => {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
 
-
         </TouchableOpacity>
         <TouchableOpacity
           onPress={handlePostSubmission}
