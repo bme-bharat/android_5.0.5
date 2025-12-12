@@ -1,13 +1,13 @@
 
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Image, StyleSheet, TouchableOpacity, Text, ScrollView, TextInput, Alert, View, Modal, Platform, Pressable, ActivityIndicator, ActionSheetIOS, KeyboardAvoidingView, TouchableWithoutFeedback, Linking, NativeModules } from 'react-native';
+import { Image, StyleSheet, TouchableOpacity, Text, ScrollView, TextInput, Alert, View, Modal, Platform, Pressable, ActivityIndicator, ActionSheetIOS, KeyboardAvoidingView, TouchableWithoutFeedback, Linking, NativeModules, StatusBar } from 'react-native';
 import axios from 'axios';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import Toast from 'react-native-toast-message';
 import RNFS from 'react-native-fs';
 import { CountryCodes, ProfileSelect, stateCityData } from '../../assets/Constants';
-import Icon from 'react-native-vector-icons/MaterialIcons';
+
 import { Keyboard } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import CustomDropdown from '../../components/DropDownMenu';
@@ -19,13 +19,13 @@ import ImagePicker from 'react-native-image-crop-picker';
 import dummy from '../../images/homepage/dummy.png';
 import femaleImage from '../../images/homepage/female.jpg';
 import ImageResizer from 'react-native-image-resizer';
-import Ionicons from 'react-native-vector-icons/Ionicons';
+
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { useDispatch } from 'react-redux';
 import { updateCompanyProfile } from '../Redux/MyProfile/CompanyProfile_Actions';
 import { showToast } from '../AppUtils/CustomToast';
 import apiClient from '../ApiClient';
-import AppStyles from '../AppUtils/AppStyles';
+import AppStyles, { STATUS_BAR_HEIGHT } from '../AppUtils/AppStyles';
 import { PERMISSIONS, RESULTS, request, check } from 'react-native-permissions';
 import ImageCropPicker from 'react-native-image-crop-picker';
 import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
@@ -46,7 +46,7 @@ const UserProfileUpdateScreen = () => {
   const dispatch = useDispatch();
 
   const { profile, imageUrl } = route.params;
-  console.log('profile', profile)
+
   const [localImageUrl, setLocalImageUrl] = useState(imageUrl);
   const [dateOfBirth, setDateOfBirth] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -462,15 +462,15 @@ const UserProfileUpdateScreen = () => {
       : [];
 
 
-const handleStateSelect = (item) => {
-  setPostData({
-    ...postData,
-    state: item.label,
-    city: "", // reset city when state changes
-  });
+  const handleStateSelect = (item) => {
+    setPostData({
+      ...postData,
+      state: item.label,
+      city: "", // reset city when state changes
+    });
 
-  showToast('Please select city', 'info'); // toast when state changes
-};
+    showToast('Please select city', 'info'); // toast when state changes
+  };
 
 
 
@@ -1181,7 +1181,8 @@ const handleStateSelect = (item) => {
 
   return (
     <KeyboardAvoid>
-      <View style={styles.container} >
+                <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
+          
         <View style={styles.headerContainer}>
 
           <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
@@ -1189,12 +1190,12 @@ const handleStateSelect = (item) => {
 
           </TouchableOpacity>
         </View>
-        <KeyboardAwareScrollView
+        <ScrollView
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={{ paddingBottom: '40%', paddingHorizontal: 5, backgroundColor: 'whitesmoke' }}
           showsVerticalScrollIndicator={false}
         >
-          <Text style={styles.header}>Edit your profile</Text>
+          <Text style={styles.header}>Update your profile</Text>
 
           <TouchableOpacity onPress={handleImageSelection} style={styles.imageContainer} activeOpacity={1}>
 
@@ -1260,185 +1261,9 @@ const handleStateSelect = (item) => {
           </View>
 
 
-          <Modal
-            visible={isModalVisible}
-            transparent={true}
-            animationType="slide"
-            onRequestClose={() => setModalVisible(false)}
-          >
-
-            <View style={styles.modalOverlay}
-              onPress={() => {
-                setModalVisible(false)
-                setPhoneNumber('')
-                setOtpSent(false)
-                setIsOTPVerified(false)
-                setTimer(0)
-                setCountryCode('+91')
-                setOtp(['', '', '', '', '', '']);
-              }
-
-              }>
 
 
-              <View style={styles.modalContainer}>
-                <TouchableOpacity
-                  style={styles.closeButton}
-                  onPress={() => {
-                    setPhoneNumber(''); // Reset the phone number state
-                    setModalVisible(false); // Close the modal
-                    setOtpSent(false)
-                    setIsOTPVerified(false)
-                    setTimer(0)
-                    setCountryCode('+91')
-                    setOtp(['', '', '', '', '', '']);
-                  }}
-                  activeOpacity={1}
-                >
-                  <Close width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.gray} />
 
-                </TouchableOpacity>
-                <View style={styles.inputrow}>
-                  <View style={[styles.code, { width: "25%" }]}>
-                    <PhoneDropDown
-                      options={CountryCodes}
-                      selectedValue={countryCode}
-                      onSelect={(item) => setCountryCode(item.value)}
-                    />
-                  </View>
-
-
-                  <TextInput
-                    style={[
-                      styles.inputPhoneNumber,
-                      phoneNumber.length > 0 && { letterSpacing: 1 },
-                    ]}
-                    value={phoneNumber}
-                    onChangeText={handlePhoneNumberChange}
-                    placeholder="Enter phone number"
-                    keyboardType="phone-pad"
-                    placeholderTextColor="gray"
-                    maxLength={10}
-                  />
-                </View>
-
-                {otpSent && !isOTPVerified && (
-                  <View>
-
-                    <TextInput
-                      style={[
-                        styles.otpInput,
-                        isTypingOtp && { letterSpacing: 5 },
-                      ]}
-                      value={otp}
-                      onChangeText={(value) => {
-                        if (/^\d*$/.test(value)) {
-                          setOtp(value);
-                          setIsTypingOtp(value.length > 0);
-                          if (value.length === 6) {
-                            Keyboard.dismiss();
-                          }
-                        }
-                      }}
-                      placeholder="Enter OTP"
-                      keyboardType="numeric"
-                      maxLength={6}
-                      placeholderTextColor="gray"
-                    />
-
-                    {/* Verify OTP Button */}
-                    <TouchableOpacity onPress={handleVerifyOTP} style={{ alignSelf: 'center', }} activeOpacity={1}>
-                      <Text style={styles.buttonText}>Verify</Text>
-                    </TouchableOpacity>
-
-                    {/* Conditionally render the timer or the resend OTP button */}
-                    {!isResendEnabled ? (
-                      <Text style={styles.timerText}>Resend in {timer}s</Text>
-                    ) : (
-                      <TouchableOpacity onPress={resendHandle} style={{ alignSelf: 'center', }}>
-                        <Text style={styles.buttonText}>Resend OTP</Text>
-                      </TouchableOpacity>
-                    )}
-                  </View>
-                )}
-                {!otpSent && (
-                  <TouchableOpacity onPress={sendOTPHandle} style={{ alignSelf: 'center', }}>
-                    <Text style={styles.buttonText}>Get verification code</Text>
-                  </TouchableOpacity>
-                )}
-
-                {isOTPVerified && (
-                  <TouchableOpacity onPress={handlePhoneNumberUpdate} style={{ alignSelf: 'center', }}>
-                    <Text style={styles.buttonText}>Update</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-
-            </View>
-          </Modal>
-
-
-          <Modal
-            visible={modalVisibleemail}
-            animationType="slide"
-            onRequestClose={() => setModalVisibleemail(false)}
-            transparent={true}
-          >
-            <View style={styles.modalContaineremail}>
-              <View style={styles.modalContentemail}>
-                {/* Close Icon */}
-                <TouchableOpacity
-                  style={styles.closeButton1}
-                  onPress={() => {
-                    setModalVisibleemail(false);
-                    setOtp1(['', '', '', '', '', '']);
-                  }}
-                >
-                  <Close width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.gray} />
-
-                </TouchableOpacity>
-
-                <Text style={styles.modalTitleemail}></Text>
-                <TextInput
-                  style={styles.inputemail}
-                  value={otp1} // Bind the string state directly
-                  onChangeText={(value) => {
-                    setOtp1(value); // Update the string directly
-                    if (value.length === 6) {
-                      Keyboard.dismiss(); // Dismiss keyboard when 6 digits are entered
-                    }
-                  }}
-                  placeholder="Enter OTP"
-                  keyboardType="numeric"
-                  placeholderTextColor="gray"
-                  maxLength={6}
-                />
-
-                <TouchableOpacity
-                  style={styles.buttonemail}
-                  onPress={handleOtpVerification1}
-                >
-                  <Text style={styles.buttonText}>Verify OTP</Text>
-                </TouchableOpacity>
-
-
-                {!isOTPVerified && otpTimer === 0 && (
-                  <TouchableOpacity
-                    style={[styles.buttonemail]}
-                    onPress={() => {
-                      handleResendOtp();
-                      startOtpTimer(); // Restart timer when OTP is resent
-                    }}
-                  >
-                    <Text style={styles.buttonText}>Resend OTP</Text>
-                  </TouchableOpacity>
-                )}
-                {otpTimer > 0 && !isOTPVerified && (
-                  <Text style={styles.timerText}>Resend in {otpTimer}s</Text>
-                )}
-              </View>
-            </View>
-          </Modal>
           <View style={styles.inputContainer}>
             <Text style={[styles.title]}>Email ID <Text style={{ color: 'red' }}>*</Text></Text>
             <View style={styles.inputWithButton}>
@@ -1579,6 +1404,7 @@ const handleStateSelect = (item) => {
               <TextInput
                 style={styles.input}
                 ref={collegeRef}
+                multiline
                 value={postData.college}
                 onChangeText={(value) => handleInputChange('college', value)}
                 placeholderTextColor="gray"
@@ -1609,38 +1435,214 @@ const handleStateSelect = (item) => {
             )}
           </TouchableOpacity>
 
-          <Message1
-            visible={modalVisible1}
-            onClose={closeModal}
-            onOk={closeModal}
-            title={modalTitle}
-            message={modalMessage}
-            iconType="warning"
-          />
 
-          <Message3
-            visible={showModal1}
-            onClose={() => setShowModal1(false)}
-            onCancel={handleStay}
-            onOk={handleLeave}
-            title="Are you sure ?"
-            message="Your updates will be lost if you leave this page. This action cannot be undone."
-            iconType="warning"
-          />
+        </ScrollView>
 
-        </KeyboardAwareScrollView>
+        <Modal
+          visible={isModalVisible}
+          transparent={true}
+          animationType="slide"
+          onRequestClose={() => setModalVisible(false)}
+        >
 
-      </View>
+          <View style={styles.modalOverlay}
+            onPress={() => {
+              setModalVisible(false)
+              setPhoneNumber('')
+              setOtpSent(false)
+              setIsOTPVerified(false)
+              setTimer(0)
+              setCountryCode('+91')
+              setOtp(['', '', '', '', '', '']);
+            }
+
+            }>
+
+
+            <View style={styles.modalContainer}>
+              <TouchableOpacity
+                style={styles.closeButton}
+                onPress={() => {
+                  setPhoneNumber(''); // Reset the phone number state
+                  setModalVisible(false); // Close the modal
+                  setOtpSent(false)
+                  setIsOTPVerified(false)
+                  setTimer(0)
+                  setCountryCode('+91')
+                  setOtp(['', '', '', '', '', '']);
+                }}
+                activeOpacity={1}
+              >
+                <Close width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.gray} />
+
+              </TouchableOpacity>
+              <View style={styles.inputrow}>
+                <View style={[styles.code, { width: "25%" }]}>
+                  <PhoneDropDown
+                    options={CountryCodes}
+                    selectedValue={countryCode}
+                    onSelect={(item) => setCountryCode(item.value)}
+                  />
+                </View>
+
+
+                <TextInput
+                  style={[
+                    styles.inputPhoneNumber,
+                    phoneNumber.length > 0 && { letterSpacing: 1 },
+                  ]}
+                  value={phoneNumber}
+                  onChangeText={handlePhoneNumberChange}
+                  placeholder="Enter phone number"
+                  keyboardType="phone-pad"
+                  placeholderTextColor="gray"
+                  maxLength={10}
+                  
+                />
+              </View>
+
+              {otpSent && !isOTPVerified && (
+                <View>
+
+                  <TextInput
+                    style={[
+                      styles.otpInput,
+                      isTypingOtp && { letterSpacing: 5 },
+                    ]}
+                    value={otp}
+                    onChangeText={(value) => {
+                      if (/^\d*$/.test(value)) {
+                        setOtp(value);
+                        setIsTypingOtp(value.length > 0);
+                        if (value.length === 6) {
+                          Keyboard.dismiss();
+                        }
+                      }
+                    }}
+                    placeholder="Enter OTP"
+                    keyboardType="numeric"
+                    maxLength={6}
+                    placeholderTextColor="gray"
+                  />
+
+                  {/* Verify OTP Button */}
+                  <TouchableOpacity onPress={handleVerifyOTP} style={{ alignSelf: 'center', }} activeOpacity={1}>
+                    <Text style={styles.buttonText}>Verify</Text>
+                  </TouchableOpacity>
+
+                  {/* Conditionally render the timer or the resend OTP button */}
+                  {!isResendEnabled ? (
+                    <Text style={styles.timerText}>Resend in {timer}s</Text>
+                  ) : (
+                    <TouchableOpacity onPress={resendHandle} style={{ alignSelf: 'center', }}>
+                      <Text style={styles.buttonText}>Resend OTP</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              )}
+              {!otpSent && (
+                <TouchableOpacity onPress={sendOTPHandle} style={{ alignSelf: 'center', }}>
+                  <Text style={styles.buttonText}>Get verification code</Text>
+                </TouchableOpacity>
+              )}
+
+              {isOTPVerified && (
+                <TouchableOpacity onPress={handlePhoneNumberUpdate} style={{ alignSelf: 'center', }}>
+                  <Text style={styles.buttonText}>Update</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+
+          </View>
+        </Modal>
+
+        <Modal
+          visible={modalVisibleemail}
+          animationType="slide"
+          onRequestClose={() => setModalVisibleemail(false)}
+          transparent={true}
+        >
+          <View style={styles.modalContaineremail}>
+            <View style={styles.modalContentemail}>
+              {/* Close Icon */}
+              <TouchableOpacity
+                style={styles.closeButton1}
+                onPress={() => {
+                  setModalVisibleemail(false);
+                  setOtp1(['', '', '', '', '', '']);
+                }}
+              >
+                <Close width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.gray} />
+
+              </TouchableOpacity>
+
+              <Text style={styles.modalTitleemail}></Text>
+              <TextInput
+                style={styles.inputemail}
+                value={otp1} // Bind the string state directly
+                onChangeText={(value) => {
+                  setOtp1(value); // Update the string directly
+                  if (value.length === 6) {
+                    Keyboard.dismiss(); // Dismiss keyboard when 6 digits are entered
+                  }
+                }}
+                placeholder="Enter OTP"
+                keyboardType="numeric"
+                placeholderTextColor="gray"
+                maxLength={6}
+              />
+
+              <TouchableOpacity
+                style={styles.buttonemail}
+                onPress={handleOtpVerification1}
+              >
+                <Text style={styles.buttonText}>Verify OTP</Text>
+              </TouchableOpacity>
+
+
+              {!isOTPVerified && otpTimer === 0 && (
+                <TouchableOpacity
+                  style={[styles.buttonemail]}
+                  onPress={() => {
+                    handleResendOtp();
+                    startOtpTimer(); // Restart timer when OTP is resent
+                  }}
+                >
+                  <Text style={styles.buttonText}>Resend OTP</Text>
+                </TouchableOpacity>
+              )}
+              {otpTimer > 0 && !isOTPVerified && (
+                <Text style={styles.timerText}>Resend in {otpTimer}s</Text>
+              )}
+            </View>
+          </View>
+        </Modal>
+
+        <Message1
+          visible={modalVisible1}
+          onClose={closeModal}
+          onOk={closeModal}
+          title={modalTitle}
+          message={modalMessage}
+          iconType="warning"
+        />
+
+        <Message3
+          visible={showModal1}
+          onClose={() => setShowModal1(false)}
+          onCancel={handleStay}
+          onOk={handleLeave}
+          title="Are you sure ?"
+          message="Your updates will be lost if you leave this page. This action cannot be undone."
+          iconType="warning"
+        />
+    
     </KeyboardAvoid>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    paddingHorizontal: 1,
-    backgroundColor: 'whitesmoke'
-  },
+
   downIcon: {
     position: 'absolute',
     right: 10,
@@ -1701,7 +1703,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     backgroundColor: '#fff',
     borderBottomWidth: 1,
-    borderColor: '#f0f0f0'
+    borderColor: '#f0f0f0',
+    paddingTop:STATUS_BAR_HEIGHT
   },
   otpInputContainer: {
     flexDirection: 'row',
@@ -1831,12 +1834,13 @@ const styles = StyleSheet.create({
   },
 
   input: {
-    height: 40,
+    minHeight: 40,
+    maxHeight: 120,
     backgroundColor: '#fff',
     borderRadius: 8,
     fontSize: 14,
     fontWeight: '500',
-    color:colors.text_secondary,
+    color: colors.text_secondary,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -1859,7 +1863,7 @@ const styles = StyleSheet.create({
   dropdownButtonText: {
     fontSize: 14,
     fontWeight: '500',
-    color:colors.text_secondary,
+    color: colors.text_secondary,
     flex: 1,
     paddingVertical: 5,
 
@@ -1934,7 +1938,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 13,
     fontWeight: '500',
-    color:colors.text_primary,
+    color: colors.text_primary,
     flexDirection: 'row',
     backgroundColor: '#fff',
     alignItems: 'center',

@@ -1,19 +1,19 @@
 import { StyleSheet, Text, View, FlatList, ActivityIndicator, TouchableOpacity, Alert } from 'react-native';
 import React, { useState, useEffect } from 'react';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useNetwork } from './AppUtils/IdProvider';
 import { useConnection } from './AppUtils/ConnectionProvider';
 import apiClient from './ApiClient';
 import ArrowleftIcon from '../assets/svgIcons/back.svg';
 import { colors, dimensions } from '../assets/theme.jsx';
+import AppStyles, { STATUS_BAR_HEIGHT } from './AppUtils/AppStyles.js';
 
 
 const AllNotification = () => {
   const { myId, myData } = useNetwork();
 
   const [notifications, setNotifications] = useState([]);
-  console.log('notifications',notifications)
+  console.log('notifications', notifications)
   const route = useRoute();
   const { userId } = route.params;
   const navigation = useNavigation();
@@ -127,8 +127,8 @@ const AllNotification = () => {
             console.warn('❌ Missing enquiry_id in notification item:', item);
           }
           break;
-        
-          case 'job_suggestion':
+
+        case 'job_suggestion':
           if (item.job_post_id) {
             navigation.navigate('JobDetail', {
               post_id: item.job_post_id,
@@ -161,15 +161,15 @@ const AllNotification = () => {
     return (
       <TouchableOpacity onPress={navigateToScreen} activeOpacity={0.8} style={styles.notificationItem}>
 
-          <Text style={[styles.message, item.read && styles.readMessage, !item.read && styles.unreadMessage]}>
-            {item.message}
-          </Text>
+        <Text style={[styles.message, item.read && styles.readMessage, !item.read && styles.unreadMessage]}>
+          {item.message}
+        </Text>
 
-          <Text key={item.id} style={{ alignSelf: 'flex-end', color: colors.text_secondary, fontSize: 11, fontWeight:'300' }}>  
-            {formatTimeAgo(item.timestamp)}
-          </Text>
+        <Text key={item.id} style={{ alignSelf: 'flex-end', color: colors.text_secondary, fontSize: 11, fontWeight: '300' }}>
+          {formatTimeAgo(item.timestamp)}
+        </Text>
 
-    
+
       </TouchableOpacity>
     );
   };
@@ -199,6 +199,7 @@ const AllNotification = () => {
 
     return (
       <View style={styles.container}>
+        <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
 
         <View style={styles.headerContainer}>
 
@@ -219,6 +220,8 @@ const AllNotification = () => {
   if (notifications?.removed_by_author) {
     return (
       <View style={styles.container}>
+        <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
+
         <View style={styles.headerContainer}>
 
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
@@ -235,6 +238,8 @@ const AllNotification = () => {
   }
   return (
     <View style={styles.container}>
+      <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
+
       <View style={styles.headerContainer}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <ArrowleftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
@@ -256,7 +261,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.app_background,
-
+    paddingTop: STATUS_BAR_HEIGHT
   },
   headerContainer: {
     flexDirection: 'row',
@@ -279,10 +284,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     borderRadius: 8,
     padding: 10,
-    marginBottom:5,
-    marginHorizontal:5,
-    elevation:2,
-    top:5
+    marginBottom: 5,
+    marginHorizontal: 5,
+    elevation: 2,
+    top: 5
   },
   message: {
     fontSize: 16,

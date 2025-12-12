@@ -1,17 +1,12 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { View, Image, StyleSheet, TextInput, Text, TouchableOpacity, Modal, ScrollView, RefreshControl, ActivityIndicator } from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import defaultImage from '../../images/homepage/dummy.png';
-
 import { Image as FastImage } from 'react-native';
-import Ionicons from 'react-native-vector-icons/Ionicons';
 import Message from '../../components/Message';
-
 import RNRestart from 'react-native-restart';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useSelector } from 'react-redux';
 import { showToast } from '../AppUtils/CustomToast';
 import apiClient from '../ApiClient';
@@ -28,7 +23,8 @@ import Account from '../../assets/svgIcons/account.svg';
 import Sucess from '../../assets/svgIcons/success.svg';
 
 import { colors, dimensions } from '../../assets/theme.jsx';
-import { commonStyles } from '../AppUtils/AppStyles.js';
+import AppStyles, { commonStyles, STATUS_BAR_HEIGHT } from '../AppUtils/AppStyles.js';
+import Animated from 'react-native-reanimated';
 
 
 const UserProfileScreen = () => {
@@ -283,7 +279,9 @@ const UserProfileScreen = () => {
 
   return (
 
-    <View style={styles.container}>
+    <>
+      <Animated.View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
+
       <View style={styles.headerContainer}>
         <TouchableOpacity style={styles.backButton}
           activeOpacity={1}
@@ -301,7 +299,8 @@ const UserProfileScreen = () => {
       </View>
 
       <ScrollView keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: '20%', paddingHorizontal:5 }}>
+        showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 5, backgroundColor:'white', paddingBottom:'10%' }}
+        overScrollMode='never'>
 
 
         <TouchableOpacity activeOpacity={1} onPress={() => openMediaViewer([{ type: 'image', url: profile?.imageUrl }])}
@@ -548,7 +547,7 @@ const UserProfileScreen = () => {
       </ScrollView >
 
 
-    </View >
+    </ >
   );
 };
 
@@ -556,19 +555,18 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: 'white',
-
+    paddingTop: STATUS_BAR_HEIGHT
   },
 
   headerContainer: {
+    backgroundColor: 'white',
+    paddingTop: STATUS_BAR_HEIGHT,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: 'white',
-    elevation: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
+   borderBottomWidth:1,
+   borderColor:'#ddd'
   },
 
   backButton: {
@@ -634,7 +632,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#075cab"
   },
   signOutButton: {
-    padding:10,
+    padding: 10,
     justifyContent: "center",
     alignItems: 'center',
     flexDirection: 'row',
@@ -660,7 +658,7 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     minWidth: 120,
     maxWidth: 200,
-    marginTop:5,
+    marginTop: 5,
   },
   deleteAccountButtonText: {
     color: "red",

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, Image, StyleSheet, TouchableOpacity, Alert, Linking, ActivityIndicator } from 'react-native';
 import axios from 'axios';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+
 import { useNavigation } from '@react-navigation/native';
 
 import apiClient from '../ApiClient';
@@ -12,7 +12,7 @@ import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
 import Delete from '../../assets/svgIcons/delete.svg';
 
 import { colors, dimensions } from '../../assets/theme.jsx';
-import { commonStyles } from '../AppUtils/AppStyles.js';
+import AppStyles, { commonStyles, STATUS_BAR_HEIGHT } from '../AppUtils/AppStyles.js';
 
 const MyEnqueries = () => {
     const { myId, myData } = useNetwork();
@@ -189,58 +189,58 @@ const MyEnqueries = () => {
                 activeOpacity={1} onPress={() => {
                     ServiceDetails(item?.service_id, item?.company_id);
                 }} >
-           
-                    <View style={styles.textContainer}>
 
-                        <View style={commonStyles.valContainer}>
-                            <Text style={commonStyles.label}>Company name      </Text>
-                            <Text style={commonStyles.colon}>:</Text>
-                            <Text style={commonStyles.value}>{item?.company_name || ""}</Text>
-                        </View>
-                        <View style={commonStyles.valContainer}>
-                            <Text style={commonStyles.label}>Service name      </Text>
-                            <Text style={commonStyles.colon}>:</Text>
-                            <Text style={commonStyles.value}>{item?.service_title || ""}</Text>
-                        </View>
-                        <View style={commonStyles.valContainer}>
-                            <Text style={commonStyles.label}>Enquiry description      </Text>
-                            <Text style={commonStyles.colon}>:</Text>
-                            <Text style={commonStyles.value}>{item?.enquiry_description || ""}</Text>
-                        </View>
-                        <View style={commonStyles.valContainer}>
-                            <Text style={commonStyles.label}>Enquired on      </Text>
-                            <Text style={commonStyles.colon}>:</Text>
-                            <Text style={commonStyles.value}>{formattedDate || ""}</Text>
-                        </View>
+                <View style={styles.textContainer}>
 
-
+                    <View style={commonStyles.valContainer}>
+                        <Text style={commonStyles.label}>Company name      </Text>
+                        <Text style={commonStyles.colon}>:</Text>
+                        <Text style={commonStyles.value}>{item?.company_name || ""}</Text>
+                    </View>
+                    <View style={commonStyles.valContainer}>
+                        <Text style={commonStyles.label}>Service name      </Text>
+                        <Text style={commonStyles.colon}>:</Text>
+                        <Text style={commonStyles.value}>{item?.service_title || ""}</Text>
+                    </View>
+                    <View style={commonStyles.valContainer}>
+                        <Text style={commonStyles.label}>Enquiry description      </Text>
+                        <Text style={commonStyles.colon}>:</Text>
+                        <Text style={commonStyles.value}>{item?.enquiry_description || ""}</Text>
+                    </View>
+                    <View style={commonStyles.valContainer}>
+                        <Text style={commonStyles.label}>Enquired on      </Text>
+                        <Text style={commonStyles.colon}>:</Text>
+                        <Text style={commonStyles.value}>{formattedDate || ""}</Text>
+                    </View>
 
 
-                        <View style={styles.buttonContainer}>
-                            <TouchableOpacity
-                                style={styles.deleteButton}
-                                onPress={() => {
-                                    EnquiryDetails(item?.enquiry_id,);
-                                }} activeOpacity={1}>
-                                <Text style={[styles.deleteButtonText, { color: '#075cab' }]}>
-                                    View Enquiry
-                                </Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                style={styles.deleteButton}
-                                onPress={() => handleRevokePress(item.service_id, item.enquiry_fileKey)}
-                                disabled={revokingId === item.service_id}
-                                activeOpacity={1}
-                            >
-                                <Text style={styles.deleteButtonText}>
-                                    {revokingId === item.service_id ? 'Revoke' : 'Revoke'}
-                                </Text>
-                            </TouchableOpacity>
 
-                        </View>
+
+                    <View style={styles.buttonContainer}>
+                        <TouchableOpacity
+                            style={styles.deleteButton}
+                            onPress={() => {
+                                EnquiryDetails(item?.enquiry_id,);
+                            }} activeOpacity={1}>
+                            <Text style={[styles.deleteButtonText, { color: '#075cab' }]}>
+                                View Enquiry
+                            </Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={styles.deleteButton}
+                            onPress={() => handleRevokePress(item.service_id, item.enquiry_fileKey)}
+                            disabled={revokingId === item.service_id}
+                            activeOpacity={1}
+                        >
+                            <Text style={styles.deleteButtonText}>
+                                {revokingId === item.service_id ? 'Revoke' : 'Revoke'}
+                            </Text>
+                        </TouchableOpacity>
 
                     </View>
-          
+
+                </View>
+
             </TouchableOpacity>
         );
 
@@ -250,6 +250,7 @@ const MyEnqueries = () => {
     if (loading) {
         return (
             <View style={styles.container}>
+                <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
 
                 <View style={styles.headerContainer}>
 
@@ -268,6 +269,8 @@ const MyEnqueries = () => {
     if (!enquiredServices || enquiredServices.length === 0 || enquiredServices?.removed_by_author) {
         return (
             <View style={styles.container}>
+                <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
+
                 <View style={styles.headerContainer}>
                     <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
                         <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
@@ -283,6 +286,8 @@ const MyEnqueries = () => {
 
     return (
         <View style={styles.container}>
+            <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
+
             <View style={styles.headerContainer}>
                 <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
                     <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
@@ -323,6 +328,7 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#f5f5f5',
+        paddingTop: STATUS_BAR_HEIGHT
     },
     textContainer: {
         marginBottom: 5,
@@ -332,7 +338,7 @@ const styles = StyleSheet.create({
         borderRadius: 10,
         borderWidth: 0.5,
         borderColor: '#ddd',
-        elevation:3,
+        elevation: 3,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.25,

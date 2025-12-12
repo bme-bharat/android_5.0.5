@@ -5,9 +5,11 @@ import {
     Keyboard,
 
     TouchableWithoutFeedback,
-    ScrollView
+    ScrollView,
+    StatusBar,
+    Platform
 } from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+
 import { useNavigation, useScrollToTop } from '@react-navigation/native';
 import apiClient from '../ApiClient';
 import { useNetwork } from '../AppUtils/IdProvider';
@@ -22,6 +24,14 @@ import Close from '../../assets/svgIcons/close.svg';
 import HomeBanner from '../Banners/homeBanner3.jsx';
 
 import { colors, dimensions } from '../../assets/theme.jsx';
+import Animated from 'react-native-reanimated';
+import scrollAnimations from '../helperComponents/scrollAnimations.jsx';
+
+const STATUS_BAR_HEIGHT =
+    Platform.OS === "android" ? StatusBar.currentHeight || 24 : 44;
+
+const headerHeight = STATUS_BAR_HEIGHT + 60;
+
 const ServicesList = () => {
     const { isConnected } = useConnection();
 
@@ -37,7 +47,7 @@ const ServicesList = () => {
     const [fetchLimit, setFetchLimit] = useState(3);
     const [searchResults, setSearchResults] = useState(false);
     const [searchTriggered, setSearchTriggered] = useState(false);
-
+    const { onScroll, headerStyle, bottomStyle, toolbarBgStyle, barStyle } = scrollAnimations();
 
 
 
@@ -281,54 +291,38 @@ const ServicesList = () => {
     const renderFooter = () => loadingMore ? <ActivityIndicator size="large" color="#075cab" style={{ marginVertical: 10 }} /> : null;
 
     return (
-        <View style={styles.container}>
-            <View style={styles.headerContainer}>
-                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                    <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
 
-                </TouchableOpacity>
-                <View style={AppStyles.searchContainer}>
-                    <View style={AppStyles.inputContainer}>
+        <>
+            <StatusBar translucent backgroundColor="transparent" barStyle={"light-content"} />
+
+            <Animated.View style={[AppStyles.toolbar, toolbarBgStyle]}>
+
+                <Animated.View style={[AppStyles.searchRow, headerStyle]}>
+                    <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton} activeOpacity={1}>
+                        <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.text_secondary} />
+
+                    </TouchableOpacity>
+                    <View style={AppStyles.searchBar}>
+                        <Search width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.text_secondary} />
+
                         <TextInput
+                            ref={searchInputRef}
+                            placeholder="Search services..."
                             style={AppStyles.searchInput}
-                            placeholder="Search"
-                            placeholderTextColor="gray"
+                            placeholderTextColor={colors.text_secondary}
                             value={searchQuery}
                             onChangeText={handleDebouncedTextChange}
-
                         />
-                        {searchQuery.trim() !== '' ? (
-                            <TouchableOpacity
-                                onPress={() => {
-                                    setSearchQuery('');
-                                    setSearchTriggered(false);
-                                    setSearchResults([]);
-
-
-                                }}
-                                style={AppStyles.iconButton}
-                            >
-                                <Close width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-
-                            </TouchableOpacity>
-                        ) : (
-                            <TouchableOpacity
-
-                                style={AppStyles.searchIconButton}
-                            >
-                                <Search width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-
-                            </TouchableOpacity>
-
-                        )}
                     </View>
 
-                </View>
-            </View>
+                </Animated.View>
 
+
+
+            </Animated.View>
 
             {!loading ? (
-                <FlatList
+                <Animated.FlatList
                     data={!searchTriggered || searchQuery.trim() === '' ? services : searchResults}
                     renderItem={renderItem}
                     onScrollBeginDrag={() => {
@@ -337,10 +331,13 @@ const ServicesList = () => {
 
                     }}
                     ref={scrollViewRef}
+                    onScroll={onScroll}
+                    overScrollMode={'never'}
+                    scrollEventThrottle={16}
                     keyboardShouldPersistTaps="handled"
                     keyExtractor={(item, index) => `${item.service_id}-${index}`}
                     showsVerticalScrollIndicator={false}
-                    contentContainerStyle={{ paddingBottom: '20%' }}
+                    contentContainerStyle={{ paddingTop: headerHeight, backgroundColor: colors.app_background }}
                     onEndReached={() => lastEvaluatedKey && fetchservices(lastEvaluatedKey)}
                     onEndReachedThreshold={0.5}
                     ListEmptyComponent={
@@ -351,17 +348,25 @@ const ServicesList = () => {
                         ) : null
                     }
                     refreshControl={
-                        <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={['#075cab']} />
+                        <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} progressViewOffset={headerHeight}/>
                     }
                     ListHeaderComponent={
-                        <View>
-                            <HomeBanner bannerId="serviceAd01" />
-                            {!loading && searchQuery.trim() !== '' && searchResults.length > 0 && (
-                                <Text style={styles.companyCount}>
-                                    {searchResults.length} results found
-                                </Text>
+                        <Animated.View >
+                            <View style={{ paddingVertical: 5, backgroundColor: colors.app_background }}>
+                                <HomeBanner bannerId="serviceAd01" />
+
+                            </View>
+
+                            {searchTriggered && (
+                                <>
+                                    <Text style={styles.companyCount}>
+                                        {searchTriggered && `${searchResults.length} services found`}
+                                    </Text>
+                                </>
                             )}
-                        </View>
+
+                        </Animated.View>
+
                     }
                 />
             ) : (
@@ -371,7 +376,7 @@ const ServicesList = () => {
             )}
 
 
-        </View>
+        </>
     );
 };
 
@@ -486,17 +491,17 @@ const styles = StyleSheet.create({
 
     },
     backButton: {
+        padding: 12,
         alignSelf: 'center',
-        padding: 10
+        borderRadius: 10,
+        backgroundColor: colors.background
     },
 
     card: {
         flexDirection: 'row',
         backgroundColor: '#fff',
         marginBottom: 5,
-        borderWidth: 1,
-        borderColor: '#ddd',
-        top:5
+
     },
 
     productImageContainer: {
@@ -549,7 +554,7 @@ const styles = StyleSheet.create({
         fontWeight: '600',
         color: colors.primary
     },
-    
+
     separator: {
 
         margin: 2,

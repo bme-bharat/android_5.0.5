@@ -4,29 +4,40 @@ import RenderHTML, { defaultHTMLElementModels } from 'react-native-render-html';
 import { decode } from 'html-entities';
 import truncate from 'html-truncate';
 import { colors } from '../../assets/theme';
+import sanitizeHtml from "sanitize-html";
 
 // ========== Clean inline styles ==========
 const stripInlineStyles = (domNode) => {
-  if (domNode.attribs?.style) {
-    domNode.attribs.style = domNode.attribs.style
-      .split(';')
-      .map((s) => s.trim())
-      .filter((s) => {
-        const lower = s.toLowerCase();
-        return (
-          lower.startsWith('font-weight') ||
-          lower.startsWith('font-style') ||
-          lower.startsWith('text-align') ||
-          lower.startsWith('color')
-        );
-      })
-      .join('; ');
+  if (!domNode.attribs?.style) return;
 
-    if (!domNode.attribs.style.trim()) {
-      delete domNode.attribs.style;
-    }
+  const allowedPrefixes = [
+    'margin',
+    'margin-top',
+    'margin-bottom',
+    'margin-left',
+    'margin-right',
+    'padding',
+    'padding-top',
+    'padding-bottom',
+    'padding-left',
+    'padding-right',
+    'line-height'
+  ];
+
+  domNode.attribs.style = domNode.attribs.style
+    .split(';')
+    .map(s => s.trim())
+    .filter(s => {
+      const lower = s.toLowerCase();
+      return allowedPrefixes.some(prefix => lower.startsWith(prefix));
+    })
+    .join('; ');
+
+  if (!domNode.attribs.style.trim()) {
+    delete domNode.attribs.style;
   }
 };
+
 
 // ========== Shared styling ==========
 const baseStyle = { fontSize: 14, };
@@ -35,38 +46,41 @@ const defaultTextProps = {
   selectable: false,
   style: {
     fontSize: 14,
-    marginTop: 0,
-    marginBottom: 0,
+    // marginTop: 0,
+    // marginBottom: 0,
     // fontWeight: '400',
     lineHeight: 20,
     // color:colors.text_secondary,
-    letterSpacing: 0.2, 
+    letterSpacing: 0.2,
   },
 };
 
 const tagStyles = {
-  p: { marginTop: 0, marginBottom: 15 },
-  'li > p': { marginTop: 0, marginBottom: 0 },
-  div: { marginTop: 0, marginBottom: 0 },
-  br: { marginBottom: 10 },
-  ul: { marginTop: 0, marginBottom: 0 },
-  ol: { marginTop: 0, marginBottom: 0 },
-  li: { marginTop: 0, marginBottom: 0 },
-  span: { marginTop: 0, marginBottom: 0 },
-  h1: { marginTop: 0, marginBottom: 0 },
-  h2: { marginTop: 0, marginBottom: 0 },
-  h3: { marginTop: 0, marginBottom: 0 },
-  h4: { marginTop: 0, marginBottom: 0 },
-  h5: { marginTop: 0, marginBottom: 0 },
-  h6: { marginTop: 0, marginBottom: 0 },
-  b: { fontWeight: 'bold',  },
+  // global paragraph spacing
+  p: { marginBottom: 4 },
+
+  // remove spacing only inside ul / ol
+  'ul p': { marginBottom: 0 },
+  'ol p': { marginBottom: 0 },
+
+  ul: { marginBottom: 12, paddingLeft: 18 },
+  ol: { marginBottom: 12, paddingLeft: 18 },
+
+  h1: { marginBottom: 12, fontWeight: 'bold' },
+  h2: { marginBottom: 10, fontWeight: 'bold' },
+  h3: { marginBottom: 8, fontWeight: 'bold' },
+
   strong: { fontWeight: 'bold' },
+  b: { fontWeight: 'bold' },
+
   a: {
-    color: '#075cab', // link color
+    color: '#075cab',
     textDecorationLine: 'underline',
   },
-  
 };
+
+
+
 
 // ========== RenderHTML Wrapper (memoized) ==========
 const RenderHtmlRenderer = React.memo(({ sourceHtml, width }) => {
@@ -282,6 +296,52 @@ export const generateHighlightedHTML = (rawHtml = '', query = '') => {
     return text.replace(regex, (match) =>
       `<span style="background-color: #fff9c4; border-radius: 4px; padding: 0 2px;">${match}</span>`
     );
+  });
+};
+
+
+export const sanitizeHtmlBody = (html) => {
+  return sanitizeHtml(html, {
+    allowedTags: [
+      "p", "div", "span",
+      "br",
+      "ul", "ol", "li",
+      "strong", "b",
+      "em", "i",
+      "u",
+      "h1", "h2", "h3", "h4", "h5", "h6",
+      "blockquote", "pre", "code",
+      "a"
+    ],
+    allowedAttributes: {
+      "*": ["style"], // we allow styles but will whitelist only some
+      "a": ["href", "target"],
+    },
+    allowedSchemes: ["http", "https", "mailto"],
+
+    allowedStyles: {
+      "*": {
+        // ❗ ONLY ALLOW formatting styles — NO colors at all
+        "font-weight": [/^(bold|700|800|900)$/], // bold allowed
+        "font-style": [/^italic$/],             // italic allowed
+        "text-decoration": [/^underline$/],     // underline allowed
+
+        // ❌ NOT ALLOWED:
+        // color
+        // background
+        // background-color
+        // margin
+        // padding
+        // font-family
+        // font-size
+        // line-height
+      },
+    },
+    transformTags: {
+      "a": sanitizeHtml.simpleTransform('a', { rel: "noopener noreferrer" })
+    },
+    allowEmpty: true,
+    exclusiveFilter: () => false,
   });
 };
 

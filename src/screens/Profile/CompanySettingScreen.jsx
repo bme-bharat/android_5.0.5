@@ -24,6 +24,7 @@ import Restrict from '../../assets/svgIcons/user-forbid.svg';
 import Seeker from '../../assets/svgIcons/seekers.svg';
 import Product from '../../assets/svgIcons/products.svg';
 import Service from '../../assets/svgIcons/services.svg';
+import AppStyles, { STATUS_BAR_HEIGHT } from '../AppUtils/AppStyles';
 
 
 
@@ -169,8 +170,9 @@ const CompanySettingScreen = () => {
 
     <View style={styles.container1} >
 
+      <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
 
-      <Animated.ScrollView contentContainerStyle={[styles.container, { paddingBottom: '20%', }]}
+      <Animated.ScrollView contentContainerStyle={{ paddingBottom: '10%', overscrollMode: 'never' }}
         showsVerticalScrollIndicator={false} >
 
         {isConnected ? (

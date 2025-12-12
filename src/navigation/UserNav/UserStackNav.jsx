@@ -1,7 +1,7 @@
 import React, { useCallback, useState } from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+
 ////user job nav
 import UserJobProfileScreen from '../../screens/Job/UserJobProfileScreen';
 import UserJobListScreen from '../../screens/Job/JobListScreen';
@@ -47,7 +47,6 @@ import YourResourcesList from '../../screens/Resources/MyResources';
 import ProductDetails from '../../screens/Products/ProductDetails';
 import CreateProduct from '../../screens/Products/ProductUploads';
 import ProductsList from '../../screens/Products/ProductsList';
-import RelatedProductDetails from '../../screens/Products/RelatedProductsDetails';
 import MyProducts from '../../screens/Products/MyProducts';
 import EditProduct from '../../screens/Products/ProductEdit';
 
@@ -58,7 +57,7 @@ import ServicesList from '../../screens/Services/ServicesList';
 import ServiceDetails from '../../screens/Services/ServiceDetails';
 import EnquiryForm from '../../screens/Services/Enquiry';
 import MyEnqueries from '../../screens/Services/MyEnqueries';
-import RelatedServicesDetails from '../../screens/Services/RelatedServicesDetails';
+
 import EnquiryDetails from '../../screens/Services/EnquiryDetails';
 import InPrivacyPolicy from '../../screens/Bme_content/InPrivacyPolicy';
 import UserHomeScreen from '../../screens/UserHomeScreen';
@@ -67,7 +66,7 @@ import AllPosts from '../../screens/Forum/Feed';
 import LatestPosts from '../../screens/Forum/FeedLatest';
 import TrendingPosts from '../../screens/Forum/FeedTrending';
 import InlineVideo from '../../screens/FullScreenMediaViewer';
-
+import Profile from '../../screens/Profile/UserProfile'
 
 const Stack = createNativeStackNavigator();
 
@@ -124,8 +123,6 @@ const UserStackNav = () => {
       <Stack.Screen name="ServiceDetails" component={ServiceDetails} options={screenOption} />
       <Stack.Screen name="JobDetail" component={JobDetailScreen} options={screenOption} />
       <Stack.Screen name="ProductDetails" component={ProductDetails} options={screenOption} />
-      <Stack.Screen name="RelatedServicesDetails" component={RelatedServicesDetails} options={screenOption} />
-      <Stack.Screen name="RelatedProductDetails" component={RelatedProductDetails} options={screenOption} />
       <Stack.Screen name="ResourceDetails" component={ResourceDetails} options={screenOption} />
       <Stack.Screen name="InlineVideo" component={InlineVideo} options={screenOption} />
 
@@ -151,8 +148,6 @@ const UserJobNav = () => (
     <Stack.Screen name="ServiceDetails" component={ServiceDetails} options={screenOption} />
     <Stack.Screen name="JobDetail" component={JobDetailScreen} options={screenOption} />
     <Stack.Screen name="ProductDetails" component={ProductDetails} options={screenOption} />
-    <Stack.Screen name="RelatedServicesDetails" component={RelatedServicesDetails} options={screenOption} />
-    <Stack.Screen name="RelatedProductDetails" component={RelatedProductDetails} options={screenOption} />
     <Stack.Screen name="ResourceDetails" component={ResourceDetails} options={screenOption} />
 
   </Stack.Navigator>
@@ -178,8 +173,6 @@ const UserCompanyListNav = () => {
       <Stack.Screen name="ServiceDetails" component={ServiceDetails} options={screenOption} />
       <Stack.Screen name="JobDetail" component={JobDetailScreen} options={screenOption} />
       <Stack.Screen name="ProductDetails" component={ProductDetails} options={screenOption} />
-      <Stack.Screen name="RelatedServicesDetails" component={RelatedServicesDetails} options={screenOption} />
-      <Stack.Screen name="RelatedProductDetails" component={RelatedProductDetails} options={screenOption} />
       <Stack.Screen name="ResourceDetails" component={ResourceDetails} options={screenOption} />
       <Stack.Screen name="InlineVideo" component={InlineVideo} options={screenOption} />
       <Stack.Screen name="Comment" component={CommentScreen} options={screenOption} />
@@ -213,8 +206,6 @@ const UserForumNav = () => {
       <Stack.Screen name="ServiceDetails" component={ServiceDetails} options={screenOption} />
       <Stack.Screen name="JobDetail" component={JobDetailScreen} options={screenOption} />
       <Stack.Screen name="ProductDetails" component={ProductDetails} options={screenOption} />
-      <Stack.Screen name="RelatedServicesDetails" component={RelatedServicesDetails} options={screenOption} />
-      <Stack.Screen name="RelatedProductDetails" component={RelatedProductDetails} options={screenOption} />
       <Stack.Screen name="ResourceDetails" component={ResourceDetails} options={screenOption} />
       <Stack.Screen name="InlineVideo" component={InlineVideo} options={screenOption} />
 
@@ -260,6 +251,8 @@ const UserProfileNav = () => (
     <Stack.Screen name="TermsAndConditions" component={TermsAndConditionsScreen} options={screenOption} />
     <Stack.Screen name="CompanyDetails" component={CompanyDetailsScreen} options={screenOption} />
     <Stack.Screen name="ServicesList" component={ServicesList} options={screenOption} />
+    
+    <Stack.Screen name="Profile" component={Profile} options={screenOption} />
 
     <Stack.Screen name="EnquiryForm" component={EnquiryForm} options={screenOption} />
     <Stack.Screen name="MyEnqueries" component={MyEnqueries} options={screenOption} />
@@ -272,8 +265,6 @@ const UserProfileNav = () => (
     <Stack.Screen name="ServiceDetails" component={ServiceDetails} options={screenOption} />
     <Stack.Screen name="JobDetail" component={JobDetailScreen} options={screenOption} />
     <Stack.Screen name="ProductDetails" component={ProductDetails} options={screenOption} />
-    <Stack.Screen name="RelatedServicesDetails" component={RelatedServicesDetails} options={screenOption} />
-    <Stack.Screen name="RelatedProductDetails" component={RelatedProductDetails} options={screenOption} />
     <Stack.Screen name="ResourceDetails" component={ResourceDetails} options={screenOption} />
     <Stack.Screen name="InlineVideo" component={InlineVideo} options={screenOption} />
 
@@ -296,8 +287,7 @@ const UserResources = () => (
     <Stack.Screen name="ServiceDetails" component={ServiceDetails} options={screenOption} />
     <Stack.Screen name="JobDetail" component={JobDetailScreen} options={screenOption} />
     <Stack.Screen name="ProductDetails" component={ProductDetails} options={screenOption} />
-    <Stack.Screen name="RelatedServicesDetails" component={RelatedServicesDetails} options={screenOption} />
-    <Stack.Screen name="RelatedProductDetails" component={RelatedProductDetails} options={screenOption} />
+
     <Stack.Screen name="ResourceDetails" component={ResourceDetails} options={screenOption} />
     <Stack.Screen name="InlineVideo" component={InlineVideo} options={screenOption} />
     <Stack.Screen name="Comment" component={CommentScreen} options={screenOption} />
@@ -321,8 +311,7 @@ const UserProducts = () => {
       <Stack.Screen name="ServiceDetails" component={ServiceDetails} options={screenOption} />
       <Stack.Screen name="JobDetail" component={JobDetailScreen} options={screenOption} />
       <Stack.Screen name="ProductDetails" component={ProductDetails} options={screenOption} />
-      <Stack.Screen name="RelatedServicesDetails" component={RelatedServicesDetails} options={screenOption} />
-      <Stack.Screen name="RelatedProductDetails" component={RelatedProductDetails} options={screenOption} />
+
       <Stack.Screen name="ResourceDetails" component={ResourceDetails} options={screenOption} />
       <Stack.Screen name="InlineVideo" component={InlineVideo} options={screenOption} />
       <Stack.Screen name="Comment" component={CommentScreen} options={screenOption} />
@@ -344,8 +333,7 @@ const CompanyServices = () => {
       <Stack.Screen name="ServiceDetails" component={ServiceDetails} options={screenOption} />
       <Stack.Screen name="JobDetail" component={JobDetailScreen} options={screenOption} />
       <Stack.Screen name="ProductDetails" component={ProductDetails} options={screenOption} />
-      <Stack.Screen name="RelatedServicesDetails" component={RelatedServicesDetails} options={screenOption} />
-      <Stack.Screen name="RelatedProductDetails" component={RelatedProductDetails} options={screenOption} />
+
       <Stack.Screen name="ResourceDetails" component={ResourceDetails} options={screenOption} />
       <Stack.Screen name="Comment" component={CommentScreen} options={screenOption} />
 

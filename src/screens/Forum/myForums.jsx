@@ -20,6 +20,7 @@ import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
 import Add from '../../assets/svgIcons/add.svg';
 
 import { colors, dimensions } from '../../assets/theme.jsx';
+import AppStyles, { STATUS_BAR_HEIGHT } from '../AppUtils/AppStyles.js';
 
 const defaultLogo = Image.resolveAssetSource(defaultImage).uri;
 
@@ -34,7 +35,7 @@ const YourForumListScreen = ({ navigation, route }) => {
   const { myId, myData } = useNetwork();
 
   const [allForumPost, setAllForumPost] = useState([]);
-console.log('allForumPost',allForumPost)
+  console.log('allForumPost', allForumPost)
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [postToDelete, setPostToDelete] = useState(null);
   const scrollViewRef = useRef(null)
@@ -261,10 +262,10 @@ console.log('allForumPost',allForumPost)
         year: 'numeric',
       }).replace(/\//g, '-')
       : 'No date';
-      const cleanUri = (uri) => uri?.split('?')[0];
+    const cleanUri = (uri) => uri?.split('?')[0];
 
-      const isDefaultImage = cleanUri(imageUri) === cleanUri(defaultLogo);
-      
+    const isDefaultImage = cleanUri(imageUri) === cleanUri(defaultLogo);
+
     return (
       <TouchableOpacity activeOpacity={1} onPress={() => {
         forumDetails(item.forum_id, isDefaultImage ? undefined : imageUri);
@@ -316,7 +317,9 @@ console.log('allForumPost',allForumPost)
 
     return (
 
-      <View style={styles.container}>
+      <>
+        <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
+
         <View style={styles.headerContainer}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
             <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
@@ -334,7 +337,7 @@ console.log('allForumPost',allForumPost)
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
           <Text style={{ fontSize: 16, color: 'gray' }}>No posts available</Text>
         </View>
-      </View>
+      </>
     );
   }
 
@@ -342,7 +345,8 @@ console.log('allForumPost',allForumPost)
   return (
 
 
-    <View style={styles.container}>
+    <>
+      <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
 
       <View style={styles.headerContainer}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
@@ -386,7 +390,7 @@ console.log('allForumPost',allForumPost)
         />
       )}
 
-    </View>
+    </>
 
 
   );
@@ -413,7 +417,7 @@ const styles = StyleSheet.create({
     borderColor: '#ddd',
     shadowColor: '#000',
     top: 5,
-    elevation:2
+    elevation: 2
   },
   noPostsContainer: {
     flex: 1,
@@ -490,11 +494,13 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 2,
+    paddingTop: STATUS_BAR_HEIGHT
 
   },
   container: {
     flex: 1,
     backgroundColor: 'whitesmoke',
+    paddingTop: STATUS_BAR_HEIGHT
   },
   imageContainer: {
     flex: 1,
@@ -696,7 +702,6 @@ const styles = StyleSheet.create({
 });
 
 export default YourForumListScreen;
-
 
 
 

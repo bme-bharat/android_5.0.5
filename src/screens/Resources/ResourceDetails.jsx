@@ -5,7 +5,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useRoute, useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Image as FastImage } from 'react-native';
 import Video from 'react-native-video';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import apiClient from '../ApiClient';
 import { useNetwork } from '../AppUtils/IdProvider';
 import { getTimeDisplay } from '../helperComponents/signedUrls';
@@ -19,6 +18,7 @@ import File from '../../assets/svgIcons/file.svg';
 
 
 import { colors, dimensions } from '../../assets/theme.jsx';
+import AppStyles, { STATUS_BAR_HEIGHT } from '../AppUtils/AppStyles.js';
 
 const ResourcesDetails = () => {
     const route = useRoute();
@@ -216,6 +216,7 @@ const ResourcesDetails = () => {
         // Post is not loaded yet or null
         return (
             <View style={styles.mainContainer}>
+                <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
 
                 <View style={styles.headerContainer1}>
                     <TouchableOpacity
@@ -238,6 +239,8 @@ const ResourcesDetails = () => {
     if (postData?.removed_by_author) {
         return (
             <View style={styles.mainContainer}>
+                <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
+
                 <View style={styles.headerContainer1}>
                     <TouchableOpacity
                         style={styles.backButton}
@@ -257,6 +260,8 @@ const ResourcesDetails = () => {
     return (
 
         <View style={styles.mainContainer}>
+            <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
+
             <View style={styles.headerContainer1}>
                 <TouchableOpacity
                     style={styles.backButton}
@@ -374,7 +379,7 @@ const ResourcesDetails = () => {
 };
 
 const styles = StyleSheet.create({
-    mainContainer: { flex: 1, backgroundColor: '#fff' },
+    mainContainer: { flex: 1, backgroundColor: '#fff', paddingTop:STATUS_BAR_HEIGHT },
     backButton: { padding: 10, alignSelf: 'flex-start' },
     container: { padding: 10, },
     authorContainer: {

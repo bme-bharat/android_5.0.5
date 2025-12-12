@@ -1,83 +1,411 @@
 
 
-import React, { useRef, useState, useEffect, useCallback, } from 'react';
-import { View, FlatList, Image, TouchableOpacity, Text, RefreshControl, Keyboard, BackHandler, } from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import { useFocusEffect, useNavigation, useNavigationState } from '@react-navigation/native';
-import Video from 'react-native-video';
-import Banner01 from './Banners/homeBanner';
-import Banner02 from './Banners/homeBanner2';
+import React, { useRef, useState, useEffect, useCallback, memo } from 'react';
+import { View, FlatList, Image, TouchableOpacity, Text, BackHandler, RefreshControl, Keyboard, StatusBar, ActivityIndicator, Dimensions, Platform } from 'react-native';
 
-import { updateCompanyProfile } from './Redux/MyProfile/CompanyProfile_Actions';
-import { useDispatch, useSelector } from 'react-redux';
+import { useNavigation, useFocusEffect, useScrollToTop, useNavigationState } from '@react-navigation/native';
+
 import apiClient from './ApiClient';
-
-import useFetchData from './helperComponents/HomeScreenData';
+import { useDispatch, useSelector } from 'react-redux';
+import { updateCompanyProfile } from './Redux/MyProfile/CompanyProfile_Actions';
 import { useNetwork } from './AppUtils/IdProvider';
+import useFetchData, { fetchJobs, fetchLatestPosts, fetchProducts, fetchServices, fetchTrendingPosts } from './helperComponents/HomeScreenData';
 import { useConnection } from './AppUtils/ConnectionProvider';
-import { getSignedUrl, getTimeDisplayForum, getTimeDisplayHome } from './helperComponents/signedUrls';
+import { getSignedUrl, getTimeDisplay, getTimeDisplayForum, getTimeDisplayHome } from './helperComponents/signedUrls';
 import AppStyles, { styles } from './AppUtils/AppStyles';
 import { ForumPostBody } from './Forum/forumBody';
-import { Image as FastImage } from 'react-native';
+import { generateAvatarFromName } from './helperComponents/useInitialsAvatar';
 import BottomNavigationBar from './AppUtils/BottomNavigationBar';
-import Menu from '../assets/svgIcons/menu.svg';
+import Banner01 from './Banners/homeBanner';
+import Banner02 from './Banners/homeBanner2';
+import Banner03 from './Banners/homeBanner3';
+
+
 import Notification from '../assets/svgIcons/notification.svg';
 import Job from '../assets/svgIcons/jobs.svg';
 import Fire from '../assets/svgIcons/fire.svg';
 import Service from '../assets/svgIcons/services.svg';
 import Product from '../assets/svgIcons/products.svg';
 import Latest from '../assets/svgIcons/latest.svg';
+import Name from '../assets/svgIcons/id-card.svg';
 import Description from '../assets/svgIcons/description.svg';
 import Company from '../assets/svgIcons/company.svg';
 import Money from '../assets/svgIcons/money.svg';
 import AnimatedTextSequence from './animations/AnimatedTextSequence';
-import Spin from './animations/spin';
-import { colors, dimensions } from '../assets/theme';
+import FastImage from "@d11/react-native-fast-image";
+import Menu from "../assets/svgIcons/menu.svg";
+import User from "../assets/svgIcons/user.svg";
 import LinearGradient from 'react-native-linear-gradient';
-const CompanySettingScreen = React.lazy(() => import('./Profile/CompanySettingScreen'));
+
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  useAnimatedScrollHandler,
+  interpolate,
+  Extrapolate,
+  runOnJS,
+  withTiming,
+} from "react-native-reanimated";
+import { colors, dimensions } from '../assets/theme';
+
+
+const { width, height } = Dimensions.get("window");
+const HEADER_HEIGHT = width * (10 / 16);
+const COLLAPSED_HEIGHT = 60;
+const TOP_HEADER_HEIGHT = 60;
+
+const STATUS_BAR_HEIGHT =
+  Platform.OS === "android" ? StatusBar.currentHeight || 24 : 44;
+
+
+const SHOW_THRESHOLD = 8; // small scroll threshold to hide top header
+const DIRECTION_THRESHOLD = 0.5; // small delta to avoid jitter
+
+const UserSettingScreen = React.lazy(() => import('./Profile/UserSettingScreen'));
 const ProductsList = React.lazy(() => import('./Products/ProductsList'));
-const JobListScreen = React.lazy(() => import('./Job/JobListScreen'));
 const AllPosts = React.lazy(() => import('./Forum/Feed'));
+const JobListScreen = React.lazy(() => import('./Job/JobListScreen'));
+
+
+
+const sectionThemes = {
+  latest: {
+    icon: "🔥",
+    gradient: [
+      "rgb(211, 210, 210)",   
+      "rgba(122, 180, 224, 0.10)"
+    ],
+    shadow: "rgba(122,180,224,0.25)",
+    textColor: "#003A70",
+  },
+
+  jobs: {
+    icon: "💼",
+    gradient: [
+      "rgb(211, 210, 210)",   
+      "rgba(122, 180, 224, 0.10)"
+    ],
+    shadow: "rgba(74,146,209,0.25)",
+    textColor: "#003A70",
+  },
+
+  trending: {
+    icon: "📈",
+    gradient: [
+      "rgb(211, 210, 210)",   
+      "rgba(122, 180, 224, 0.10)"
+    ],
+    shadow: "rgba(168,210,238,0.25)",
+    textColor: "#003A70",
+  },
+
+  products: {
+    icon: "🛍️",
+    gradient: [
+      "rgb(211, 210, 210)",   
+      "rgba(122, 180, 224, 0.10)"
+    ],
+    shadow: "rgba(223,240,250,0.25)",
+    textColor: "#003A70",
+  },
+
+  services: {
+    icon: "🛠️",
+    gradient: [
+      "rgb(211, 210, 210)",   
+      "rgba(122, 180, 224, 0.10)"
+    ],
+    shadow: "rgba(30,111,190,0.25)",
+    textColor: "#003A70",
+  },
+
+  default: {
+    icon: "✨",
+    gradient: [
+      "rgb(211, 210, 210)",   
+      "rgba(122, 180, 224, 0.10)"
+    ],
+    shadow: "rgba(122,180,224,0.2)",
+    textColor: "#003A70",
+  },
+};
+
+
+
+
+
+
+
+const SectionWrapper = ({
+  keyName,
+  title,
+  fetchDataFn,
+  onVisible,
+  childrenRenderer,
+  placeholderHeight = height,
+  isLast,  // NEW: Prop to know if this is the last rendered section
+  onLoaded,
+}) => {
+
+  const isBanner = keyName?.startsWith("banner"); // 👈 EASY CHECK
+  const theme = sectionThemes[keyName];
+  const navigation = useNavigation();
+
+  const [data, setData] = useState(fetchDataFn ? null : []);
+  const [loading, setLoading] = useState(false);
+
+  const navigationMap = [
+    { key: "jobs", navigate: () => navigation.navigate("Jobs") },
+    { key: "trending", navigate: () => navigation.navigate("Trending") },
+    { key: "latest", navigate: () => navigation.navigate("Latest") },
+    { key: "products", navigate: () => navigation.navigate("Products") },
+    { key: "services", navigate: () => navigation.navigate("Services") },
+  ];
+  
+ const seeMoreFn = navigationMap.find(n => keyName?.toLowerCase().includes(n.key))?.navigate;
+
+  useEffect(() => {
+    if (data !== null && isLast && onLoaded) {  // data is set (either [] for no fetch or actual data)
+      onLoaded();
+    }
+  }, [data, isLast, onLoaded]);
+
+  useEffect(() => {
+    if (!fetchDataFn) return;
+    if (!onVisible || data) return;
+
+    let mounted = true;
+    const load = async () => {
+      setLoading(true);
+      const res = await fetchDataFn();
+      if (!mounted) return;
+
+      setData(res?.jobs || res?.products || res?.services || res || []);
+      setLoading(false);
+    };
+
+    load();
+    return () => (mounted = false);
+  }, [onVisible]);
+
+  // =============================================
+  // ⭐ IF BANNER → NO THEMES, NO HEADER, NO GRADIENT
+  // =============================================
+  if (isBanner) {
+    return (
+      <View style={{ marginBottom: 10 }}>
+        {childrenRenderer(data)}
+      </View>
+    );
+  }
+
+  // =============================================
+  // ⭐ NORMAL SECTION WITH THEME
+  // =============================================
+  return (
+    <LinearGradient
+      colors={theme.gradient}
+      start={{ x: 0.5, y: 0 }}  // top center
+      end={{ x: 0.5, y: 0.5 }}
+      style={{
+        borderRadius: 20,
+        padding: 5,
+        marginHorizontal: 5,
+        marginBottom: 10,
+        shadowColor: theme.shadow,
+        shadowOpacity: 0.6,
+        shadowRadius: 14,
+        shadowOffset: { width: 0, height: 6 },
+        elevation: 6,
+        minHeight: data ? undefined : placeholderHeight,
+        position: 'relative'
+      }}
+    >
+      {/* HEADER */}
+      {title && (
+        <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 14, paddingHorizontal: 10, justifyContent: 'space-between' }}>
+          <View style={{flexDirection: "row",alignItems: "center",}}>
+            <Text style={{ fontSize: 26, marginRight: 8 }}>{theme.icon}</Text>
+            <Text style={{
+              color: theme.textColor,
+              fontSize: 16,
+              fontWeight: "600",
+              letterSpacing: 0.3,
+            }}>
+              {title}
+            </Text>
+          </View>
+          {seeMoreFn && (
+            <Text onPress={seeMoreFn} style={{
+              color: theme.textColor,
+              fontSize: 16,
+              fontWeight: "600",
+              letterSpacing: 0.3,
+            }}>
+              See more
+            </Text>
+          )}
+        </View>
+      )}
+
+      {/* LOADING */}
+      {loading && (
+        <View style={{
+          height: placeholderHeight - 90,
+          borderRadius: 18,
+          backgroundColor: "rgba(255,255,255,0.22)",
+          overflow: "hidden",
+        }}>
+
+        </View>
+      )}
+
+      {childrenRenderer(data)}
+    </LinearGradient>
+  );
+};
+
+
+
+
+
 
 
 const tabNameMap = {
-  CompanyJobList: "Jobs",
-  Home3: 'Home',
+  Home3: "Home",
+  ProductsList: "Products",
+  Feed: "Feed",
+  Jobs: "Jobs",
+  Settings: "Settings",
 };
-const tabConfig = [
-  { name: "Home", component: CompanyHomeScreen, focusedIcon: 'home', unfocusedIcon: 'home-outline', iconComponent: Icon },
-  { name: "Jobs", component: JobListScreen, focusedIcon: 'briefcase', unfocusedIcon: 'briefcase-outline', iconComponent: Icon },
-  { name: "Feed", component: AllPosts, focusedIcon: 'rss', unfocusedIcon: 'rss-box', iconComponent: Icon },
-  { name: "Products", component: ProductsList, focusedIcon: 'shopping', unfocusedIcon: 'shopping-outline', iconComponent: Icon },
-  { name: "Settings", component: CompanySettingScreen, focusedIcon: 'cog', unfocusedIcon: 'cog-outline', iconComponent: Icon },
-];
 
+const tabConfig = [
+  { name: "Home", component: CompanyHomeScreen },
+  { name: "Jobs", component: JobListScreen },
+  { name: "Feed", component: AllPosts },
+  { name: "Products", component: ProductsList },
+  { name: "Settings", component: UserSettingScreen },
+];
 
 
 const CompanyHomeScreen = React.memo(() => {
   const { myId, myData } = useNetwork();
+
   const { isConnected } = useConnection();
+
   const currentRouteName = useNavigationState((state) => {
     const route = state.routes[state.index];
 
     return route.name;
   });
   const profile = useSelector(state => state.CompanyProfile.profile);
+
   const dispatch = useDispatch();
+
   const navigation = useNavigation();
   const [isRefreshing, setIsRefreshing] = React.useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const flatListRef = useRef(null);
-  const scrollOffsetY = useRef(0);
-  const [isProfileFetched, setIsProfileFetched] = useState(false);
+
+  const scrollY = useSharedValue(0);
+  const prevScrollY = useSharedValue(0); // track previous scroll position to detect direction
+  const [barStyle, setBarStyle] = React.useState("dark-content");
+
+  // topHeaderVisible: 1 -> visible at top (scrollY <= SHOW_THRESHOLD OR scrolling up)
+  // 0 -> hidden when scrolled down
+  const topHeaderVisible = useSharedValue(1);
+
+  const onScroll = useAnimatedScrollHandler({
+    onScroll: (event) => {
+
+      const y = event.contentOffset.y;
+      const prev = prevScrollY.value;
+      const dy = y - prev; // positive -> scrolling down, negative -> scrolling up
+
+      scrollY.value = y;
+
+      // Toggle status bar style based on scroll (optional)
+      const shouldUseDark = y > SHOW_THRESHOLD;
+
+      runOnJS(setBarStyle)(shouldUseDark ? "dark-content" : "light-content");
+
+      // Always visible inside header image
+      if (y < HEADER_HEIGHT - COLLAPSED_HEIGHT) {
+        topHeaderVisible.value = withTiming(1, { duration: 180 });
+      }
+      else {
+        // Only AFTER header collapsed → direction-based hide/show
+        if (dy > DIRECTION_THRESHOLD && topHeaderVisible.value === 1) {
+          topHeaderVisible.value = withTiming(0, { duration: 180 });
+        }
+        else if (dy < -DIRECTION_THRESHOLD && topHeaderVisible.value === 0) {
+          topHeaderVisible.value = withTiming(1, { duration: 180 });
+        }
+      }
+
+      // store current as previous for next frame
+      prevScrollY.value = y;
+    },
+  });
+
+  // Animated style for StatusBar-like background
+  const statusBarBgStyle = useAnimatedStyle(() => {
+    // fade from 0 → 1 as scroll moves from 0 → HEADER_HEIGHT (adjust as needed)
+    const opacity = interpolate(
+      scrollY.value,
+      [0, HEADER_HEIGHT],
+      [0, 1],
+      Extrapolate.CLAMP
+    );
+
+    return {
+      backgroundColor: `rgba(255,255,255,${opacity})`,
+    };
+  });
+
+  const headerAnimatedStyle = useAnimatedStyle(() => ({
+    height: interpolate(
+      scrollY.value,
+      [0, HEADER_HEIGHT],
+      [HEADER_HEIGHT, COLLAPSED_HEIGHT + STATUS_BAR_HEIGHT],
+      Extrapolate.CLAMP
+    ),
+  }));
+
+  const toolbarBgStyle = useAnimatedStyle(() => {
+    // fade from 0 → 1 as scroll moves from 0 → 40 (you can adjust)
+    const opacity = interpolate(
+      scrollY.value,
+      [0, 40],
+      [0, 1],
+      Extrapolate.CLAMP
+    );
+
+    // white background with fade
+    return {
+      backgroundColor: "rgba(255,255,255," + opacity + ")",
+      shadowOpacity: opacity * 0.1, // smooth fade-in shadow
+    };
+  });
 
 
+  // top header animation (collapse height + slide + fade)
+  const topHeaderStyle = useAnimatedStyle(() => {
+    // topHeaderVisible.value will be animating between 0 and 1
+    const v = topHeaderVisible.value;
+    // height goes from 0 -> TOP_HEADER_HEIGHT
+    const height = interpolate(v, [0, 1], [0, TOP_HEADER_HEIGHT], Extrapolate.CLAMP);
+    const translateY = interpolate(v, [0, 1], [-8, 0], Extrapolate.CLAMP);
+    const opacity = interpolate(v, [0, 1], [0, 1], Extrapolate.CLAMP);
 
-  const handleScroll = (event) => {
-    const offsetY = event.nativeEvent.contentOffset.y;
-    scrollOffsetY.current = offsetY;
-  };
+    return {
+      height,
+      opacity,
+      transform: [{ translateY }],
+      overflow: "hidden",
 
+    };
+  });
 
   useFocusEffect(
     useCallback(() => {
@@ -103,287 +431,334 @@ const CompanyHomeScreen = React.memo(() => {
 
 
 
-  const handleRefresh = async () => {
-    if (isConnected) {
-      setIsRefreshing(true);
-      await refreshData();
-      setIsRefreshing(false);
-    }
-  };
 
   const navigateToDetails = (job) => {
     navigation.navigate("JobDetail", { post_id: job.post_id, post: job });
   };
 
-  const {
-    jobs,
-    latestPosts,
-    trendingPosts,
-    products,
-    services,
-    isFetchingProducts,
-    isFetchingServices,
-    isFetchingJobs,
-    isFetchingLatestPosts,
-    isFetchingTrendingPosts,
-    jobImageUrls,
-    latestImageUrls,
-    trendingImageUrls,
-    productImageUrls,
-    servicesImageUrls,
-    authorImageUrls,
-    refreshData,
-
-  } = useFetchData({ shouldFetch: isProfileFetched });
-
-  const renderJobCard = ({ item }) => {
-    if (!item || item.isEmpty) return null;
-
-    const { post_id, job_title, experience_required, Package, job_post_created_on, companyAvatar, working_location } = item;
-    const imageUrl = jobImageUrls?.[item.post_id];
-
-    return (
-      <TouchableOpacity
-        onPress={() => navigateToDetails(item)}
-        activeOpacity={0.85}
-        style={styles.eduCard}
-      >
-
-        <View style={styles.eduCardLeft}>
-          {imageUrl ? (
-            <FastImage
-              source={{ uri: imageUrl, }}
-
-              style={styles.eduImage}
-              resizeMode='contain'
-              onError={() => { }}
-            />
-          ) : (
-            <View style={[AppStyles.avatarContainer, { backgroundColor: companyAvatar?.backgroundColor }]}>
-              <Text style={[AppStyles.avatarText, { color: companyAvatar?.textColor }]}>
-                {companyAvatar?.initials}
-              </Text>
-            </View>
-          )}
-        </View>
-
-        <View style={styles.eduCardRight}>
-          <Text numberOfLines={1} ellipsizeMode="tail" style={styles.eduTitle}>
-            {job_title || "Job Title"}
-          </Text>
-
-          <Text numberOfLines={1} style={styles.eduSubText}>
-            <Text style={styles.label}>Experience: </Text>
-            {experience_required?.slice(0, 15) || "N/A"}
-          </Text>
-
-          <Text numberOfLines={1} style={styles.eduSubText}>
-            <Text style={styles.label}>Package: </Text>
-            {Package || 'Not disclosed'}
-          </Text>
-
-          <Text numberOfLines={1} style={styles.eduSubText}>
-            <Text style={styles.label}>Location: </Text>
-            {working_location || 'Not disclosed'}
-          </Text>
-
-          <Text numberOfLines={1} style={[styles.eduSubText, { alignSelf: 'flex-end', fontSize: 11, fontWeight: '300', color: colors.text_secondary, }]}>
-            {getTimeDisplayHome(job_post_created_on) || 'Not disclosed'}
-          </Text>
 
 
-        </View>
-      </TouchableOpacity>
-    );
-  };
 
-  const renderForumCard = ({ item }) => {
-    if (!item || !item.forum_id) return null;
+  const renderSectionUI = (key, data) => {
+    switch (key) {
 
-    const isVideo = item.fileKey?.endsWith('.mp4');
+      case "banner1":
+        return <Banner02 />
+      case "latest":
+        return (
+          <FlatList
+            data={data}
+            showsHorizontalScrollIndicator={false}
+            keyExtractor={(item) => item.forum_id.toString()}
+            renderItem={({ item }) => (
+              <TouchableOpacity
+                activeOpacity={0.9}
+                style={styles.articleCard}
+                onPress={() => navigation.navigate("Comment", { forum_id: item.forum_id })}
+              >
+                <View style={[styles.articleCardHeader, { backgroundColor: '#fff' }]}>
+                  {/* Vertical stack for badge, image, name */}
+                  <View style={{ marginTop: 5 }}>
 
-    return (
-      <TouchableOpacity
-        activeOpacity={0.9}
-        style={styles.articleCard}
-        onPress={() => navigation.navigate("Comment", { forum_id: item.forum_id })}
-      >
-        <View style={[styles.articleCardHeader, { backgroundColor: '#fff' }]}>
-          {/* Vertical stack for badge, image, name */}
-          <View style={{ marginTop: 5 }}>
+                    <View style={[styles.authorRow]}>
+                      {item?.authorImage ? (
+                        <Image
+                          source={{ uri: item.authorImage }}
+                          style={styles.authorImage}
+                          resizeMode="cover"
+                        />
+                      ) : (
+                        <View
+                          style={[
+                            styles.authorImage,
+                            {
+                              backgroundColor: item.avatar?.backgroundColor || '#ccc',
+                              justifyContent: 'center',
+                              alignItems: 'center',
+                            }
+                          ]}
+                        >
+                          <Text style={{ color: item.avatar?.textColor || '#fff', fontWeight: 'bold', fontSize: 24 }}>
+                            {item.avatar?.initials}
+                          </Text>
+                        </View>
+                      )}
 
-            <View style={[styles.authorRow]}>
-              {item?.authorImage ? (
-                <Image
-                  source={{ uri: item.authorImage }}
-                  style={styles.authorImage}
-                  resizeMode="cover"
-                />
-              ) : (
-                <View
-                  style={[
-                    styles.authorImage,
-                    {
-                      backgroundColor: item.avatar?.backgroundColor || '#ccc',
-                      justifyContent: 'center',
-                      alignItems: 'center',
-                    }
-                  ]}
-                >
-                  <Text style={{ color: item.avatar?.textColor || '#fff', fontWeight: 'bold' }}>
-                    {item.avatar?.initials || 'B'}
-                  </Text>
+
+                      <View style={styles.authorInfo}>
+                        <Text
+                          style={styles.authorName}
+                          numberOfLines={1}
+                          ellipsizeMode="tail"
+                        >
+                          {item.author || 'No Name'}
+                        </Text>
+                        <Text style={styles.badgeText}>{item.author_category || ''}</Text>
+
+                        <Text style={styles.articleTime}>{getTimeDisplayForum(item.posted_on)}</Text>
+                      </View>
+                    </View>
+
+                  </View>
+
+                  {item.mediaUrl && (
+
+                    <Image
+                      source={{ uri: item.mediaUrl }}
+                      style={styles.articleMedia}
+                      resizeMode="cover"
+                    />
+
+                  )}
+
                 </View>
-              )}
 
 
-              <View style={styles.authorInfo}>
-                <Text
-                  style={styles.authorName}
-                  numberOfLines={1}
-                  ellipsizeMode="tail"
-                >
-                  {item.author || 'No Name'}
-                </Text>
-                <Text style={styles.badgeText}>{item.author_category || ''}</Text>
-
-                <Text style={styles.articleTime}>{getTimeDisplayForum(item.posted_on)}</Text>
-              </View>
-            </View>
-
-          </View>
-
-          {item.mediaUrl && (
-
-            <Image
-              source={{ uri: item.mediaUrl }}
-              style={styles.articleMedia}
-              resizeMode="cover"
-            />
-
-          )}
-
-        </View>
-
-
-        <ForumPostBody
-          html={item.forum_body}
-          forumId={item?.forum_id}
-          numberOfLines={4}
-        />
-      </TouchableOpacity>
-
-    );
-  };
-
-  const renderProductCard = ({ item }) => {
-    if (!item || !item.product_id) return null;
-
-    const imageUrl = productImageUrls?.[item.product_id]
-    return (
-      <TouchableOpacity
-        style={styles.card5}
-        activeOpacity={1}
-        onPress={() => handleAddProduct(item)}
-      >
-
-        <View style={styles.companyImageContainer}>
-          <Image
-            source={{ uri: imageUrl }}
-            style={styles.companyImage}
-            resizeMode='contain'
+                <ForumPostBody
+                  html={item.forum_body}
+                  forumId={item?.forum_id}
+                  numberOfLines={4}
+                />
+              </TouchableOpacity>
+            )}
 
           />
-        </View>
+        );
 
-        <View style={styles.cardContent4}>
-          <View style={styles.cardTitleRow}>
-            <Text numberOfLines={1} style={styles.eduTitle}>{item.title || ' '}
-            </Text>
-          </View>
-          <View style={styles.cardTitleRow}>
-            <Description width={dimensions.icon.small} height={dimensions.icon.small} color={colors.gray} />
-            <Text style={styles.rowText} numberOfLines={1}>{item.description || 'Not specified'}</Text>
-          </View>
+      case "banner2":
+        return <Banner02 />
 
-          <View style={styles.cardTitleRow}>
-            <Company width={dimensions.icon.small} height={dimensions.icon.small} color={colors.gray} />
-            <Text style={styles.rowText} numberOfLines={1}>{item.company_name || 'Not specified'}</Text>
-          </View>
+      case "jobs":
+        return (
+          <FlatList
+            data={data}
+            keyExtractor={(item) => item.post_id.toString()}
+            renderItem={({ item }) => (
+              <TouchableOpacity
+                onPress={() => navigateToDetails(item)}
+                activeOpacity={0.85}
+                style={styles.eduCard}
+              >
+                <View style={styles.eduCardLeft}>
+                  {item.image ? (
+                    <Image source={{ uri: item.image }} style={styles.eduImage} />
+                  ) : (
+                    <View style={styles.cardImage1}>
+                      <Text style={styles.avatarText}>{item.companyAvatar.initials}</Text>
+                    </View>
+                  )}
+                </View>
+                <View style={styles.eduCardRight}>
+                  <Text numberOfLines={1} ellipsizeMode="tail" style={styles.eduTitle}>
+                    {item.job_title || "Job Title"}
+                  </Text>
 
-          <View style={styles.cardTitleRow}>
-            <Money width={dimensions.icon.small} height={dimensions.icon.small} color={colors.gray} />
-            <Text style={styles.rowText} numberOfLines={1}>
-              {(item.price ?? '').toString().trim() !== '' ? item.price : 'Not specified'}
-            </Text>
-          </View>
+                  <Text numberOfLines={1} style={styles.eduSubText}>
+                    <Text style={styles.label}>Experience: </Text>
+                    {item.experience_required?.slice(0, 15) || "N/A"}
+                  </Text>
 
-        </View>
+                  <Text numberOfLines={1} style={styles.eduSubText}>
+                    <Text style={styles.label}>Package: </Text>
+                    {item.Package || 'Not disclosed'}
+                  </Text>
 
-      </TouchableOpacity>
-    );
-  };
+                  <Text numberOfLines={1} style={styles.eduSubText}>
+                    <Text style={styles.label}>Location: </Text>
+                    {item.working_location || 'Not disclosed'}
+                  </Text>
 
-  const renderServiceCard = ({ item }) => {
-    if (!item || !item.service_id) return null;
+                  <Text numberOfLines={1} style={[styles.eduSubText, { alignSelf: 'flex-end', fontSize: 11, fontWeight: '300', color: colors.text_secondary, }]}>
+                    {getTimeDisplayHome(item.job_post_created_on) || 'Not disclosed'}
+                  </Text>
 
-    const imageUrl = servicesImageUrls?.[item.service_id]
 
-    return (
-      <TouchableOpacity
-        style={styles.card5}
-        activeOpacity={1}
-        onPress={() => handleAddservice(item)}
-      >
+                </View>
+              </TouchableOpacity>
+            )}
+          />
 
-        <View style={styles.companyImageContainer}>
-          <Image
-            source={{ uri: imageUrl }}
-            style={styles.companyImage}
-            resizeMode='contain'
+        );
+
+
+      case "trending":
+        return (
+          <FlatList
+            data={data}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            keyExtractor={(item) => item.forum_id.toString()}
+            renderItem={({ item }) => (
+              <TouchableOpacity
+                activeOpacity={0.9}
+                style={styles.postCard}
+                onPress={() => navigation.navigate("Comment", { forum_id: item.forum_id })}
+              >
+                {/* HEADER */}
+                <View style={styles.postHeader}>
+                  {item.authorImage ? (
+                    <Image source={{ uri: item.authorImage }} style={styles.postAvatar} />
+                  ) : (
+                    <View
+                      style={[
+                        styles.authorImage,
+                        {
+                          backgroundColor: item.avatar?.backgroundColor || '#ccc',
+                          justifyContent: 'center',
+                          alignItems: 'center',
+                        }
+                      ]}
+                    >
+                      <Text style={{ color: item.avatar?.textColor || '#fff', fontWeight: 'bold', fontSize: 24 }}>
+                        {item.avatar?.initials}
+                      </Text>
+                    </View>
+                  )}
+
+                  <View style={{ marginLeft: 12, flex: 1 }}>
+                    <Text style={styles.postAuthor} numberOfLines={1}>
+                      {item.author}
+                    </Text>
+                    <Text style={styles.postCategory}>{item.author_category}</Text>
+                    <Text style={styles.postTime}>
+                      {getTimeDisplayForum(item.posted_on)}
+                    </Text>
+                  </View>
+                </View>
+
+                {/* IMAGE */}
+                {item.mediaUrl && (
+                  <Image source={{ uri: item.mediaUrl }} style={styles.postImage} />
+                )}
+
+                {/* BODY */}
+                <ForumPostBody
+                  html={item.forum_body}
+                  forumId={item.forum_id}
+                  numberOfLines={4}
+                />
+              </TouchableOpacity>
+            )}
 
           />
-        </View>
+        );
 
-        <View style={styles.cardContent4}>
-          <View style={styles.cardTitleRow}>
-            <Text numberOfLines={1} style={styles.eduTitle}>{item.title || ' '}
-            </Text>
-          </View>
-          <View style={styles.cardTitleRow}>
-            <Description width={dimensions.icon.small} height={dimensions.icon.small} color={colors.gray} />
-            <Text style={styles.rowText} numberOfLines={1}>{item.description || 'Not specified'}</Text>
-          </View>
+      case "banner3":
+        return <Banner03 />
 
-          <View style={styles.cardTitleRow}>
-            <Company width={dimensions.icon.small} height={dimensions.icon.small} color={colors.gray} />
-            <Text style={styles.rowText} numberOfLines={1}>{item.company_name || 'Not specified'}</Text>
-          </View>
+      case "products":
+        return (
+          <FlatList
+            data={data}
 
-          <View style={styles.cardTitleRow}>
-            <Money width={dimensions.icon.small} height={dimensions.icon.small} color={colors.gray} />
-            <Text style={styles.rowText} numberOfLines={1}>
-              {(item.price ?? '').toString().trim() !== '' ? item.price : 'Not specified'}
-            </Text>
-          </View>
+            showsHorizontalScrollIndicator={false}
+            keyExtractor={(item) => item.product_id.toString()}
+            numColumns={2}
+            contentContainerStyle={styles.flatListContainer}
+            columnWrapperStyle={styles.columnWrapper}
+            renderItem={({ item }) => (
+              <TouchableOpacity
+                style={styles.card5}
+                activeOpacity={1}
+                onPress={() => handleAddProduct(item)}
+              >
 
-        </View>
 
-      </TouchableOpacity>
-    );
+                <Image source={{ uri: item.image }} style={{ width: 100, height: 100, alignSelf:'center' }} />
+
+                <View style={styles.cardContent4}>
+                  <View style={styles.cardTitleRow}>
+                    <Text numberOfLines={1} style={styles.eduTitle}>{item.title || ' '}
+                    </Text>
+                  </View>
+                  <View style={styles.cardTitleRow}>
+                    <Description width={dimensions.icon.small} height={dimensions.icon.small} color={colors.gray} />
+                    <Text style={styles.rowText} numberOfLines={1}>{item.description || 'Not specified'}</Text>
+                  </View>
+
+                  <View style={styles.cardTitleRow}>
+                    <Company width={dimensions.icon.small} height={dimensions.icon.small} color={colors.gray} />
+                    <Text style={styles.rowText} numberOfLines={1}>{item.company_name || 'Not specified'}</Text>
+                  </View>
+
+                  <View style={styles.cardTitleRow}>
+                    <Money width={dimensions.icon.small} height={dimensions.icon.small} color={colors.gray} />
+                    <Text style={styles.rowText} numberOfLines={1}>
+                      {(item.price ?? '').toString().trim() !== '' ? item.price : 'Not specified'}
+                    </Text>
+                  </View>
+
+                </View>
+
+              </TouchableOpacity>
+            )}
+          />
+        );
+
+      case "services":
+        return (
+          <FlatList
+            data={data}
+
+            showsHorizontalScrollIndicator={false}
+            keyExtractor={(item) => item.service_id.toString()}
+            numColumns={2}
+            contentContainerStyle={styles.flatListContainer}
+            columnWrapperStyle={styles.columnWrapper}
+            renderItem={({ item }) => (
+              <TouchableOpacity
+                style={styles.card5}
+                activeOpacity={1}
+                onPress={() => handleAddservice(item)}
+              >
+
+
+                <Image source={{ uri: item.image }} style={{ width: 100, height: 100, alignSelf:'center' }} />
+                <View style={styles.cardContent4}>
+                  <View style={styles.cardTitleRow}>
+                    <Text numberOfLines={1} style={styles.eduTitle}>{item.title || ' '}
+                    </Text>
+                  </View>
+                  <View style={styles.cardTitleRow}>
+                    <Description width={dimensions.icon.small} height={dimensions.icon.small} color={colors.gray} />
+                    <Text style={styles.rowText} numberOfLines={1}>{item.description || 'Not specified'}</Text>
+                  </View>
+
+                  <View style={styles.cardTitleRow}>
+                    <Company width={dimensions.icon.small} height={dimensions.icon.small} color={colors.gray} />
+                    <Text style={styles.rowText} numberOfLines={1}>{item.company_name || 'Not specified'}</Text>
+                  </View>
+
+                  <View style={styles.cardTitleRow}>
+                    <Money width={dimensions.icon.small} height={dimensions.icon.small} color={colors.gray} />
+                    <Text style={styles.rowText} numberOfLines={1}>
+                      {(item.price ?? '').toString().trim() !== '' ? item.price : 'Not specified'}
+                    </Text>
+                  </View>
+
+                </View>
+
+              </TouchableOpacity>
+            )}
+          />
+        );
+
+      default:
+        return null;
+    }
   };
 
 
 
 
 
-  useEffect(() => {
-    fetchProfile();
-  }, [myId]);
 
 
   const allJobs = () => {
     navigation.navigate('Jobs');
+  };
+  const allPosts = () => {
+    navigation.navigate('Feed');
   };
 
   const goToTrending = () => {
@@ -403,11 +778,13 @@ const CompanyHomeScreen = React.memo(() => {
   };
 
   const handleAddservice = (service) => {
+
     navigation.navigate('ServiceDetails', { service_id: service.service_id, company_id: service.company_id });
 
   };
 
   const handleAddProduct = (product) => {
+
     navigation.navigate('ProductDetails', { product_id: product.product_id, company_id: product.company_id });
 
   };
@@ -456,12 +833,14 @@ const CompanyHomeScreen = React.memo(() => {
     } catch (error) {
       dispatch(updateCompanyProfile(null));
     } finally {
-      setIsProfileFetched(true);
+
     }
   };
 
 
-
+  useEffect(() => {
+    fetchProfile();
+  }, [myId]);
 
   const handleProfile = () => {
     if (!isConnected) {
@@ -475,6 +854,7 @@ const CompanyHomeScreen = React.memo(() => {
 
   const handleMenuPress = () => {
     if (!isConnected) {
+
       return;
     }
     const parentNavigation = navigation.getParent();
@@ -484,34 +864,52 @@ const CompanyHomeScreen = React.memo(() => {
   };
 
 
-  const [activeBannerId, setActiveBannerId] = useState(null);
+
+
+  const [visibleMap, setVisibleMap] = useState({});
+
+  const viewabilityConfig = {
+    itemVisiblePercentThreshold: 10, // must see 40%
+  };
 
   const onViewableItemsChanged = useRef(({ viewableItems }) => {
-    console.log('viewableItems', viewableItems.map(v => v.item.type));
-
-    // Find *any* visible banner in the currently viewable items
-    const visibleBanner = viewableItems.find(
-      v => v.item?.type?.includes('banner')
-    );
-
-    if (visibleBanner) {
-      setActiveBannerId(
-        visibleBanner.item.type === 'banner1'
-          ? 'ban01'
-          : visibleBanner.item.type === 'banner2'
-            ? 'adban01'
-            : visibleBanner.item.type === 'banner3'
-              ? 'adban02'
-              : null
-      );
-    } else {
-      setActiveBannerId(null);
-    }
+    const newFlags = {};
+    viewableItems.forEach((v) => (newFlags[v.item.key] = true));
+    setVisibleMap((prev) => ({ ...prev, ...newFlags }));
   }).current;
 
 
+  // Register fetch functions
+  const sections = [
+    { key: "banner1", title: "Banner", },
+    {
+      key: "latest", title: "Latest Posts", fetchFn: fetchLatestPosts,
 
-  const viewabilityConfig = { viewAreaCoveragePercentThreshold: 50 };
+    },
+    { key: "banner2", title: "Banner", },
+
+    {
+      key: "jobs", title: "Jobs", fetchFn: fetchJobs,
+    },
+    {
+      key: "trending", title: "Trending", fetchFn: fetchTrendingPosts,
+
+    },
+    { key: "banner3", title: "Banner", },
+
+    {
+      key: "products", title: "Products", fetchFn: fetchProducts,
+
+    },
+    {
+      key: "services", title: "Services", fetchFn: fetchServices,
+
+    },
+  ];
+
+  const [loadedUpTo, setLoadedUpTo] = useState(0); // Index in sections array
+  // NEW: Dynamically slice sections based on loadedUpTo (only show up to loadedUpTo + 1)
+  const currentSections = sections.slice(0, loadedUpTo + 1);
 
   useFocusEffect(
     useCallback(() => {
@@ -527,20 +925,67 @@ const CompanyHomeScreen = React.memo(() => {
     }, [])
   );
 
+  const [refreshing, setRefreshing] = useState(false);
+
+
+  const handleRefresh = useCallback(async () => {
+    try {
+      setRefreshing(true);
+  
+      // Reset lazy loading
+      setLoadedUpTo(0);
+  
+      // Reset visibility map so that sections load again
+      setVisibleMap({});
+  
+      // OPTIONAL: scroll to top
+      flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
+  
+      // Re-fetch all sections that have fetchFn
+      for (let sec of sections) {
+        if (sec.fetchFn) {
+          try {
+            await sec.fetchFn();
+          } catch (e) {}
+        }
+      }
+    } catch (e) {
+      console.error("Refresh failed", e);
+    } finally {
+      setRefreshing(false);
+    }
+  }, []);
+  
+
   return (
-    <View style={{ backgroundColor: '#f0f0f0', flex: 1 }}>
+    <>
+      <StatusBar translucent backgroundColor="transparent" barStyle={'dark-content'} />
+      <Animated.View style={[styles.toolbar, toolbarBgStyle]}>
+        {/* TOP HEADER (menu | username+category | avatar) */}
+        <Animated.View style={[styles.topHeader, topHeaderStyle]}>
+          {/* Left: menu */}
+          <TouchableOpacity style={{ padding: 10 }} onPress={handleMenuPress}>
+            <Menu
+              width={dimensions.icon.minlarge}
+              height={dimensions.icon.minlarge}
+              color={colors.text_primary}
+            />
+          </TouchableOpacity>
 
-      <View style={styles.headerContainer}>
-        <TouchableOpacity onPress={handleMenuPress} style={AppStyles.menuContainer}>
-          <Menu width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.text_primary} />
+          {/* Center: username + category */}
+          <View style={styles.userInfo}>
+            <Text numberOfLines={1} style={styles.userName}>
+              Hi {profile?.company_name}
+            </Text>
 
-        </TouchableOpacity>
-        <View style={styles.rightContainer}>
+          </View>
+
+
           <TouchableOpacity
             style={styles.notificationContainer}
             onPress={() => navigation.navigate('AllNotification', { userId: myId })}
           >
-            <Notification width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.text_primary} />
+            <Notification width={dimensions.icon.minlarge} height={dimensions.icon.minlarge} color={colors.text_primary} />
 
             {unreadCount > 0 && (
               <View style={styles.notificationBadge}>
@@ -549,12 +994,11 @@ const CompanyHomeScreen = React.memo(() => {
             )}
           </TouchableOpacity>
 
-          <TouchableOpacity onPress={handleProfile} style={styles.profileContainer} activeOpacity={0.8}>
-
+          {/* Right: avatar */}
+          <TouchableOpacity style={styles.iconTouch} onPress={handleProfile}>
             {profile?.imageUrl ? (
               <FastImage
                 source={{ uri: profile?.imageUrl, }}
-
                 style={styles.detailImage}
                 resizeMode='contain'
                 onError={() => { }}
@@ -566,241 +1010,73 @@ const CompanyHomeScreen = React.memo(() => {
                 </Text>
               </View>
             )}
-
           </TouchableOpacity>
 
-        </View>
+        </Animated.View>
 
-      </View>
+        {/* <Animated.View style={[styles.searchRow, topHeaderStyle]}>
+          <View style={styles.searchBar}>
+            <TextInput
+              placeholder="Search restaurants, dishes..."
+              style={styles.searchInput}
+              placeholderTextColor="#666"
+            />
+          </View>
+        </Animated.View> */}
 
-      <FlatList
+      </Animated.View>
+
+      <Animated.FlatList
         showsVerticalScrollIndicator={false}
         ref={flatListRef}
-        onScroll={handleScroll}
-        scrollEventThrottle={16}
+        data={currentSections}
+        keyExtractor={(item) => item.key}
         onViewableItemsChanged={onViewableItemsChanged}
         viewabilityConfig={viewabilityConfig}
-        onScrollBeginDrag={() => Keyboard.dismiss()}
-        contentContainerStyle={{ paddingBottom: '20%', }}
-        refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />}
-        data={[
-          { type: 'banner1' },
-          { type: 'jobs', data: jobs },
-          { type: 'banner2' },
-          { type: 'trendingPosts', data: trendingPosts },
-          { type: 'latestPosts', data: latestPosts },
-          { type: 'banner3' },
-          { type: 'products', data: products },
-          { type: 'services', data: services },
-        ]}
-        keyExtractor={(item, index) => `${item.type || 'unknown'}-${index}`}
+        onScroll={onScroll}
+        scrollEventThrottle={16}
+        overScrollMode={"never"}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor={colors.text_primary}
+            colors={[colors.text_primary]}
+            progressViewOffset={STATUS_BAR_HEIGHT}
+          />
+        }
+        
+        ListHeaderComponent={
 
-        renderItem={({ item }) => {
-          switch (item.type) {
-            case 'banner1':
-              return (
-                <>
-                  <Banner01 bannerId="ban01" activeBannerId={activeBannerId} />
-                  <AnimatedTextSequence />
-                </>
-              );
-              
-
-            case 'jobs':
-              //  if (!item.data || item.data.length === 0) return ;
-              return (
-                <View style={[styles.cards,]}>
-                  <View style={styles.headingContainer}>
-                    <View style={styles.headingWrapper}>
-                      <Text style={styles.headingText}>Jobs</Text>
-                      <Job
-                        width={dimensions.icon.small}
-                        height={dimensions.icon.small}
-                        color={colors.primary}
-                      />
-                    </View>
-
-                    <TouchableOpacity onPress={allJobs}>
-                      <Text style={styles.seeAllText}>see more ...</Text>
-                    </TouchableOpacity>
-                  </View>
-
-                  <FlatList
-                    data={item.data}
-                    renderItem={({ item }) => renderJobCard({ item })}
-                    keyExtractor={(job) => `job-${job.post_id}`}
-                    scrollEnabled={false} // parent handles scrolling
-                    nestedScrollEnabled
-                    ListFooterComponent={
-                      (!item.data || item.data.length === 0) && (
-                        <View>
-                          {[...Array(4)].map((_, index) => (
-                            <View key={index} style={styles.eduCard}>
-                              <View style={styles.eduCardLeft} />
-                              <View style={styles.eduCardRight}>
-                                <Text numberOfLines={1} style={styles.eduTitle}></Text>
-                                <Text numberOfLines={1} style={styles.eduSubText}></Text>
-                                <Text numberOfLines={1} style={styles.eduSubText}></Text>
-                              </View>
-                            </View>
-                          ))}
-                        </View>
-                      )
-                    }
-
-                  />
-                </View>
-              );
-
-            case 'banner2':
-              return <Banner02 bannerId="adban01" activeBannerId={activeBannerId} />
+          <Animated.View style={[styles.header, { height: HEADER_HEIGHT }]}>
+            <Banner01 />
+          </Animated.View>
 
 
-            case 'trendingPosts':
-              if (!item.data || item.data.length === 0) return null;
-              return (
-                <View style={styles.cards}>
-                  <View style={styles.headingContainer}>
-                    <View style={styles.headingWrapper}>
-                      <Text style={styles.headingText}>Trending posts</Text>
+        }
 
-                      <Fire
-                        width={dimensions.icon.small}
-                        height={dimensions.icon.small}
-                        color={colors.primary}
-                      />
+        renderItem={({ item, index }) => {
+          const isLast = index === currentSections.length - 1;  // NEW: Check if this is the last rendered section
 
-                    </View>
-                    <TouchableOpacity onPress={goToTrending}>
-                      <Text style={styles.seeAllText}>see more ...</Text>
-                    </TouchableOpacity>
-                  </View>
+          // Lazy Sections
+          return (
+            <SectionWrapper
+              keyName={item.key}
+              title={item.title}
+              fetchDataFn={item.fetchFn}
+              Icon={item.Icon}
+              onVisible={visibleMap[item.key]}
+              placeholderHeight={height} // IMPORTANT
+              isLast={isLast}  // NEW: Pass whether this is the last section
+              onLoaded={() => {  // NEW: Callback to unlock the next section
+                setLoadedUpTo((prev) => (prev < sections.length - 1 ? prev + 1 : prev));
+              }}
 
-                  <FlatList
-                    data={item.data}
-                    renderItem={({ item }) => renderForumCard({ item })}
-                    keyExtractor={(forum, index) =>
-                      forum.forum_id?.toString() || forum.post_id?.toString() || `fallback-${index}`
-                    }
-                    scrollEnabled={false}
-                    nestedScrollEnabled
-
-                  />
-                </View>
-              );
-
-            case 'latestPosts':
-              if (!item.data || item.data.length === 0) return null;
-
-              return (
-                <View style={styles.cards}>
-                  <View style={styles.headingContainer}>
-                    <View style={styles.headingWrapper}>
-                      <Text style={styles.headingText}>Latest posts</Text>
-
-                      <Latest
-                        width={dimensions.icon.small}
-                        height={dimensions.icon.small}
-                        color={colors.primary}
-                      />
-
-                    </View>
-                    <TouchableOpacity onPress={goToLatest}>
-                      <Text style={styles.seeAllText}>see more ...</Text>
-                    </TouchableOpacity>
-                  </View>
-
-                  <FlatList
-                    data={item.data}
-                    renderItem={({ item }) => renderForumCard({ item })}
-                    keyExtractor={(forum, index) =>
-                      forum.forum_id?.toString() || forum.post_id?.toString() || `fallback-${index}`
-                    }
-                    scrollEnabled={false}
-                    nestedScrollEnabled
-
-                  />
-                </View>
-              );
-
-            case 'banner3':
-              return <Banner02 bannerId="adban02" activeBannerId={activeBannerId} />;
-
-            case 'products':
-              if (!item.data || item.data.length === 0) return null;
-
-              return (
-                <View style={styles.cards}>
-                  <View style={styles.headingContainer}>
-
-                    <View style={styles.headingWrapper}>
-                      <Text style={styles.headingText}>Products</Text>
-
-                      <Product
-                        width={dimensions.icon.small}
-                        height={dimensions.icon.small}
-                        color={colors.primary}
-                      />
-
-                    </View>
-                    <TouchableOpacity onPress={allProducts}>
-                      <Text style={styles.seeAllText}>see more ...</Text>
-                    </TouchableOpacity>
-                  </View>
-
-                  <FlatList
-                    data={item.data}
-                    renderItem={({ item }) => renderProductCard({ item })}
-                    keyExtractor={(d) => `product-${d.product_id}`}
-                    numColumns={2}
-                    contentContainerStyle={styles.flatListContainer}
-                    columnWrapperStyle={styles.columnWrapper}
-                    scrollEnabled={false}
-                    nestedScrollEnabled
-
-                  />
-                </View>
-              );
-
-            case 'services':
-              if (!item.data || item.data.length === 0) return null;
-
-              return (
-                <View style={styles.cards}>
-                  <View style={styles.headingContainer}>
-
-                    <View style={styles.headingWrapper}>
-                      <Text style={styles.headingText}>Services</Text>
-                      <Service
-                        width={dimensions.icon.small}
-                        height={dimensions.icon.small}
-                        color={colors.primary}
-                      />
-
-                    </View>
-                    <TouchableOpacity onPress={allServices}>
-                      <Text style={styles.seeAllText}>see more ...</Text>
-                    </TouchableOpacity>
-                  </View>
-
-                  <FlatList
-                    data={item.data}
-                    renderItem={({ item }) => renderServiceCard({ item })}
-                    keyExtractor={(d) => (`service-${d.service_id}`)}
-                    numColumns={2}
-                    contentContainerStyle={styles.flatListContainer}
-                    columnWrapperStyle={styles.columnWrapper}
-                    scrollEnabled={false}
-                    nestedScrollEnabled
-
-                  />
-                </View>
-              );
-
-            default:
-              return null;
-          }
+              childrenRenderer={(data) => renderSectionUI(item.key, data)}
+            />
+          );
         }}
+        ListFooterComponent={<View style={{ height: 100 }} />}
       />
 
       <BottomNavigationBar
@@ -808,17 +1084,18 @@ const CompanyHomeScreen = React.memo(() => {
         currentRouteName={currentRouteName}
         navigation={navigation}
         flatListRef={flatListRef}
-        scrollOffsetY={scrollOffsetY}
         handleRefresh={handleRefresh}
         tabNameMap={tabNameMap}
 
       />
 
 
-    </View>
+    </>
   );
 
 });
 
 
+
 export default CompanyHomeScreen;
+

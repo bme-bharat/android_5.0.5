@@ -1,21 +1,23 @@
 import React from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, StatusBar } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
 import { colors, dimensions } from '../../assets/theme.jsx';
+import AppStyles, { STATUS_BAR_HEIGHT } from '../AppUtils/AppStyles.js';
 
 const LegalPolicy = () => {
   const navigation = useNavigation();
   return (
-    <View style={styles.container1} >
+    < >
+      <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
+
       <View style={styles.headerContainer}>
-      <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                         <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-      
-      </TouchableOpacity>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
+
+        </TouchableOpacity>
       </View>
- 
+
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
 
         <Text style={styles.sectionHeading}>Legal Compliance Policy</Text>
@@ -80,7 +82,7 @@ const LegalPolicy = () => {
           We are dedicated to ensuring that our App operates in accordance with the highest legal and ethical standards in Bharat. Your trust and satisfaction are essential to us, and we will continue to prioritize legal compliance in our operations within the Bharat legal framework.
         </Text>
       </ScrollView>
-    </View>
+    </>
   );
 };
 
@@ -103,7 +105,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     textAlign: 'left', // Align text to the left
     alignSelf: 'flex-start',
-    marginBottom:5
+    marginBottom: 5
 
   },
   subValue: {
@@ -122,13 +124,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     backgroundColor: 'white',
     borderBottomWidth: 1,
-    borderColor: '#f0f0f0'
+    borderColor: '#f0f0f0',
+    paddingTop: STATUS_BAR_HEIGHT
   },
-  container1: {
-    flex: 1,
 
-    backgroundColor: '#fff',
-  },
   container: {
     padding: 10,
     backgroundColor: "white"

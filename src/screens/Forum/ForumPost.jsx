@@ -6,16 +6,16 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import Toast from 'react-native-toast-message';
 import RNFS from 'react-native-fs';
 import Message3 from '../../components/Message3';
-import Ionicons from 'react-native-vector-icons/Ionicons';
+
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import PlayOverlayThumbnail from './Play';
 import { showToast } from '../AppUtils/CustomToast';
 import { useNetwork } from '../AppUtils/IdProvider';
 import apiClient from '../ApiClient';
 import { EventRegister } from 'react-native-event-listeners';
-import AppStyles from '../AppUtils/AppStyles';
+import AppStyles, { STATUS_BAR_HEIGHT } from '../AppUtils/AppStyles';
 import { actions, RichEditor, RichToolbar } from 'react-native-pell-rich-editor';
-import { cleanForumHtml } from './forumBody';
+import { sanitizeHtmlBody } from './forumBody';
 import { useSelector } from 'react-redux';
 import { useMediaPicker } from '../helperComponents/MediaPicker';
 import { MediaPreview } from '../helperComponents/MediaPreview';
@@ -46,14 +46,13 @@ const ForumPostScreen = () => {
   const [file, setFile] = useState(null);
   const [fileType, setFileType] = useState('');
   const [mediaMeta, setMediaMeta] = useState(null);
- 
+
   const [compressedImage, setCompressedImage] = useState(null);
   const navigation = useNavigation();
   const [postData, setPostData] = useState({
     body: '',
     fileKey: '',
   });
-
   const [hasChanges, setHasChanges] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const scrollViewRef = useRef(null);
@@ -67,7 +66,7 @@ const ForumPostScreen = () => {
   useEffect(() => {
     setThumbnailUri(mediaMeta?.previewThumbnail)
   }, [mediaMeta])
-  
+
   useEffect(() => {
 
     const bodyChanged = postData.body.trim() !== '';
@@ -109,16 +108,6 @@ const ForumPostScreen = () => {
   };
 
 
-  const [isFormValid, setIsFormValid] = useState(false);
-
-  useEffect(() => {
-
-    const plainText = stripHtmlTags(postData.body); // already defined
-    const isValid = plainText.trim().length > 0;
-
-    setIsFormValid(isValid);
-  }, [postData.body]);
-
   const handleMediaPickerPress = () => {
     Alert.alert(
       'Select Media',
@@ -144,7 +133,7 @@ const ForumPostScreen = () => {
       { cancelable: true }
     );
   };
-  
+
 
 
   const {
@@ -250,26 +239,30 @@ const ForumPostScreen = () => {
   );
 
 
-
-
-
-  const stripHtmlTags = (html) =>
-    html?.replace(/<\/?[^>]+(>|$)/g, '').trim() || '';
-
-  const sanitizeHtmlBody = (html) => {
-    const cleaned = cleanForumHtml(html); // your existing cleaner
-
-    return cleaned
-      .replace(/<div><br><\/div>/gi, '') // remove empty line divs
-      .replace(/<p>(&nbsp;|\s)*<\/p>/gi, '') // remove empty p tags
-      .replace(/<div>(&nbsp;|\s)*<\/div>/gi, '') // remove empty divs
-      .trim(); // trim outer whitespace
-  };
-
-  const handleBodyChange = (html) => {
-    const sanitizedHtml = sanitizeHtmlBody(html);
-    setPostData((prev) => ({ ...prev, body: sanitizedHtml }));
-  };
+  const cleanHtmlSpaces = (html) => {
+     if (!html) return "";
+   
+     let cleaned = html;
+ 
+     const emptyBlock = /<div>\s*(?:<span>\s*)?(?:<br\s*\/?>)\s*(?:<\/span>)?\s*<\/div>/gi;
+     cleaned = cleaned.replace(new RegExp(`^(?:${emptyBlock.source})+`, "i"), "");
+     cleaned = cleaned.replace(new RegExp(`(?:${emptyBlock.source})+$`, "i"), "");
+     cleaned = cleaned.trim();
+   
+     return cleaned;
+   };
+  
+   
+   const handleBodyChange = (html) => {
+   
+     const cleanedBody = sanitizeHtmlBody(html);
+     const finalBody = cleanHtmlSpaces(cleanedBody);
+ 
+     setPostData(prev => ({
+       ...prev,
+       body: finalBody
+     }));
+   };
 
 
 
@@ -283,10 +276,7 @@ const ForumPostScreen = () => {
     try {
       setHasChanges(false);
 
-      const sanitizedBody = sanitizeHtmlBody(postData.body);
-      const plainText = stripHtmlTags(sanitizedBody);
-
-      if (!plainText.trim()) {
+      if (!postData.body.trim()) {
         showToast("Description is mandatory", "info");
         return;
       }
@@ -304,21 +294,20 @@ const ForumPostScreen = () => {
       if (uploaded) {
         fileKey = uploaded.fileKey;
         thumbnailFileKey = uploaded.thumbnailFileKey;
-        console.log('Uploaded files:', fileKey, thumbnailFileKey);
+      
       }
 
-      console.log('📎 Uploaded keys:', { fileKey, thumbnailFileKey });
+
       const postPayload = {
         command: "postInForum",
         user_id: myId,
-        forum_body: sanitizedBody, // ✅ cleaned before submit
+        forum_body: postData.body, // ✅ cleaned before submit
         fileKey,
         thumbnail_fileKey: thumbnailFileKey,
         extraData: mediaMeta || {}
 
       };
 
-      console.log('postPayload', postPayload)
       const res = await apiClient.post('/postInForum', postPayload);
 
       if (res.data.status !== 'success') throw new Error("Failed to submit post.");
@@ -365,6 +354,7 @@ const ForumPostScreen = () => {
 
   return (
     <View style={styles.container}>
+      <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
 
       <View style={styles.headerContainer}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
@@ -375,9 +365,9 @@ const ForumPostScreen = () => {
           onPress={handlePostSubmission}
           style={[
             AppStyles.buttonContainer,
-            !isFormValid || loading || isCompressing ? styles.disabledButton : null,
+           !postData.body || loading || isCompressing ? styles.disabledButton : null,
           ]}
-          disabled={!isFormValid || loading || isCompressing}
+          disabled={!postData.body || loading || isCompressing}
         >
           {loading || isCompressing ? (
             <ActivityIndicator size="small" />
@@ -391,7 +381,7 @@ const ForumPostScreen = () => {
 
 
       <KeyboardAwareScrollView
-        contentContainerStyle={{ flexGrow: 1,paddingHorizontal:10, paddingBottom: '40%' }}
+        contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 10, paddingBottom: '40%' }}
         keyboardShouldPersistTaps="handled"
         extraScrollHeight={20}
         onScrollBeginDrag={() => Keyboard.dismiss()}
@@ -538,7 +528,8 @@ const ForumPostScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    
+    paddingTop: STATUS_BAR_HEIGHT
+
   },
 
   buttonText: {

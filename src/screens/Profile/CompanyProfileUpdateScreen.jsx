@@ -17,8 +17,7 @@ import {
   NativeModules,
   KeyboardAvoidingView
 } from 'react-native';
-import MaterialIcon from 'react-native-vector-icons/MaterialCommunityIcons';
-import Icon from 'react-native-vector-icons/MaterialIcons'
+
 import { CountryCodes, ProfileSelect } from '../../assets/Constants';
 import { Keyboard } from 'react-native';
 import axios from 'axios';
@@ -39,7 +38,7 @@ import { updateCompanyProfile } from '../Redux/MyProfile/CompanyProfile_Actions'
 import { useDispatch, useSelector } from 'react-redux';
 import default_image from '../../images/homepage/buliding.jpg';
 import { showToast } from '../AppUtils/CustomToast';
-import AppStyles from '../AppUtils/AppStyles';
+import AppStyles, { STATUS_BAR_HEIGHT } from '../AppUtils/AppStyles';
 import apiClient from '../ApiClient';
 import { Image as FastImage } from 'react-native';
 
@@ -50,7 +49,7 @@ import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
 import Camera from '../../assets/svgIcons/camera.svg';
 import Close from '../../assets/svgIcons/close.svg';
 import Success from '../../assets/svgIcons/success.svg';
-
+import Pdf from '../../assets/svgIcons/pdf.svg';
 import { colors, dimensions } from '../../assets/theme.jsx';
 import { MediaPreview } from '../helperComponents/MediaPreview.jsx';
 import KeyboardAvoid from '../AppUtils/KeyboardAvoid.jsx';
@@ -70,6 +69,9 @@ const CompanyUserSignupScreen = () => {
   const [imageUri, setImageUri] = useState(null);
   const [fileUri, setFileUri] = useState(null);
   const [fileType, setFileType] = useState('');
+  const [imageFileType, setImageFileType] = useState(null);
+  const [pdfFileType, setPdfFileType] = useState(null);
+
   const [file, setFile] = useState(null);
   const [pdf, setPdf] = useState(null);
 
@@ -108,7 +110,7 @@ const CompanyUserSignupScreen = () => {
   });
 
 
-  
+
   const [postData, setPostData] = useState({
     company_name: profile.company_name || "",
     business_registration_number: profile.business_registration_number || "",
@@ -128,12 +130,28 @@ const CompanyUserSignupScreen = () => {
 
   // 🔍 Detect unsaved changes
   useEffect(() => {
-    const hasChanges = Object.keys(postData).some(
-      key => postData[key] !== (profile[key] ?? "")
-    ) || isImageChanged;
+    const initialPostData = {
+      company_name: profile.company_name || "",
+      business_registration_number: profile.business_registration_number || "",
+      company_contact_number: profile.company_contact_number || "",
+      company_email_id: profile.company_email_id || "",
+      is_email_verified: profile.is_email_verified || false,
+      company_located_city: profile.company_located_city || "",
+      company_located_state: profile.company_located_state || "",
+      Website: profile.Website || "",
+      company_address: profile.company_address || "",
+      company_description: profile.company_description || "",
+      fileKey: profile.fileKey || null,
+      brochureKey: profile.brochureKey || "",
+      select_your_profile: profile.select_your_profile || "",
+      category: profile.category || "",
+    }
 
-    setHasChanges(hasChanges);
-  }, [postData, isImageChanged, profile]);
+    const hasAnyChanges = Object.keys(initialPostData).some(
+      (key) => postData[key] !== initialPostData[key]
+    );
+    setHasChanges(hasAnyChanges);
+  }, [postData, profile, selectedCategory, verifiedEmail]);
 
   // 🚪 Prevent navigation if unsaved changes exist
   useEffect(() => {
@@ -209,11 +227,11 @@ const CompanyUserSignupScreen = () => {
   }));
 
   const cities = postData.company_located_state && stateCityData[postData.company_located_state]
-      ? stateCityData[postData.company_located_state].map((city) => ({
-        label: city,
-        key: city,
-      }))
-      : [];
+    ? stateCityData[postData.company_located_state].map((city) => ({
+      label: city,
+      key: city,
+    }))
+    : [];
 
   const handleStateSelect = (item) => {
     setPostData({
@@ -742,7 +760,8 @@ const CompanyUserSignupScreen = () => {
       });
       setImageUri(resizedImage.uri);
       setFileUri(resizedImage.uri);
-      setFileType(capturedImage.mime || 'image/jpeg');
+      setImageFileType(capturedImage.mime || 'image/jpeg');
+
       setIsImageChanged(true);
 
     } catch (err) {
@@ -853,9 +872,10 @@ const CompanyUserSignupScreen = () => {
       });
       setImageUri(resizedImage.uri);
       setFileUri(resizedImage.uri);
-      setFileType(file.mime || 'image/jpeg');
-      setIsImageChanged(true);
+      setImageFileType(file.mime || 'image/jpeg');
 
+      setIsImageChanged(true);
+      setHasChanges(true);
     } catch (err) {
       if (err?.message?.includes('cancelled') || err?.code === 'E_PICKER_CANCELLED') return;
       console.error('Error picking/cropping image:', err);
@@ -889,7 +909,7 @@ const CompanyUserSignupScreen = () => {
       const res = await apiClient.post('/uploadFileToS3', {
         command: 'uploadFileToS3',
         headers: {
-          'Content-Type': fileType,
+          'Content-Type': imageFileType,
           'Content-Length': fileSize,
         },
       });
@@ -905,7 +925,7 @@ const CompanyUserSignupScreen = () => {
         const uploadRes = await fetch(uploadUrl, {
           method: 'PUT',
           headers: {
-            'Content-Type': fileType,
+            'Content-Type': imageFileType,
           },
           body: fileBlob,
         });
@@ -953,59 +973,10 @@ const CompanyUserSignupScreen = () => {
     }
   };
 
-  const handleUploadCatalogue = async () => {
-    try {
-      // Launch document picker to select a document (PDF)
-      const response = await DocumentPicker.pick({
-        type: [DocumentPicker.types.pdf],  // Ensure only PDF is selected
-      });
 
-      if (response) {
-        const selectedFile = response[0];
-
-
-        // Check if the selected file is a PDF
-        if (selectedFile.type !== 'application/pdf') {
-
-          showToast("Please select a valid PDF file", 'error');
-          return;
-        }
-
-        setPostData(prevState => ({
-          ...prevState,
-          brochureKey: "",
-        }));
-
-
-        const fileSizeInMB = selectedFile.size / (1024 * 1024); // Size in MB
-        if (fileSizeInMB > 5) {
-
-          showToast("File size shouldn't exceed 5MB", 'error');
-          return;
-        }
-
-        const documentFileKey = await uploadFile(selectedFile, 'document');
-
-        setPostData(prevState => ({
-          ...prevState,
-          brochureKey: documentFileKey,
-        }));
-
-
-        showToast("Catalogue uploaded successfully", 'success');
-      }
-    } catch (error) {
-      if (DocumentPicker.isCancel(error)) {
-
-      } else {
-
-        showToast("Failed to upload catalogue", 'error');
-      }
-    }
-  };
   const handleRemoveMedia = () => {
     setPdf(null);
-    setFileType('');
+    pdfFileType('');
 
   };
   const handleFileChange = async () => {
@@ -1027,16 +998,19 @@ const CompanyUserSignupScreen = () => {
         if (fileSize <= MAX_SIZE) {
           setPdf(pdf);
           setHasChanges(true);
-          setFileType(mimeType);
+          setPdfFileType(mimeType);
+
         } else {
           showToast("File size must be less than 5MB.", "error");
           setPdf(null);
-          setFileType(null);
+          setPdfFileType(mimeType);
+
         }
       } else {
         showToast("Please upload a PDF file.", "error");
         setPdf(null);
-        setFileType(null);
+        setPdfFileType(mimeType);
+
       }
     } catch (err) {
       if (err?.message?.includes('cancelled')) {
@@ -1102,7 +1076,7 @@ const CompanyUserSignupScreen = () => {
   };
 
   const handleUploadFile = async () => {
-    console.log('🟡 handleUploadFile started');
+
     setLoading(true);
 
     if (!pdf) {
@@ -1122,7 +1096,7 @@ const CompanyUserSignupScreen = () => {
       const res = await apiClient.post('/uploadFileToS3', {
         command: 'uploadFileToS3',
         headers: {
-          'Content-Type': fileType,
+          'Content-Type': pdfFileType,
           'Content-Length': fileSize,
         },
       });
@@ -1143,7 +1117,7 @@ const CompanyUserSignupScreen = () => {
         const uploadRes = await fetch(uploadUrl, {
           method: 'PUT',
           headers: {
-            'Content-Type': fileType,
+            'Content-Type': pdfFileType,
           },
           body: fileBlob,
         });
@@ -1248,7 +1222,7 @@ const CompanyUserSignupScreen = () => {
     const emailToSend = postData.is_email_verified ? postData.company_email_id : verifiedEmail;
 
     try {
-      const imageFileKey = imageUri ? await handleUploadImage(imageUri, fileType) : postData.fileKey;
+      const imageFileKey = imageUri ? await handleUploadImage(imageUri, imageFileType) : postData.fileKey;
 
       const uploadedFileKey = await handleUploadFile();
 
@@ -1267,7 +1241,7 @@ const CompanyUserSignupScreen = () => {
         company_address: postData.company_address?.trimStart().trimEnd(),
         company_description: postData.company_description?.trimStart().trimEnd(),
         fileKey: imageFileKey || null,
-        brochureKey: uploadedFileKey,
+        brochureKey: uploadedFileKey || postData.brochureKey,
         select_your_profile: selectedProfile,
         category: selectedCategory,
 
@@ -1293,9 +1267,7 @@ const CompanyUserSignupScreen = () => {
 
         await fetchProfile();
 
-        setTimeout(() => {
-          navigation.goBack();
-        }, 100);
+        navigation.goBack();
 
       } else {
 
@@ -1408,7 +1380,9 @@ const CompanyUserSignupScreen = () => {
 
   return (
     <KeyboardAvoid>
-      <View style={{ backgroundColor: 'whitesmoke', flex: 1 }}>
+      <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
+
+      <View style={{ backgroundColor: 'whitesmoke', flex: 1, paddingTop: STATUS_BAR_HEIGHT }}>
         <View style={styles.headerContainer}>
           <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
             <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
@@ -1422,7 +1396,7 @@ const CompanyUserSignupScreen = () => {
           showsVerticalScrollIndicator={false}
           onScrollBeginDrag={() => Keyboard.dismiss()}
           scrollEventThrottle={16}
-          data={[{ key: 'image' }, { key: 'formInputs' }, { key: 'footer' }]}
+          data={[{ key: 'image' }, { key: 'formInputs' }]}
           renderItem={({ item }) => {
             switch (item.key) {
               case 'image':
@@ -1430,7 +1404,7 @@ const CompanyUserSignupScreen = () => {
                   <>
                     <Text style={styles.header}>Edit your profile</Text>
 
-                    <TouchableOpacity onPress={handleImageSelection} style={styles.imageContainer}>
+                    <TouchableOpacity onPress={handleImageSelection} style={styles.imageContainer} activeOpacity={1}>
 
                       <FastImage
                         source={imageSource}
@@ -1450,7 +1424,7 @@ const CompanyUserSignupScreen = () => {
 
               case 'formInputs':
                 return (
-                  <TouchableOpacity activeOpacity={1} style={{ paddingHorizontal: 5, paddingBottom: '20%' }}>
+                  <View activeOpacity={1} style={{ paddingHorizontal: 5, paddingBottom: '20%' }}>
                     {[
                       {
                         placeholder: 'Company name',
@@ -1515,7 +1489,7 @@ const CompanyUserSignupScreen = () => {
                         />
 
                         {profile.is_email_verified && postData.company_email_id === profile.company_email_id ? (
-                          <Success width={dimensions.icon.small} height={dimensions.icon.small} color={colors.success}/>
+                          <Success width={dimensions.icon.small} height={dimensions.icon.small} color={colors.success} />
                         ) : (
                           <TouchableOpacity
                             style={styles.buttonemailmain}
@@ -1610,39 +1584,67 @@ const CompanyUserSignupScreen = () => {
                       />
                     </View>
 
-                    <View style={{ marginVertical: 20 }}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
-                        <Text style={{ color: 'black' }}>
-                          {postData?.brochureKey ? postData.brochureKey : 'No file uploaded'}
+                    {postData?.brochureKey && (
+                      <View style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        marginTop: 20,
+                        position: 'relative',
+                        flex: 1,
+                        flexWrap: 'wrap'
+                      }}>
+
+                        <Pdf
+                          width={dimensions.icon.xl}
+                          height={dimensions.icon.xl}
+                          color={colors.danger}
+                        />
+
+                        <Text style={{ color: 'black', marginLeft: 8 }}>
+                          {postData?.brochureKey ? postData.brochureKey : null}
                         </Text>
 
-                        {postData?.brochureKey && (
-                          <TouchableOpacity onPress={handleDeleteBrochure} style={{ marginLeft: 10 }}>
-                            <Close width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.gray} />
 
-                          </TouchableOpacity>
-                        )}
-                      </View>
-
-                      {!postData?.brochureKey && (
                         <TouchableOpacity
-                          style={styles.uploadButton}
-                          onPress={handleFileChange}
+                          onPress={handleDeleteBrochure}
+                          style={{
+                            position: 'absolute',
+                            top: -20,        // adjust as needed
+                            right: 0,      // adjust as needed
+                            padding: 5
+                          }}
                         >
-                          <Text style={styles.uploadButtonText}>Upload company catalogue</Text>
+                          <Close
+                            width={dimensions.icon.medium}
+                            height={dimensions.icon.medium}
+                            color={colors.gray}
+                          />
                         </TouchableOpacity>
-                      )}
 
-                      {!pdf?.mime?.startsWith('image') && (
-                        <MediaPreview
-                          uri={pdf?.uri}
-                          mime={pdf?.mime || 'application/octet-stream'}
-                          name={pdf?.name}
-                          onRemove={handleRemoveMedia}
-                        />
-                      )}
+                      </View>
+                    )}
 
-                    </View>
+                    {!postData?.brochureKey && (
+                      <TouchableOpacity
+                        style={styles.uploadButton}
+                        onPress={handleFileChange}
+                      >
+                        <Text style={styles.uploadButtonText}>Upload company catalogue</Text>
+                      </TouchableOpacity>
+                    )}
+
+                    {!pdf?.mime?.startsWith('image') && (
+                      <MediaPreview
+                        uri={pdf?.uri}
+                        mime={pdf?.mime || 'application/octet-stream'}
+                        name={pdf?.name}
+                        onRemove={handleRemoveMedia}
+                      />
+                    )}
+
+
+
                     <TouchableOpacity
                       style={[
                         AppStyles.Postbtn,
@@ -1664,7 +1666,7 @@ const CompanyUserSignupScreen = () => {
                         </Text>
                       )}
                     </TouchableOpacity>
-                  </TouchableOpacity>
+                  </View>
 
                 );
 

@@ -4,7 +4,7 @@ import {
   Modal, Share,
 } from 'react-native';
 import { useRoute, useNavigation, useFocusEffect } from '@react-navigation/native';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+
 import Video from 'react-native-video';
 import { FlatList } from 'react-native-gesture-handler';
 import { Dimensions } from 'react-native';
@@ -14,11 +14,12 @@ import DisclaimerBox from './DisclaimerBox';
 import { useFileOpener } from '../helperComponents/fileViewer';
 import { useNetwork } from '../AppUtils/IdProvider';
 import { openMediaViewer } from '../helperComponents/mediaViewer';
-import AppStyles from '../AppUtils/AppStyles';
+import AppStyles, { STATUS_BAR_HEIGHT } from '../AppUtils/AppStyles';
 
 import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
 import ShareIcon from '../../assets/svgIcons/share.svg';
 import Company from '../../assets/svgIcons/company.svg';
+import Play from '../../assets/svgIcons/play.svg';
 
 import { colors, dimensions } from '../../assets/theme.jsx';
 
@@ -427,6 +428,7 @@ const ProductDetails = () => {
 
     return (
       <View style={styles.container}>
+        <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
 
         <View style={styles.headerContainer}>
 
@@ -446,6 +448,8 @@ const ProductDetails = () => {
   if (product?.removed_by_author) {
     return (
       <View style={styles.container}>
+        <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
+
         <View style={styles.headerContainer}>
 
           <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
@@ -464,6 +468,8 @@ const ProductDetails = () => {
   return (
 
     <View style={styles.container}>
+      <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
+
       <View style={styles.headerContainer}>
         <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
           <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
@@ -555,7 +561,8 @@ const ProductDetails = () => {
                             paused
                           />
                           <TouchableOpacity style={styles.playButton}>
-                            <Icon name="play-circle-outline" size={40} color="white" />
+                            <Play width={dimensions.icon.ml} height={dimensions.icon.ml} color={colors.background} />
+
                           </TouchableOpacity>
                         </TouchableOpacity>
                       </View>
@@ -641,7 +648,7 @@ const ProductDetails = () => {
                     ) : null}
                   </View>
                   <TouchableOpacity onPress={closeModal} style={styles.closeButton}>
-                    <Icon name="close" size={20} color="#fff" />
+
                   </TouchableOpacity>
                 </View>
               </Modal>
@@ -725,7 +732,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: 'white',
-
+    paddingTop: STATUS_BAR_HEIGHT
   },
 
   divider: {
@@ -895,8 +902,8 @@ const styles = StyleSheet.create({
     color: colors.primary,
     fontSize: 15,
     fontWeight: '600',
-    paddingHorizontal:10,
-    marginBottom:10
+    paddingHorizontal: 10,
+    marginBottom: 10
   },
 
   productDescription: {

@@ -12,7 +12,7 @@ import BMEVideoPlayer from '../BMEVideoPlayer';
 
 const { width } = Dimensions.get('window');
 
-const HomeBanner = () => {
+const HomeBanner = ({onStatusChange}) => {
   const [banners, setBanners] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const videoRefs = useRef([]);
@@ -21,6 +21,11 @@ const HomeBanner = () => {
   const [videoLoading, setVideoLoading] = useState({});
   const timerRef = useRef(null); // ⏱️ fallback timer
   const isFocused = useIsFocused();
+
+  useEffect(() => {
+    // notify parent whether banners exist
+    onStatusChange?.(banners.length === 0);
+  }, [banners]);
 
   // 🔹 Fetch video banners
   const fetchBanners = useCallback(async () => {
@@ -77,15 +82,15 @@ const HomeBanner = () => {
         navigation.navigate('CompanyDetails', { userId: item.id });
         return;
       }
-  
+
       if (item.redirect?.target_url) {
         const url = item.redirect.target_url;
-    
+
         // Extract ID safely
         try {
           const segments = url.split('/').filter(Boolean);
           const companyId = segments[segments.length - 1];
-  
+
           if (companyId) {
             navigation.navigate('CompanyDetails', { userId: companyId });
           } else {
@@ -98,7 +103,7 @@ const HomeBanner = () => {
     },
     [navigation]
   );
-  
+
 
   // 🔹 Move to next video manually or after video ends
   const moveToNext = useCallback(() => {
@@ -124,114 +129,99 @@ const HomeBanner = () => {
 
   const viewConfigRef = useRef({ viewAreaCoveragePercentThreshold: 80 });
 
-  // 🔹 Control playback per visible item
   useEffect(() => {
-    // Clear previous timer
-    if (timerRef.current) clearTimeout(timerRef.current);
+    if (!isFocused) {
+      // If screen not focused → stop timers + pause all videos
+      if (timerRef.current) clearTimeout(timerRef.current);
 
-    // Play current video
-    const ref = videoRefs.current[currentIndex];
-    if (ref && typeof ref.play === 'function') {
-      ref.seekTo?.(0);
-      ref.play();
+      videoRefs.current.forEach((v) => v?.pause?.());
+      return;
     }
 
-    // Pause others
+    // Screen IS focused → normal autoplay
+    if (timerRef.current) clearTimeout(timerRef.current);
+
+    const ref = videoRefs.current[currentIndex];
+    if (ref && ref.play) {
+      ref.seekTo?.(0);
+    }
+
     videoRefs.current.forEach((v, i) => {
       if (i !== currentIndex && v?.pause) v.pause();
     });
 
-    // ⏱️ Default 15-second fallback
     timerRef.current = setTimeout(() => {
       moveToNext();
     }, 15000);
 
-    // Cleanup timer when index changes
     return () => clearTimeout(timerRef.current);
-  }, [currentIndex, moveToNext]);
+  }, [currentIndex, moveToNext, isFocused]);
 
 
-  useFocusEffect(
-    useCallback(() => {
-      // When screen focuses, resume current timer
-      if (!timerRef.current) {
-        timerRef.current = setTimeout(() => moveToNext(), 15000);
-      }
-  
-      // When screen blurs, clear the timer
-      return () => {
-        if (timerRef.current) {
-          clearTimeout(timerRef.current);
-          timerRef.current = null;
-        }
-      };
-    }, [currentIndex, moveToNext])
-  );
-  
-  
   return (
-    <View style={{ alignItems: 'center' }}>
-      <FlatList
-        ref={flatListRef}
-        data={banners}
-        keyExtractor={(_, i) => i.toString()}
-        horizontal
-        pagingEnabled
-        snapToInterval={width} // 👈 account for margin
-        decelerationRate="fast"
-        showsHorizontalScrollIndicator={false}
-        onViewableItemsChanged={onViewableItemsChanged}
-        viewabilityConfig={viewConfigRef.current}
-        renderItem={({ item, index }) => (
-          <TouchableOpacity
-            activeOpacity={0.9}
-            onPress={() => onPressBanner(item)}
-            style={{
-              width,
-              height: width * 0.5,
-              overflow: 'hidden',
-              
-            }} >
-            <BMEVideoPlayer
-              ref={(ref) => (videoRefs.current[index] = ref)}
-              source={item.url}
-              paused={!isFocused || currentIndex !== index}
-              muted={true}
-              // showProgressBar={true}  
-              resizeMode="cover"
-              style={{ width: '100%', height: '100%' }}
-              repeat={false}
-              onEndReached={handleVideoEnd}
-              onPlaybackStatus={(status) => {
-                switch (status.status) {
-                  case 'loading':
-                  case 'buffering':
-                    setVideoLoading((prev) => ({ ...prev, [index]: true }));
-                    break;
-                  case 'loaded':
-                  case 'playing':
-                  case 'ended':
-                    setVideoLoading((prev) => ({ ...prev, [index]: false }));
-                    break;
-                }
+
+    <FlatList
+      ref={flatListRef}
+      data={banners}
+      keyExtractor={(_, i) => i.toString()}
+      horizontal
+      pagingEnabled
+      snapToInterval={width} // 👈 account for margin
+      decelerationRate="fast"
+      showsHorizontalScrollIndicator={false}
+      onViewableItemsChanged={onViewableItemsChanged}
+      viewabilityConfig={viewConfigRef.current}
+      renderItem={({ item, index }) => (
+        <TouchableOpacity
+          activeOpacity={1}
+          onPress={() => onPressBanner(item)}
+          style={{
+            width,
+            aspectRatio: 16 / 10,
+            overflow: 'hidden',
+            borderBottomLeftRadius: 18,
+            borderBottomRightRadius: 18
+          }} >
+          <BMEVideoPlayer
+            ref={(ref) => (videoRefs.current[index] = ref)}
+            source={item.url}
+            paused={!isFocused || currentIndex !== index}
+            muted={true}
+            // showProgressBar={true}  
+            resizeMode="cover"
+            style={{ width: '100%', height: '100%' }}
+            repeat={false}
+            onEndReached={handleVideoEnd}
+            onPlaybackStatus={(status) => {
+              switch (status.status) {
+                case 'loading':
+                case 'buffering':
+                  setVideoLoading((prev) => ({ ...prev, [index]: true }));
+                  break;
+                case 'loaded':
+                case 'playing':
+                case 'ended':
+                  setVideoLoading((prev) => ({ ...prev, [index]: false }));
+                  break;
+              }
+            }}
+          />
+
+          {videoLoading[index] && (
+            <ActivityIndicator
+              size="small"
+              color="#fff"
+              style={{
+                position: 'absolute',
+                top: '45%',
+                left: '45%',
               }}
             />
+          )}
+        </TouchableOpacity>
+      )}
+    />
 
-            {videoLoading[index] && (
-              <ActivityIndicator
-                size="small"
-                color="#fff"
-                style={{
-                  position: 'absolute',
-                  top: '45%',
-                  left: '45%',
-                }}
-              />
-            )}
-          </TouchableOpacity>
-        )}
-      />
-    </View>
   );
 };
 

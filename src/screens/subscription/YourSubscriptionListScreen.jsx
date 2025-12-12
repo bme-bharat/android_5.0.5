@@ -6,12 +6,12 @@ import { StyleSheet, Text, View, FlatList, TouchableOpacity, ActivityIndicator }
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useNavigation } from '@react-navigation/native';
 import apiClient from '../ApiClient';
 import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
 
 import { colors, dimensions } from '../../assets/theme';
+import AppStyles, { commonStyles, STATUS_BAR_HEIGHT } from '../AppUtils/AppStyles';
 
 const YourSubscriptionListScreen = () => {
   const [userid, setUserid] = useState('');
@@ -90,26 +90,26 @@ const YourSubscriptionListScreen = () => {
 
   const renderItem = ({ item }) => (
     <TouchableOpacity style={styles.itemContainer} activeOpacity={1}>
-      <View style={styles.detailContainer}>
-        <View style={styles.lableIconContainer}>
-          <Text style={styles.itemTitle}>Package name </Text>
-        </View>
-        <Text style={styles.colon}>:</Text>
-        <Text style={styles.itemValue}>{item.subscription_plan}</Text>
+      <View style={commonStyles.valContainer}>
+
+        <Text style={commonStyles.label}>Package name </Text>
+
+        <Text style={commonStyles.colon}>:</Text>
+        <Text style={commonStyles.value}>{item.subscription_plan}</Text>
       </View>
-      <View style={styles.detailContainer}>
-        <View style={styles.lableIconContainer}>
-          <Text style={styles.itemTitle}>Amount</Text>
-        </View>
-        <Text style={styles.colon}>:</Text>
-        <Text style={styles.itemValue}>{item.amount} {item.currency}</Text>
+      <View style={commonStyles.valContainer}>
+
+        <Text style={commonStyles.label}>Amount</Text>
+
+        <Text style={commonStyles.colon}>:</Text>
+        <Text style={commonStyles.value}>{item.amount} {item.currency}</Text>
       </View>
-      <View style={styles.detailContainer}>
-        <View style={styles.lableIconContainer}>
-          <Text style={styles.itemTitle}>Subscribed on </Text>
-        </View>
-        <Text style={styles.colon}>:</Text>
-        <Text style={styles.itemValue}>
+      <View style={commonStyles.valContainer}>
+
+        <Text style={commonStyles.label}>Subscribed on </Text>
+
+        <Text style={commonStyles.colon}>:</Text>
+        <Text style={commonStyles.value}>
           {(() => {
             const date = new Date(item.transaction_on * 1000);
             const day = String(date.getDate()).padStart(2, '0');
@@ -119,29 +119,26 @@ const YourSubscriptionListScreen = () => {
           })()}
         </Text>
       </View>
-      <View style={styles.detailContainer}>
-        <View style={styles.lableIconContainer}>
+      <View style={commonStyles.valContainer}>
 
-          <Text style={styles.itemTitle}>Duration</Text>
-        </View>
-        <Text style={styles.colon}>:</Text>
-        <Text style={styles.itemValue}>{item.transaction_duration}</Text>
+        <Text style={commonStyles.label}>Duration</Text>
+
+        <Text style={commonStyles.colon}>:</Text>
+        <Text style={commonStyles.value}>{item.transaction_duration}</Text>
       </View>
-      <View style={styles.detailContainer}>
-        <View style={styles.lableIconContainer}>
+      <View style={commonStyles.valContainer}>
 
-          <Text style={styles.itemTitle}>Email</Text>
-        </View>
-        <Text style={styles.colon}>:</Text>
-        <Text style={styles.itemValue}>{item.transaction_by}</Text>
+        <Text style={commonStyles.label}>Email</Text>
+
+        <Text style={commonStyles.colon}>:</Text>
+        <Text style={commonStyles.value}>{item.transaction_by}</Text>
       </View>
-      <View style={styles.detailContainer}>
-        <View style={styles.lableIconContainer}>
+      <View style={commonStyles.valContainer}>
 
-          <Text style={styles.itemTitle}>Phone number</Text>
-        </View>
-        <Text style={styles.colon}>:</Text>
-        <Text style={styles.itemValue}>{item.user_phone_number}</Text>
+        <Text style={commonStyles.label}>Phone number</Text>
+
+        <Text style={commonStyles.colon}>:</Text>
+        <Text style={commonStyles.value}>{item.user_phone_number}</Text>
       </View>
     </TouchableOpacity>
   );
@@ -158,6 +155,8 @@ const YourSubscriptionListScreen = () => {
 
   return (
     <View style={styles.container}>
+      <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
+
       <View style={styles.headerContainer}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
@@ -183,6 +182,7 @@ const styles = StyleSheet.create({
     flex: 1,
     // padding: 10,
     backgroundColor: '#fff',
+    paddingTop: STATUS_BAR_HEIGHT
   },
   container1: {
     flex: 1,
@@ -192,7 +192,7 @@ const styles = StyleSheet.create({
   header: {
     fontSize: 18,
     fontWeight: '600',
-    padding:10,
+    padding: 10,
     color: '#075cab',
     textAlign: 'center',
   },
@@ -211,10 +211,10 @@ const styles = StyleSheet.create({
 
   },
   itemContainer: {
-    top:5,
+    top: 5,
     padding: 10,
-    marginHorizontal:5,
-    marginBottom:5,
+    marginHorizontal: 5,
+    marginBottom: 5,
     borderRadius: 12,
     backgroundColor: '#ffffff',
     elevation: 2,
@@ -223,8 +223,6 @@ const styles = StyleSheet.create({
   detailContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 4,
-    marginBottom: 10
   },
   lableIconContainer: {
     flexDirection: 'row',
@@ -237,18 +235,18 @@ const styles = StyleSheet.create({
   },
   itemTitle: {
     flex: 1, // Take up available space
-    color: 'black',
-    fontWeight: '500',
-    fontSize: 15,
+    color: colors.text_primary,
+    fontWeight: '400',
+    fontSize: 14,
     textAlign: 'left', // Align text to the left
     alignSelf: 'flex-start',
   },
   itemValue: {
     flex: 2, // Take the remaining space
     flexShrink: 1,
-    color: 'black',
+    color: colors.text_secondary,
     fontWeight: '400',
-    fontSize: 15,
+    fontSize: 13,
     textAlign: 'left', // Align text to the left
     alignSelf: 'flex-start',
   },

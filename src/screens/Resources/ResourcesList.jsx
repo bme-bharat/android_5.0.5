@@ -1,15 +1,10 @@
 import React, { useState, useEffect, useCallback, useRef, Profiler, useMemo } from "react";
-import { View, Text, FlatList, Image, TouchableOpacity, TextInput, Dimensions, Modal, StyleSheet, KeyboardAvoidingView, TouchableWithoutFeedback, Keyboard, ActivityIndicator, ToastAndroid, Linking, RefreshControl, Share, ScrollView } from "react-native";
+import { View, Text, FlatList, Image, TouchableOpacity, TextInput, Dimensions, StyleSheet, TouchableWithoutFeedback, Keyboard, ActivityIndicator, RefreshControl, Share, StatusBar, Platform } from "react-native";
 import Video from "react-native-video";
 import { useIsFocused } from "@react-navigation/native";
-import { scale } from 'react-native-size-matters';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-
-import ParsedText from "react-native-parsed-text";
 import apiClient from "../ApiClient";
 import { useDispatch, useSelector } from "react-redux";
 import { clearResourcePosts, updateOrAddResourcePosts } from "../Redux/Resource_Actions";
-
 
 import { useFileOpener } from "../helperComponents/fileViewer";
 
@@ -34,6 +29,8 @@ import File from '../../assets/svgIcons/file.svg';
 import BMEVideoPlayer from "../BMEVideoPlayer";
 
 import { colors, dimensions } from '../../assets/theme.jsx';
+import scrollAnimations from "../helperComponents/scrollAnimations.jsx";
+import Animated from "react-native-reanimated";
 
 
 const videoExtensions = [
@@ -44,6 +41,10 @@ const videoExtensions = [
 
 const { width: deviceWidth, height: deviceHeight } = Dimensions.get('window');
 const maxAllowedHeight = Math.round(deviceHeight * 0.6);
+const STATUS_BAR_HEIGHT =
+  Platform.OS === "android" ? StatusBar.currentHeight || 24 : 44;
+
+const headerHeight = STATUS_BAR_HEIGHT + 60;
 
 const ResourcesList = ({ navigation, route }) => {
 
@@ -66,6 +67,7 @@ const ResourcesList = ({ navigation, route }) => {
     const [expandedTexts, setExpandedTexts] = useState({});
     const { openFile } = useFileOpener();
     const [loading1, setLoading1] = useState(false);
+    const { onScroll, headerStyle, bottomStyle, toolbarBgStyle, barStyle } = scrollAnimations();
 
     const handleOpenResume = async (fileKey) => {
         if (!fileKey) return;
@@ -79,27 +81,27 @@ const ResourcesList = ({ navigation, route }) => {
 
     useEffect(() => {
         const listener = EventRegister.addEventListener('onResourcePostCreated', async ({ newPost }) => {
-        console.log('newPost',newPost)
+            console.log('newPost', newPost)
             try {
                 // Author name from profile
                 const name = profile?.company_name
                     ? profile.company_name
                     : `${profile?.first_name || ''} ${profile?.last_name || ''}`;
-    
+
                 const resourceId = newPost?.resource_id;
                 const fileKey = newPost?.fileKey;
                 const authorFileKey = newPost?.author_fileKey || profile?.fileKey;
-    
+
                 // Get signed URLs
                 const fileKeySignedUrl = await getSignedUrl(resourceId, fileKey);
-    
+
                 let authorSignedUrl;
                 if (authorFileKey) {
                     authorSignedUrl = await getSignedUrl(resourceId, authorFileKey);
                 } else {
                     authorSignedUrl = generateAvatarFromName(name);
                 }
-    
+
                 // Construct new post with all required fields
                 const postWithMedia = {
                     ...newPost,
@@ -110,7 +112,7 @@ const ResourcesList = ({ navigation, route }) => {
                     fileKeySignedUrl,
                     authorSignedUrl,
                 };
-    
+
                 // Update state, prevent duplicates
                 setLocalPosts((prevPosts) => {
                     const alreadyExists = prevPosts.some(p => p.resource_id === postWithMedia.resource_id);
@@ -119,17 +121,17 @@ const ResourcesList = ({ navigation, route }) => {
                     }
                     return [postWithMedia, ...prevPosts];
                 });
-    
+
             } catch (error) {
                 console.error('[onResourcePostCreated] Failed to fetch media for post:', error);
             }
         });
-    
+
         return () => {
             EventRegister.removeEventListener(listener);
         };
     }, [profile]);
-    
+
 
 
     const withTimeout = (promise, timeout = 10000) => {
@@ -271,44 +273,44 @@ const ResourcesList = ({ navigation, route }) => {
     };
 
     const videoExtensions = ['.mp4', '.mov', '.avi', '.mkv', '.flv', '.wmv', '.webm'];
-  
+
     const onViewableItemsChanged = useRef(({ viewableItems }) => {
         if (!viewableItems?.length) {
-          setActiveVideo?.(null);
-          return;
-        }
-    
-        if (isFocused ) {
-          const visibleItem = viewableItems.find(item => item.isViewable);
-          if (visibleItem) {
-            const { resource_id, fileKey } = visibleItem.item || {};
-            const isVideo = fileKey && videoExtensions.some(ext => fileKey.toLowerCase().endsWith(ext));
-    
-            if (resource_id && isVideo) {
-              setActiveVideo?.(resource_id);
-            } else {
-              setActiveVideo?.(null);
-            }
-    
-          } else {
             setActiveVideo?.(null);
-          }
+            return;
         }
-    
-      }).current;
 
+        if (isFocused) {
+            const visibleItem = viewableItems.find(item => item.isViewable);
+            if (visibleItem) {
+                const { resource_id, fileKey } = visibleItem.item || {};
+                const isVideo = fileKey && videoExtensions.some(ext => fileKey.toLowerCase().endsWith(ext));
 
-      useEffect(() => {
-        if (!isFocused) {
-          // Pause all videos when screen loses focus
-          Object.values(videoRefs.current).forEach(ref => {
-            if (ref && typeof ref.pause === 'function') {
-              ref.pause(); // For players with a pause() method
+                if (resource_id && isVideo) {
+                    setActiveVideo?.(resource_id);
+                } else {
+                    setActiveVideo?.(null);
+                }
+
+            } else {
+                setActiveVideo?.(null);
             }
-          });
         }
-      }, [isFocused]);
-      
+
+    }).current;
+
+
+    useEffect(() => {
+        if (!isFocused) {
+            // Pause all videos when screen loses focus
+            Object.values(videoRefs.current).forEach(ref => {
+                if (ref && typeof ref.pause === 'function') {
+                    ref.pause(); // For players with a pause() method
+                }
+            });
+        }
+    }, [isFocused]);
+
 
     const toggleFullText = (forumId) => {
         setExpandedTexts((prev) => ({
@@ -382,7 +384,7 @@ const ResourcesList = ({ navigation, route }) => {
     const MediaPreview = ({
         item,
         openMediaViewer,
-        
+
         maxAllowedHeight
     }) => {
         const { Icon, color } = getFileIconData(item?.extraData?.name);
@@ -429,7 +431,7 @@ const ResourcesList = ({ navigation, route }) => {
                                 height: '100%',
                             }}
                             controls
-                            paused={!isFocused || activeVideo !== item.resource_id }
+                            paused={!isFocused || activeVideo !== item.resource_id}
                             repeat
 
                         />
@@ -476,7 +478,7 @@ const ResourcesList = ({ navigation, route }) => {
         const fileUrl = item.fileKeySignedUrl?.[item.resource_id] || '';
         return (
 
-            <View style={styles.comments}>
+            <TouchableOpacity style={styles.comments} activeOpacity={1}>
                 <View style={styles.dpContainer}>
                     <TouchableOpacity style={styles.dpContainer1} onPress={() => handleNavigate(item)} activeOpacity={1}>
                         {item.author_fileKey ? (
@@ -533,7 +535,7 @@ const ResourcesList = ({ navigation, route }) => {
                 <MediaPreview
                     item={item}
                     openMediaViewer={openMediaViewer}
-                    
+
                     maxAllowedHeight={maxAllowedHeight}
                 />
 
@@ -573,7 +575,7 @@ const ResourcesList = ({ navigation, route }) => {
 
                     <Text style={styles.iconTextUnderlined}>Share</Text>
                 </TouchableOpacity>
-            </View>
+            </TouchableOpacity>
 
         );
     }, [activeVideo, expandedTexts]);
@@ -690,129 +692,112 @@ const ResourcesList = ({ navigation, route }) => {
     };
 
     return (
-        <Profiler id="ForumListCompanylatest" onRender={onRender}>
-            <View style={{ flex: 1, backgroundColor: colors.app_background }}>
-                <View style={styles.searchContainer}>
-                    <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                        <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
+
+        <>
+            <Animated.View style={[AppStyles.toolbar, toolbarBgStyle]}>
+
+                <Animated.View style={[AppStyles.searchRow, headerStyle]}>
+                    <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton} activeOpacity={1}>
+                        <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.text_secondary} />
 
                     </TouchableOpacity>
-                    <View style={styles.searchContainer1}>
-                        <View style={styles.inputContainer}>
-                            <TextInput
-                                ref={searchInputRef}
-                                style={styles.searchInput}
-                                placeholder="Search"
-                                placeholderTextColor="gray"
-                                value={searchQuery}
-                                onChangeText={handleDebouncedTextChange}
-                            />
-                            {searchQuery.trim() !== '' ? (
-                                <TouchableOpacity
-                                    onPress={() => {
-                                        setSearchQuery('');
-                                        setSearchTriggered(false);
-                                        setSearchResults([]);
+                    <View style={AppStyles.searchBar}>
+                        <Search width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.text_secondary} />
 
-                                    }}
-                                    style={styles.iconButton}
-                                >
-                                    <Close width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-
-                                </TouchableOpacity>
-                            ) : (
-                                <TouchableOpacity
-
-                                    style={styles.searchIconButton}
-                                >
-                                    <Search width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-
-                                </TouchableOpacity>
-
-                            )}
-                        </View>
+                        <TextInput
+                            ref={searchInputRef}
+                            placeholder="Search ..."
+                            style={AppStyles.searchInput}
+                            placeholderTextColor={colors.text_secondary}
+                            value={searchQuery}
+                            onChangeText={handleDebouncedTextChange}
+                        />
                     </View>
                     <TouchableOpacity style={AppStyles.circle}
                         onPress={() => navigation.navigate("ResourcesPost")} activeOpacity={0.8}>
-                        <Add width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
+                        <Add width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.background} />
 
                         <Text style={AppStyles.shareText}> Contribute</Text>
                     </TouchableOpacity>
+                </Animated.View>
 
-                </View>
+            </Animated.View>
 
-                <TouchableWithoutFeedback
-                    onPress={() => {
-                        Keyboard.dismiss();
-                        searchInputRef.current?.blur?.();
+            <TouchableWithoutFeedback
+                onPress={() => {
+                    Keyboard.dismiss();
+                    searchInputRef.current?.blur?.();
 
-                    }}
-                >
-                    <View style={{ flex: 1 }}>
-                        {!loading ? (
-                            <FlatList
-                                ref={listRef}
-                                data={!searchTriggered || searchQuery.trim() === '' ? localPosts : searchResults}
-                                renderItem={renderItem}
-                                showsVerticalScrollIndicator={false}
-                                keyboardShouldPersistTaps="handled"
-                                onScrollBeginDrag={() => {
-                                    Keyboard.dismiss();
-                                    searchInputRef.current?.blur?.();
-                                }}
-                                keyExtractor={(item, index) => `${item.resource_id}-${index}`}
-                                onViewableItemsChanged={onViewableItemsChanged}
-                                viewabilityConfig={{ itemVisiblePercentThreshold: 50 }}
-                                ListEmptyComponent={
-                                    (searchTriggered && searchResults.length === 0) ? (
-                                        <View style={{ alignItems: 'center', marginTop: 40 }}>
-                                            <Text style={{ fontSize: 16, color: '#666' }}>No resources found</Text>
-                                        </View>
-                                    ) : null
-                                }
-                                ListHeaderComponent={
-                                    <View>
-                                        {searchTriggered && searchResults.length > 0 && (
-                                            <Text style={styles.companyCount}>
-                                                {searchResults.length} results found
-                                            </Text>
-                                        )}
+                }}
+            >
+                <View style={{ flex: 1 }}>
+                    {!loading ? (
+                        <Animated.FlatList
+                            ref={listRef}
+                            data={!searchTriggered || searchQuery.trim() === '' ? localPosts : searchResults}
+                            renderItem={renderItem}
+                            showsVerticalScrollIndicator={false}
+                            keyboardShouldPersistTaps="handled"
+                            onScrollBeginDrag={() => {
+                                Keyboard.dismiss();
+                                searchInputRef.current?.blur?.();
+                            }}
+                            onScroll={onScroll}
+                            overScrollMode={'never'}
+                            scrollEventThrottle={16}
+                            keyExtractor={(item, index) => `${item.resource_id}-${index}`}
+                            onViewableItemsChanged={onViewableItemsChanged}
+                            viewabilityConfig={{ itemVisiblePercentThreshold: 50 }}
+                            ListEmptyComponent={
+                                (searchTriggered && searchResults.length === 0) ? (
+                                    <View style={{ alignItems: 'center', marginTop: 40 }}>
+                                        <Text style={{ fontSize: 16, color: '#666' }}>No resources found</Text>
                                     </View>
+                                ) : null
+                            }
+                            ListHeaderComponent={
+                                <View>
+                                    {searchTriggered && searchResults.length > 0 && (
+                                        <Text style={styles.companyCount}>
+                                            {searchResults.length} results found
+                                        </Text>
+                                    )}
+                                </View>
+                            }
+                            ListFooterComponent={
+                                loadingMore ? (
+                                    <ActivityIndicator size="small" color="#075cab" style={{ marginVertical: 20 }} />
+                                ) : null
+                            }
+                            refreshControl={
+                                <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} progressViewOffset={headerHeight}/>
+                            }
+                            onEndReached={() => {
+                                if (hasMorePosts) {
+                                    fetchPosts(lastEvaluatedKey);
                                 }
-                                ListFooterComponent={
-                                    loadingMore ? (
-                                        <ActivityIndicator size="small" color="#075cab" style={{ marginVertical: 20 }} />
-                                    ) : null
-                                }
-                                refreshControl={
-                                    <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />
-                                }
-                                onEndReached={() => {
-                                    if (hasMorePosts) {
-                                        fetchPosts(lastEvaluatedKey);
-                                    }
-                                }}
-                                onEndReachedThreshold={0.5}
-                                contentContainerStyle={{ paddingBottom: '5%', }}
+                            }}
+                            onEndReachedThreshold={0.5}
+                            contentContainerStyle={{ paddingTop: headerHeight, backgroundColor: colors.app_background, }}
 
-                            />
-                        ) : (
-                            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                                <ActivityIndicator color={'#075cab'} size="large" />
-                            </View>
-                        )}
+                        />
+                    ) : (
+                        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                            <ActivityIndicator color={'#075cab'} size="large" />
+                        </View>
+                    )}
 
-                        {loading1 && (
-                            <View style={styles.overlay}>
-                                <ActivityIndicator size="large" color="#fff" />
-            
-                            </View>
-                        )}
-                    </View>
-                </TouchableWithoutFeedback>
+                    {loading1 && (
+                        <View style={styles.overlay}>
+                            <ActivityIndicator size="large" color="#fff" />
 
-            </View>
-        </Profiler>
+                        </View>
+                    )}
+                </View>
+            </TouchableWithoutFeedback>
+
+        </>
+
     );
 };
 
@@ -850,13 +835,13 @@ const styles = StyleSheet.create({
         justifyContent: "center",
         alignItems: "center",
         zIndex: 9999,
-      },
-    
-      overlayText: {
+    },
+
+    overlayText: {
         color: "#fff",
         marginTop: 10,
         fontSize: 16,
-      },
+    },
 
     documentContainer: {
         justifyContent: 'center',
@@ -1038,8 +1023,10 @@ const styles = StyleSheet.create({
     },
 
     backButton: {
+        padding: 12,
         alignSelf: 'center',
-        padding: 10
+        borderRadius: 10,
+        backgroundColor: colors.background
 
     },
 

@@ -1,9 +1,9 @@
 
 import React, { useState, useEffect, useCallback, useRef, Profiler, useMemo } from "react";
-import { View, Text, TouchableOpacity, TextInput, Dimensions, StyleSheet, Keyboard, ActivityIndicator, RefreshControl, InputAccessoryView } from "react-native";
+import { View, Text, TouchableOpacity, TextInput, Dimensions, StyleSheet, Keyboard, ActivityIndicator, RefreshControl, InputAccessoryView, Platform, StatusBar } from "react-native";
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { useIsFocused } from "@react-navigation/native";
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+
 import { useNetwork } from "../AppUtils/IdProvider";
 import { showToast } from "../AppUtils/CustomToast";
 import CommentsSection from "../AppUtils/Comments";
@@ -30,10 +30,14 @@ import Add from '../../assets/svgIcons/add.svg';
 import { colors, dimensions } from '../../assets/theme.jsx';
 
 const { height: screenHeight } = Dimensions.get('window');
+const STATUS_BAR_HEIGHT =
+    Platform.OS === "android" ? StatusBar.currentHeight || 24 : 44;
 
+const headerHeight = STATUS_BAR_HEIGHT + 60;
 const LatestPosts = () => {
     const navigation = useNavigation();
-    const { onScroll, headerStyle, bottomStyle } = scrollAnimations();
+    const { onScroll, headerStyle, bottomStyle, toolbarBgStyle, barStyle } = scrollAnimations();
+
     const { myId, myData } = useNetwork();
     const { isConnected } = useConnection();
     const [hasFetchedPosts, setHasFetchedPosts] = useState(false);
@@ -137,7 +141,7 @@ const LatestPosts = () => {
                     />
                 </InputAccessoryView>
             </View>,
-            -screenHeight 
+            -screenHeight
         );
     };
 
@@ -258,122 +262,95 @@ const LatestPosts = () => {
 
 
     return (
-        <Profiler id="ForumListCompanylatest" onRender={onRender}>
-            <View style={{ flex: 1, backgroundColor: colors.app_background }}>
-                <Animated.View style={[AppStyles.headerContainer, headerStyle]}>
-                    <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-                        <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
+        <>
+            <Animated.View style={[AppStyles.toolbar, toolbarBgStyle]}>
 
-                    </TouchableOpacity>
-                    <View style={AppStyles.searchContainer}>
-                        <View style={AppStyles.inputContainer}>
-                            <TextInput
-                                ref={searchInputRef}
-                                style={AppStyles.searchInput}
-                                placeholder="Search"
-                                placeholderTextColor="gray"
-                                value={searchQuery}
-                                onChangeText={setSearchQuery}      // <--- Add this
-                            onSubmitEditing={() => handleSearch(searchQuery)}
-                            />
+                <Animated.View style={[AppStyles.searchRow, headerStyle]}>
+                    <View style={AppStyles.searchBar}>
+                        <Search width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.text_secondary} />
 
-
-                            {searchQuery.trim() !== '' ? (
-                                <TouchableOpacity
-                                    onPress={() => {
-                                        setSearchQuery('');
-                                        setSearchTriggered(false);
-                                        setSearchResults([]);
-
-                                    }}
-                                    activeOpacity={0.8}
-                                    style={AppStyles.iconButton}
-                                >
-                                    <Close width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-
-                                </TouchableOpacity>
-                            ) : (
-                                <TouchableOpacity
-                                    activeOpacity={1}
-                                    style={AppStyles.searchIconButton}
-                                >
-                                    <Search width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-
-                                </TouchableOpacity>
-
-                            )}
-
-                        </View>
+                        <TextInput
+                            ref={searchInputRef}
+                            placeholder="Search posts..."
+                            style={AppStyles.searchInput}
+                            placeholderTextColor="#666"
+                            value={searchQuery}
+                            onChangeText={handleDebouncedTextChange}
+                        />
                     </View>
-
                     <TouchableOpacity
                         style={AppStyles.circle}
                         onPress={() => { navigation.navigate('ForumPost'); }}
                         activeOpacity={1}
                     >
-                        <Text style={AppStyles.shareText}>Post</Text>
-                    </TouchableOpacity>
+                        <Add width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.background} />
 
+                        <Text style={AppStyles.shareText}> Post</Text>
+                    </TouchableOpacity>
                 </Animated.View>
 
-
-                <Animated.FlatList
-                    data={!searchTriggered || searchQuery.trim() === '' ? localPosts : searchResults}
-                    renderItem={renderItem}
-                    ref={listRef}
-                    showsVerticalScrollIndicator={false}
-                    keyboardShouldPersistTaps="handled"
-                    onScrollBeginDrag={() => {
-                        Keyboard.dismiss();
-                        searchInputRef.current?.blur?.();
-
-                    }}
-                    onScroll={onScroll}
-                    scrollEventThrottle={16}
-
-                    keyExtractor={(item, index) => `${item.forum_id}-${index}`}
-                    onViewableItemsChanged={onViewableItemsChanged}
-                    viewabilityConfig={viewabilityConfig}
+            </Animated.View>
 
 
-                    refreshControl={
-                        <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />
-                    }
+            <Animated.FlatList
+                data={!searchTriggered || searchQuery.trim() === '' ? localPosts : searchResults}
+                renderItem={renderItem}
+                ref={listRef}
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
+                onScrollBeginDrag={() => {
+                    Keyboard.dismiss();
+                    searchInputRef.current?.blur?.();
 
-                    onEndReached={handleEndReached}
-                    onEndReachedThreshold={0.3}
-                    contentContainerStyle={AppStyles.scrollView}
-                    ListHeaderComponent={
-                        <>
-                            {searchTriggered && searchResults.length > 0 && (
-                                <Text style={styles.companyCount}>
-                                    {searchResults.length} results found
-                                </Text>
-                            )}
-                        </>
-                    }
-                    ListEmptyComponent={
-                        (searchTriggered && searchResults.length === 0) ? (
-                            <View style={{ alignItems: 'center', marginTop: 40 }}>
-                                <Text style={{ fontSize: 16, color: '#666' }}>No posts found</Text>
-                            </View>
-                        ) : null
-                    }
+                }}
+                onScroll={onScroll}
+                scrollEventThrottle={16}
+                overScrollMode={'never'}
+                keyExtractor={(item, index) => `${item.forum_id}-${index}`}
 
-                    ListFooterComponent={
-                        loadingMore || loading ? (
-                            <View >
-                                <ShimmerSkeleton />
-                            </View>
-                        ) : null
-                    }
+                onViewableItemsChanged={onViewableItemsChanged}
+                viewabilityConfig={viewabilityConfig}
+                refreshControl={
+                    <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh}
+                        progressViewOffset={headerHeight} />
+                }
 
-                />
+                onEndReached={handleEndReached}
+                onEndReachedThreshold={0.3}
+                contentContainerStyle={{ paddingTop: headerHeight, backgroundColor: colors.app_background }}
 
-                <ReactionSheet ref={reactionSheetRef} />
+                ListHeaderComponent={
+                    <>
+                        {searchTriggered && searchResults.length > 0 && (
+                            <Text style={styles.companyCount}>
+                                {searchResults.length} results found
+                            </Text>
+                        )}
+                    </>
+                }
+                ListEmptyComponent={
+                    (searchTriggered && searchResults.length === 0) ? (
+                        <View style={{ alignItems: 'center', marginTop: 40 }}>
+                            <Text style={{ fontSize: 16, color: '#666' }}>No posts found</Text>
+                        </View>
+                    ) : null
+                }
 
-            </View>
-        </Profiler>
+                ListFooterComponent={
+                    loadingMore || loading ? (
+                        <View >
+                            <ShimmerSkeleton />
+                        </View>
+                    ) : null
+                }
+
+            />
+
+
+            <ReactionSheet ref={reactionSheetRef} />
+
+        </>
+
     );
 };
 

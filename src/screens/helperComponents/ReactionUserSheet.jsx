@@ -6,7 +6,8 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Pressable,
-  Image
+  Image,
+  BackHandler
 } from 'react-native';
 import Animated, {
   useSharedValue, useAnimatedStyle, withSpring, withTiming,
@@ -16,7 +17,6 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useNavigation } from '@react-navigation/native';
 import { Image as FastImage } from 'react-native';
 import { useForumReactionUsers } from '../Forum/useForumReactions';
@@ -24,12 +24,12 @@ import Close from '../../assets/svgIcons/close-large.svg';
 
 import { colors, dimensions } from '../../assets/theme.jsx';
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
-const MAX_TRANSLATE_Y = -SCREEN_HEIGHT * 0.95;
+const MAX_TRANSLATE_Y = -SCREEN_HEIGHT * 0.80;
 
 const ReactionSheet = forwardRef(({ onClose }, ref) => {
 
   const navigation = useNavigation();
-  const translateY = useSharedValue(0);
+  const translateY = useSharedValue(SCREEN_HEIGHT);
   const gestureContext = useSharedValue({ startY: 0 });
   const isActive = useSharedValue(false);
   const [active, setActive] = useState(false);
@@ -89,8 +89,13 @@ const ReactionSheet = forwardRef(({ onClose }, ref) => {
 
   const scrollTo = (destination) => {
     'worklet';
-    const clamped = Math.max(destination, MAX_TRANSLATE_Y);
-    const shouldClose = clamped === 0;
+    const clamped = Math.min(
+      Math.max(destination, MAX_TRANSLATE_Y),
+      SCREEN_HEIGHT
+    );
+    
+    const shouldClose = clamped === SCREEN_HEIGHT;
+
     isActive.value = !shouldClose;
     runOnJS(setActive)(!shouldClose);
 
@@ -121,7 +126,7 @@ const ReactionSheet = forwardRef(({ onClose }, ref) => {
 
 
   const closeSheet = () => {
-    scrollTo(0);
+    scrollTo(SCREEN_HEIGHT);
     setForumId(null);
     setReactionType('All');
     setHighlightReactId(null);
@@ -157,6 +162,21 @@ const ReactionSheet = forwardRef(({ onClose }, ref) => {
     }, 600); // reset after animation time
   }, [highlightReactId, usersByReaction]);
 
+  useEffect(() => {
+    const backHandler = BackHandler.addEventListener(
+      "hardwareBackPress",
+      () => {
+        if (ref.current?.isActive()) {
+          ref.current?.close();   // CLOSE FIRST
+          return true;                         // BLOCK BACK PRESS
+        }
+        return false;                           // allow normal back
+      }
+    );
+  
+    return () => backHandler.remove();
+  }, []);
+  
 
   const gesture = Gesture.Pan()
     .onStart(() => {
@@ -168,11 +188,11 @@ const ReactionSheet = forwardRef(({ onClose }, ref) => {
     })
     .onEnd((event) => {
       const SNAP_THRESHOLD = SCREEN_HEIGHT / 3;
-      if (event.velocityY > 500 || translateY.value > -SNAP_THRESHOLD) {
-        scrollTo(0);
+      if (event.velocityY > 500 || translateY.value > MAX_TRANSLATE_Y + SNAP_THRESHOLD) {
+        scrollTo(SCREEN_HEIGHT); // close
       } else {
-        scrollTo(MAX_TRANSLATE_Y);
-      }
+        scrollTo(MAX_TRANSLATE_Y); // open
+      }      
     });
 
   const animatedStyle = useAnimatedStyle(() => {
@@ -185,8 +205,10 @@ const ReactionSheet = forwardRef(({ onClose }, ref) => {
 
     return {
       transform: [{ translateY: translateY.value }],
-      borderRadius,
+      borderTopLeftRadius: borderRadius,
+      borderTopRightRadius: borderRadius,
     };
+    
   });
 
   const backdropOpacity = useAnimatedStyle(() => ({

@@ -2,7 +2,6 @@ import React, { useEffect, useState, forwardRef, useImperativeHandle, useRef } f
 import { View, Text, FlatList, ActivityIndicator, StyleSheet, TouchableOpacity, Image, Keyboard, TouchableWithoutFeedback, Animated, Pressable, Dimensions } from 'react-native';
 import apiClient from '../ApiClient';
 import { Image as FastImage } from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { EventRegister } from 'react-native-event-listeners';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigation } from '@react-navigation/native';
@@ -492,23 +491,25 @@ const CommentsSection = forwardRef(({ forum_id, currentUserId, onEditComment, hi
                                 </View>
 
                                 {item.text && (
-                                    <>
-                                        <Text
-                                            style={styles.commentText}
-                                            numberOfLines={expandedComments[item.comment_id] ? undefined : 3}
-                                        >
-                                            {item.text.trim()}
-                                        </Text>
+                                    <TouchableOpacity
+                                        activeOpacity={0.7}
+                                        onPress={() => toggleExpand(item.comment_id)}
+                                    >
+                                        <Text style={styles.commentText}>
+                                            {expandedComments[item.comment_id]
+                                                ? item.text.trim()
+                                                : item.text.trim().slice(0, 40)}
 
-                                        {item.text.trim().length > 100 && (
-                                            <TouchableOpacity onPress={() => toggleExpand(item.comment_id)}>
+                                            {item.text.trim().length > 40 && (
                                                 <Text style={styles.readMoreText}>
-                                                    {expandedComments[item.comment_id] ? 'Read Less' : 'Read More'}
+                                                    {expandedComments[item.comment_id] ? '  Read Less' : '  ...Read More'}
                                                 </Text>
-                                            </TouchableOpacity>
-                                        )}
-                                    </>
+                                            )}
+                                        </Text>
+                                    </TouchableOpacity>
                                 )}
+
+
                             </View>
                         </View>
 
@@ -629,7 +630,7 @@ const styles = StyleSheet.create({
         color: colors.text_primary,
         maxWidth: '70%',
         paddingHorizontal: 2,
-        
+
     },
 
     timestampText: {

@@ -1,6 +1,5 @@
 import React from 'react';
 import { Modal, Text, TouchableOpacity, View, StyleSheet, Dimensions } from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import Sucess from '../assets/svgIcons/success.svg';
 import Warning from '../assets/svgIcons/warning.svg';

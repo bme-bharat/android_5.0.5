@@ -7,7 +7,6 @@ import Toast from 'react-native-toast-message';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import CustomDropDownMenu from '../../components/DropDownMenu'; // Ensure this is imported
 import { ExperienceType, HireType, industrySkills, industryType, SalaryType, topTierCities } from '../../assets/Constants'; // Import constants
-import Icon from 'react-native-vector-icons/MaterialIcons';
 
 import Message from '../../components/Message';
 import Message3 from '../../components/Message3';
@@ -17,7 +16,7 @@ import { updateJobPost } from '../Redux/Job_Actions';
 import { showToast } from '../AppUtils/CustomToast';
 import apiClient from '../ApiClient';
 import { useNetwork } from '../AppUtils/IdProvider';
-import AppStyles from '../AppUtils/AppStyles';
+import AppStyles, { STATUS_BAR_HEIGHT } from '../AppUtils/AppStyles';
 import { EventRegister } from 'react-native-event-listeners';
 import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
 
@@ -266,6 +265,7 @@ const CompanyJobEditScreen = ({ route }) => {
 
   return (
     <View style={styles.container5}>
+      <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
 
       <TouchableOpacity style={styles.backButton} activeOpacity={0.8} onPress={() => navigation.goBack()}>
         <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
@@ -297,7 +297,7 @@ const CompanyJobEditScreen = ({ route }) => {
               onSelect={(item) => handleChange('industry_type', item.label)}
               buttonStyle={styles.dropdownButton}
               buttonTextStyle={styles.dropdownButtonText}
-              
+
               placeholder={jobEditFormData.industry_type || ""} // Show the current value or placeholder
             />
           </View>
@@ -383,7 +383,7 @@ const CompanyJobEditScreen = ({ route }) => {
               onSelect={(item) => handleChange('Package', item.label)}
               buttonStyle={styles.dropdownButton}
               buttonTextStyle={styles.dropdownButtonText}
-              
+
               placeholder={jobEditFormData.Package || ""}
             />
           </View>
@@ -449,7 +449,7 @@ const styles = StyleSheet.create({
 
   container5: {
     backgroundColor: 'white',
-
+    paddingTop: STATUS_BAR_HEIGHT
   },
 
   container: {
@@ -497,7 +497,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     fontSize: 14,
     fontWeight: '500',
-    color:colors.text_secondary,
+    color: colors.text_secondary,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -539,7 +539,7 @@ const styles = StyleSheet.create({
   dropdownButtonText: {
     fontSize: 14,
     fontWeight: '500',
-    color:colors.text_secondary,
+    color: colors.text_secondary,
     flex: 1,
     paddingVertical: 5,
   },
@@ -547,7 +547,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
 
   },
-  
+
   delete: {
     color: '#FF0000',
     fontWeight: '600',

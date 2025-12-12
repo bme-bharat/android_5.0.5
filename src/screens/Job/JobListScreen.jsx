@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Image, ActivityIndicator, Linking, Modal, RefreshControl, Share, Alert, Keyboard, FlatList, TouchableWithoutFeedback } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Image, ActivityIndicator, Linking, Modal, RefreshControl, Share, Alert, Keyboard, FlatList, TouchableWithoutFeedback, StatusBar, Platform } from 'react-native';
 import axios from 'axios';
 import { useFocusEffect, useNavigation, useNavigationState, useScrollToTop } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -31,6 +31,7 @@ import Money from '../../assets/svgIcons/money.svg';
 import Location from '../../assets/svgIcons/location.svg';
 
 import { colors, dimensions } from '../../assets/theme.jsx';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 
 
@@ -39,12 +40,14 @@ const CompanySettingScreen = React.lazy(() => import('../Profile/CompanySettingS
 const CompanyHomeScreen = React.lazy(() => import('../CompanyHomeScreen'));
 const AllPosts = React.lazy(() => import('../Forum/Feed'));
 
+const STATUS_BAR_HEIGHT =
+  Platform.OS === "android" ? StatusBar.currentHeight || 24 : 44;
 
-const headerHeight = 60;
+const headerHeight = STATUS_BAR_HEIGHT + 60;
 const bottomHeight = 60;
 const JobListScreen = () => {
   const navigation = useNavigation();
-  const { onScroll, headerStyle, bottomStyle } = scrollAnimations();
+  const { onScroll, headerStyle, bottomStyle, toolbarBgStyle, barStyle } = scrollAnimations();
 
 
   const tabNameMap = {
@@ -617,50 +620,24 @@ const JobListScreen = () => {
 
 
   return (
-    <View style={styles.container1}>
+    <>
+      <StatusBar translucent backgroundColor="transparent" barStyle={"light-content"} />
 
-      <View style={styles.container}>
-        <Animated.View style={[AppStyles.headerContainer, headerStyle]}>
-          <View style={AppStyles.searchContainer}>
-            <View style={AppStyles.inputContainer}>
-              <TextInput
-                ref={searchInputRef}
-                style={AppStyles.searchInput}
-                placeholder="Search"
-                placeholderTextColor="gray"
-                value={searchQuery}
-                onChangeText={handleDebouncedTextChange}
-              />
+      <Animated.View style={[AppStyles.toolbar, toolbarBgStyle]}>
 
-              {searchQuery.trim() !== '' ? (
-                <TouchableOpacity
-                  onPress={() => {
-                    setSearchQuery('');
-                    setSearchTriggered(false);
-                    setSearchResults([]);
+        <Animated.View style={[AppStyles.searchRow, headerStyle]}>
+          <View style={AppStyles.searchBar}>
+            <Search width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.text_secondary} />
 
-                  }}
-                  activeOpacity={0.8}
-                  style={AppStyles.iconButton}
-                >
-                  <Close width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-
-                </TouchableOpacity>
-              ) : (
-                <TouchableOpacity
-                  activeOpacity={1}
-                  style={AppStyles.searchIconButton}
-                >
-                  <Search width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-
-                </TouchableOpacity>
-
-              )}
-
-            </View>
+            <TextInput
+              ref={searchInputRef}
+              placeholder="Search jobs..."
+              style={AppStyles.searchInput}
+              placeholderTextColor="#666"
+              value={searchQuery}
+              onChangeText={handleDebouncedTextChange}
+            />
           </View>
-
-
           {isConnected && (
             <TouchableOpacity
               style={AppStyles.circle}
@@ -677,100 +654,99 @@ const JobListScreen = () => {
               }}
               activeOpacity={0.5}
             >
-              <Add width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
+              <Add width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.background} />
 
               <Text style={AppStyles.shareText}> {storeProfile?.user_type === 'company' ? 'Post' : 'Job profile'}</Text>
             </TouchableOpacity>
           )}
-
-
         </Animated.View>
 
         {showNewJobAlert && (
-          <TouchableOpacity onPress={handleRefresh} style={{ position: 'absolute', top: 60, alignSelf: 'center', backgroundColor: '#075cab', padding: 10, borderRadius: 10, zIndex: 10 }}>
+          <TouchableOpacity onPress={handleRefresh} style={{ position: 'absolute', top: headerHeight, alignSelf: 'center', backgroundColor: '#075cab', padding: 10, borderRadius: 10, zIndex: 10 }}>
             <Text style={{ color: 'white' }}>{newJobCount} new job{newJobCount > 1 ? 's' : ''} available — Tap to refresh</Text>
           </TouchableOpacity>
         )}
 
-
-        {!loading ? (
-          <Animated.FlatList
-            data={!searchTriggered ? localJobs : searchResults}
-            renderItem={({ item }) => renderJob({ item })}
-            ref={flatListRef}
-            onScroll={onScroll}
-            scrollEventThrottle={16}
-            onScrollBeginDrag={() => {
-              Keyboard.dismiss();
-              searchInputRef.current?.blur?.();
-            }}
-            contentContainerStyle={AppStyles.scrollView}
-            onViewableItemsChanged={onViewableItemsChanged}
-            viewabilityConfig={viewabilityConfig}
-            keyboardShouldPersistTaps="handled"
-            keyExtractor={(item, index) => `${item.post_id}-${index}`}
-            onEndReached={() => !searchQuery && hasMoreJobs && fetchJobs(lastEvaluatedKey)}
-            onEndReachedThreshold={0.3}
-            showsVerticalScrollIndicator={false}
-            ListEmptyComponent={
-              (searchTriggered && searchResults.length === 0) ? (
-                <View style={{ alignItems: 'center', marginTop: 40 }}>
-                  <Text style={{ fontSize: 16, color: '#666' }}>No jobs found</Text>
-                </View>
-              ) : null
-            }
-            ListHeaderComponent={
-              <View>
-                {searchTriggered && (
-                  <>
-                    <Text style={styles.companyCount}>
-                      {searchTriggered && `${searchResults.length} jobs found`}
-                    </Text>
-
-                    {searchTriggered && searchResults.length > 0 && (
-                      <Text style={styles.companyCount}>
-                        Showing results for{" "}
-                        <Text style={{ fontSize: 18, fontWeight: '600', color: '#075cab' }}>
-                          "{searchQuery}"
-                        </Text>
-                      </Text>
-                    )}
-                  </>
-                )}
-              </View>
-            }
-
-            ListFooterComponent={
-              loadingMore ? (
-                <ActivityIndicator size="small" color="#075cab" style={{ marginVertical: 20 }} />
-              ) : null
-            }
-            refreshControl={
-              <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />
-            }
-          />
-        ) : (
-          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-            <ActivityIndicator color={'#075cab'} size="large" />
-          </View>
-        )}
-
-      </View>
-
-
-      <Animated.View style={[AppStyles.bottom, { flex: 1 }, bottomStyle]}>
-
-        <BottomNavigationBar
-          tabs={tabConfig}
-          currentRouteName={currentRouteName}
-          navigation={navigation}
-          flatListRef={flatListRef}
-          scrollOffsetY={scrollOffsetY}
-          handleRefresh={handleRefresh}
-
-        />
       </Animated.View>
-    </View>
+
+
+
+
+
+      {!loading ? (
+        <Animated.FlatList
+          data={!searchTriggered ? localJobs : searchResults}
+          renderItem={({ item }) => renderJob({ item })}
+          ref={flatListRef}
+          onScroll={onScroll}
+          scrollEventThrottle={16}
+          overScrollMode={'never'}
+          onScrollBeginDrag={() => {
+            Keyboard.dismiss();
+            searchInputRef.current?.blur?.();
+          }}
+          contentContainerStyle={{ paddingBottom: bottomHeight }}
+          onViewableItemsChanged={onViewableItemsChanged}
+          viewabilityConfig={viewabilityConfig}
+          keyboardShouldPersistTaps="handled"
+          keyExtractor={(item, index) => `${item.post_id}-${index}`}
+          onEndReached={() => !searchQuery && hasMoreJobs && fetchJobs(lastEvaluatedKey)}
+          onEndReachedThreshold={0.3}
+          showsVerticalScrollIndicator={false}
+          ListEmptyComponent={
+            (searchTriggered && searchResults.length === 0) ? (
+              <View style={{ alignItems: 'center', marginTop: 40 }}>
+                <Text style={{ fontSize: 16, color: '#666' }}>No jobs found</Text>
+              </View>
+            ) : null
+          }
+          ListHeaderComponent={
+            <Animated.View style={{ height: headerHeight }}>
+              {searchTriggered && (
+                <>
+                  <Text style={styles.companyCount}>
+                    {`${searchResults.length} jobs found`}
+                  </Text>
+                </>
+              )}
+
+            </Animated.View>
+          }
+
+          ListFooterComponent={
+            loadingMore ? (
+              <ActivityIndicator size="small" color="#075cab" style={{ marginVertical: 20 }} />
+            ) : null
+          }
+
+          refreshControl={
+            <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh}
+              progressViewOffset={headerHeight} />
+          }
+        />
+      ) : (
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <ActivityIndicator color={'#075cab'} size="large" />
+        </View>
+      )}
+
+
+
+
+
+      <BottomNavigationBar
+        tabs={tabConfig}
+        currentRouteName={currentRouteName}
+        navigation={navigation}
+        flatListRef={flatListRef}
+        scrollOffsetY={scrollOffsetY}
+        handleRefresh={handleRefresh}
+        tabNameMap={tabNameMap}
+      />
+
+
+
+    </>
   );
 };
 
@@ -795,6 +771,47 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
 
+  searchRow: {
+    width: "100%",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 12,
+    gap: 10,
+
+  },
+
+  searchBar: {
+    flex: 1,
+    backgroundColor: "#f2f2f2",
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    flexDirection: "row",
+    alignItems: "center",
+
+  },
+  searchIcon: {
+    fontSize: 18,
+    marginRight: 8,
+    color: "#666",
+  },
+  searchInput: {
+    fontSize: 18,
+  },
+
+  toolbar: {
+    position: "absolute",
+    top: 0,
+    width: "100%",
+    paddingTop: STATUS_BAR_HEIGHT,
+    zIndex: 50,
+  },
+
+  topHeader: {
+    width: "100%",
+    flexDirection: "row",
+    alignItems: "center",
+  },
 
   navItem: {
     flex: 1,
@@ -829,15 +846,9 @@ const styles = StyleSheet.create({
   },
 
 
-  scrollView: {
-    paddingTop: headerHeight,
-    paddingBottom: bottomHeight,
-
-  },
-
   shareButton: {
     alignSelf: 'flex-end',
-    padding:10
+    padding: 10
   },
 
   backButton: {
@@ -877,7 +888,7 @@ const styles = StyleSheet.create({
   viewMoreButton: {
     backgroundColor: COLORS.primary,
     borderRadius: 4,
-    padding:10
+    padding: 10
   },
 
   buttonContainer: {
@@ -886,7 +897,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',  // Spread buttons across the row
     // marginTop: 10,               // Add top margin for some space
     alignItems: 'center',        // Vertically center buttons
-    
+
   },
   viewMore: {
     // padding: 20,

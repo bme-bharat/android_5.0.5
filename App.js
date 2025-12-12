@@ -34,6 +34,8 @@ import MediaViewer from './src/screens/helperComponents/mediaViewer';
 import { KeyboardInputProvider } from "./src/screens/AppUtils/KeyboardAvoidingContainer"
 import Message1 from './src/components/Message1';
 import useLastActivityTracker from './src/screens/AppUtils/LastSeenProvider';
+import LinearGradient from 'react-native-linear-gradient';
+import InAppUpdateChecker from './src/screens/InAppUpdateChecker';
 
 enableScreens();
 export const navigationRef = createNavigationContainerRef();
@@ -43,7 +45,8 @@ function App() {
   return (
     <SafeAreaProvider>
       <StatusBar
-        barStyle='light-content'
+
+        barStyle='dark-content'
         backgroundColor="#075cab"
       />
       <AppContent />
@@ -160,7 +163,7 @@ const AppContent = () => {
       });
 
       if (response.status === 200 && response.data.status === 'success') {
-        const newVersion = response.data.ios_version_number;
+        const newVersion = response.data.android_version_number;
         setUpdateVersion(newVersion);
 
         const isUpdateAvailable = compareVersions(currentVersion, newVersion);
@@ -584,33 +587,32 @@ const AppContent = () => {
   return (
 
     <Provider store={store}>
-      <View style={{ flex: 0, paddingTop: safeAreaInsets.top }} backgroundColor='#075cab' />
       <Suspense fallback={<SplashScreen />}>
         <GestureHandlerRootView style={{ flex: 1 }}>
           <ToastProvider>
             <NavigationContainer
               ref={navigationRef} >
               <ConnectionProvider>
-                <KeyboardInputProvider>
-                  <BottomSheetProvider>
-                    <NetworkProvider>
-                      <MediaViewer />
-                      <NotificationHandler />
-                      <DeepLinkHandler />
-                      {isLoggedIn ? (
-                        userType === 'users' ? (
-                          <UserBottomTabNav />
-                        ) : (
-                          <CompanyBottomTab />
-                        )
+              <InAppUpdateChecker />
+
+                <BottomSheetProvider>
+                  <NetworkProvider>
+                    <MediaViewer />
+                    <NotificationHandler />
+                    <DeepLinkHandler />
+                    {isLoggedIn ? (
+                      userType === 'users' ? (
+                        <UserBottomTabNav />
                       ) : (
-                        <LoginStack />
-                      )}
+                        <CompanyBottomTab />
+                      )
+                    ) : (
+                      <LoginStack />
+                    )}
 
-                    </NetworkProvider>
-                  </BottomSheetProvider>
+                  </NetworkProvider>
+                </BottomSheetProvider>
 
-                </KeyboardInputProvider>
               </ConnectionProvider>
 
             </NavigationContainer>
@@ -619,11 +621,6 @@ const AppContent = () => {
 
         </GestureHandlerRootView>
       </Suspense>
-      <View style={{
-        flex: 0,
-        paddingBottom: safeAreaInsets.bottom,
-        backgroundColor: '#000'
-      }} />
 
       <UpdateModal
         modalVisible={modalVisible}
@@ -648,30 +645,34 @@ const AppContent = () => {
 
 const UpdateModal = ({ modalVisible, onClose, onUpdate, handleUpdateDismiss, forceUpdate }) => {
   return (
-    <Modal transparent visible={modalVisible} animationType="fade" onRequestClose={onClose}>
+
+    <Modal transparent visible={modalVisible} animationType="fade" onRequestClose={onClose} >
       <View style={styles.modalBackground}>
         <View style={styles.modalContainer}>
-          <Text style={styles.modalTitle}>Update Available</Text>
-          <Text style={styles.modalMessage}>
-            A new version is available. Please update to the latest version for the best experience.
-          </Text>
+          <View style={styles.headerContainer}>
+            <Text style={styles.modalTitle}>Update Available</Text>
 
-          <View style={forceUpdate ? styles.buttonContainerSingle : styles.buttonContainer}>
-            <TouchableOpacity style={styles.button} onPress={onUpdate}>
-              <Text style={styles.buttonText}>Update</Text>
-            </TouchableOpacity>
+            <Text style={styles.modalMessage}>
+              A new version is available. Please update to the latest version for the best experience.
+            </Text>
 
-            {!forceUpdate && handleUpdateDismiss && (
-              <TouchableOpacity
-                style={[styles.button, styles.leaveButton]}
-                onPress={() => {
-                  onClose();
-                  handleUpdateDismiss();
-                }}
-              >
-                <Text style={styles.buttonText1}>Leave</Text>
+            <View style={forceUpdate ? styles.buttonContainerSingle : styles.buttonContainer}>
+              <TouchableOpacity style={styles.button} onPress={onUpdate}>
+                <Text style={styles.buttonText}>Update</Text>
               </TouchableOpacity>
-            )}
+
+              {!forceUpdate && handleUpdateDismiss && (
+                <TouchableOpacity
+                  style={[styles.button, styles.leaveButton]}
+                  onPress={() => {
+                    onClose();
+                    handleUpdateDismiss();
+                  }}
+                >
+                  <Text style={styles.buttonText1}>Leave</Text>
+                </TouchableOpacity>
+              )}
+            </View>
           </View>
         </View>
       </View>
@@ -684,26 +685,37 @@ export default App;
 const styles = StyleSheet.create({
   modalBackground: {
     flex: 1,
+    justifyContent: 'flex-end',   // Move to bottom
+
+  },
+
+  modalContainer: {
+    width: '100%',
+    padding: 20,
+    backgroundColor: 'white',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    elevation: 10,
+    
+  },
+  headerContainer: {
+    width: '98%',
+    // <-- EXTRA SPACE ABOVE TITLE
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.6)', // Darker background for better contrast
+    borderWidth: 2,
+    borderColor: '#075cab'
   },
-  container: {
-    flex: 1,
-  },
-  modalContainer: {
-    width: 320,
-    padding: 30,
-    backgroundColor: '#fff',
-    borderRadius: 15,
-    alignItems: 'center',
-    elevation: 5, // Add shadow for modern look
-  },
+
   modalTitle: {
     fontSize: 20,
     fontWeight: 'bold',
     marginBottom: 12,
-    color: '#333',
+    color: '#075cab',
+    textAlign: 'center',
+    paddingTop:10
   },
   modalMessage: {
     fontSize: 15,
@@ -714,6 +726,7 @@ const styles = StyleSheet.create({
   buttonContainer: {
     width: '100%',
     flexDirection: 'row',
+    justifyContent: 'space-evenly'
   },
   buttonContainerSingle: {
     width: '100%',

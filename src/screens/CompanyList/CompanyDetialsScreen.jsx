@@ -8,8 +8,7 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import default_image from '../../images/homepage/buliding.jpg'
 import axios from 'axios';
 import RNRestart from 'react-native-restart';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+
 import { Image as FastImage } from 'react-native';
 import apiClient from '../ApiClient';
 import ContactSupplierModal from '../helperComponents/ContactsModal';
@@ -21,7 +20,7 @@ import { openLink } from '../AppUtils/openLinks';
 import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
 import ShareIcon from '../../assets/svgIcons/share.svg';
 import { colors, dimensions } from '../../assets/theme.jsx';
-import { commonStyles } from '../AppUtils/AppStyles.js';
+import AppStyles, { commonStyles, STATUS_BAR_HEIGHT } from '../AppUtils/AppStyles.js';
 
 const CompanyDetailsScreen = ({ route }) => {
   const { myId, myData } = useNetwork();
@@ -40,7 +39,9 @@ const CompanyDetailsScreen = ({ route }) => {
   const [loading1, setLoading1] = useState(false);
   const { openFile } = useFileOpener();
 
+
   const handleOpenResume = async () => {
+
     if (!profile?.brochureKey) return;
     setLoading1(true);
     try {
@@ -49,6 +50,7 @@ const CompanyDetailsScreen = ({ route }) => {
       setLoading1(false);
     }
   };
+
   const navigateToDetails = (product) => {
     navigation.navigate('ProductDetails', { product_id: product.product_id, company_id: product.company_id });
 
@@ -297,6 +299,7 @@ const CompanyDetailsScreen = ({ route }) => {
 
     return (
       <View style={styles.container}>
+        <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
 
         <View style={styles.headerContainer}>
 
@@ -318,6 +321,8 @@ const CompanyDetailsScreen = ({ route }) => {
   if (profile?.removed_by_author) {
     return (
       <View style={styles.container}>
+        <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
+
         <View style={styles.headerContainer}>
           <TouchableOpacity style={styles.backButton}
             activeOpacity={1}
@@ -337,6 +342,8 @@ const CompanyDetailsScreen = ({ route }) => {
   return (
 
     <View style={styles.container}>
+      <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
+
       <View style={styles.headerContainer}>
         <TouchableOpacity style={styles.backButton}
           activeOpacity={1}
@@ -353,233 +360,233 @@ const CompanyDetailsScreen = ({ route }) => {
       </View>
 
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{paddingHorizontal:5}}>
- 
-          <TouchableOpacity
-            onPress={() => {
-              if (typeof imageUrl === 'string' && imageUrl.trim() !== '') {
-                openMediaViewer([{ type: 'image', url: imageUrl }]);
-              }
-            }}
-            activeOpacity={1}
-            style={styles.imageContainer}
-          >
-            {profile.fileKey && typeof imageUrl === 'string' && imageUrl.trim() !== '' ? (
-              <Image
-                source={{ uri: imageUrl }}
-                style={styles.detailImage}
-                resizeMode={imageUrl.includes('buliding.jpg') ? 'cover' : 'contain'}
-                onError={() => setImageUrl(null)}
-              />
-            ) : (
-              <View
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 5 }}>
+
+        <TouchableOpacity
+          onPress={() => {
+            if (typeof imageUrl === 'string' && imageUrl.trim() !== '') {
+              openMediaViewer([{ type: 'image', url: imageUrl }]);
+            }
+          }}
+          activeOpacity={1}
+          style={styles.imageContainer}
+        >
+          {profile.fileKey && typeof imageUrl === 'string' && imageUrl.trim() !== '' ? (
+            <Image
+              source={{ uri: imageUrl }}
+              style={styles.detailImage}
+              resizeMode={imageUrl.includes('buliding.jpg') ? 'cover' : 'contain'}
+              onError={() => setImageUrl(null)}
+            />
+          ) : (
+            <View
+              style={[
+                styles.detailImage,
+                {
+                  backgroundColor:
+                    profile?.companyAvatar?.backgroundColor || '#ccc',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                },
+              ]}
+            >
+              <Text
                 style={[
-                  styles.detailImage,
-                  {
-                    backgroundColor:
-                      profile?.companyAvatar?.backgroundColor || '#ccc',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                  },
+                  commonStyles.avatarText,
+                  { color: profile?.companyAvatar?.textColor || '#000' },
                 ]}
               >
-                <Text
-                  style={[
-                    commonStyles.avatarText,
-                    { color: profile?.companyAvatar?.textColor || '#000' },
-                  ]}
-                >
-                  {profile?.companyAvatar?.initials || ''}
-                </Text>
-              </View>
-            )}
-          </TouchableOpacity>
-
-
-
-          <View style={[styles.detailsContainer]}>
-
-            <View style={commonStyles.labValContainer}>
-              <Text style={commonStyles.label}>Company     </Text>
-              <Text style={commonStyles.colon}>:</Text>
-              <Text style={commonStyles.value}>{(profile?.company_name || "").trimStart().trimEnd()}</Text>
+                {profile?.companyAvatar?.initials || ''}
+              </Text>
             </View>
-
-            <View style={commonStyles.labValContainer}>
-              <Text style={commonStyles.label}>Category      </Text>
-              <Text style={commonStyles.colon}>:</Text>
-
-              <Text style={commonStyles.value}>{profile?.category || ""}</Text>
-            </View>
-            <View style={commonStyles.labValContainer}>
-              <Text style={commonStyles.label}>City              </Text>
-              <Text style={commonStyles.colon}>:</Text>
-
-              <Text style={commonStyles.value}>{profile?.company_located_city || ""}</Text>
-            </View>
-            <View style={commonStyles.labValContainer}>
-              <Text style={commonStyles.label}>State            </Text>
-              <Text style={commonStyles.colon}>:</Text>
-
-              <Text style={commonStyles.value}>{profile?.company_located_state || ""}</Text>
-            </View>
-            {profile?.company_address?.trimStart().trimEnd() ? (
-              <View style={commonStyles.labValContainer}>
-                <Text style={commonStyles.label}>Address</Text>
-                <Text style={commonStyles.colon}>:</Text>
-                <Text style={commonStyles.value}>{profile.company_address.trim()}</Text>
-              </View>
-            ) : null}
-            {profile?.Website?.trimStart().trimEnd() ? (
-              <View style={commonStyles.labValContainer}>
-                <Text style={commonStyles.label}>Website</Text>
-                <Text style={commonStyles.colon}>:</Text>
-                <Text style={commonStyles.value}>
-                  <TouchableOpacity onPress={() => openLink(profile.Website)}>
-                    <Text style={[commonStyles.value, { color: "#075cab", textDecorationLine: "underline" }]}>
-                      {profile.Website.trim()}
-                    </Text>
-                  </TouchableOpacity>
-                </Text>
-              </View>
-            ) : null}
-
-            {profile?.company_description?.trimStart().trimEnd() ? (
-              <View style={[commonStyles.labValContainer]}>
-                <Text style={commonStyles.label}>Description</Text>
-                <Text style={commonStyles.colon}>:</Text>
-                <Text style={[commonStyles.value]}>{profile.company_description.trim()}</Text>
-              </View>
-            ) : null}
-
-            {
-              profile?.brochureKey &&
-              (<TouchableOpacity onPress={handleOpenResume} disabled={loading} style={styles.pdfButton}>
-                {loading1 ? (
-                  <ActivityIndicator size="small" color="#075cab" style={styles.pdfButtonText} />
-                ) : (
-                  <Text style={styles.pdfButtonText}>View Catalogue</Text>
-                )}
-              </TouchableOpacity>)
-            }
-
-            <View style={styles.rowContainer}>
-              <TouchableOpacity
-                activeOpacity={1}
-                style={[styles.tabButton]}
-                onPress={() => setProductDropdownVisible(true)}
-              >
-                <Text style={styles.tabButtonText}>Products</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                activeOpacity={1}
-                style={[styles.tabButton]}
-                onPress={() => setServiceDropdownVisible(true)}
-              >
-                <Text style={styles.tabButtonText}>Services</Text>
-              </TouchableOpacity>
-            </View>
+          )}
+        </TouchableOpacity>
 
 
-            <Modal
-              transparent={true}
-              visible={isProductDropdownVisible}
-              onRequestClose={() => setProductDropdownVisible(false)}
-            >
-              <Pressable style={styles.modalContainer} onPress={() => setProductDropdownVisible(false)}>
-                <View style={styles.modalContent}>
-                  {products && products.length > 0 ? (
-                    <FlatList
-                      data={products}
-                      renderItem={({ item }) => (
-                        <TouchableOpacity
-                          activeOpacity={1}
-                          style={styles.dropdownItem}
-                          onPress={() => handleProductSelect(item)}
-                        >
-                          <Text style={styles.dropdownItemText}>
-                            🛒 {item.title || 'Unnamed Product'}
-                          </Text>
-                        </TouchableOpacity>
-                      )}
-                      keyExtractor={(item, index) => index.toString()}
-                    />
-                  ) : (
 
-                    <Text style={styles.noProductsText}>No products available</Text>
+        <View style={[styles.detailsContainer]}>
 
-                  )}
-                </View>
-              </Pressable>
-            </Modal>
-
-
-            <Modal
-              transparent={true}
-              visible={isServiceDropdownVisible}
-              onRequestClose={() => setServiceDropdownVisible(false)}
-            >
-              <Pressable style={styles.modalContainer} onPress={() => setServiceDropdownVisible(false)}>
-                <View style={styles.modalContent}>
-                  {services && services.length > 0 ? (
-                    <FlatList
-                      data={services}
-                      renderItem={({ item }) => (
-                        <TouchableOpacity
-                          activeOpacity={1}
-                          style={styles.dropdownItem}
-                          onPress={() => handleSevicesSelect(item)}
-                        >
-                          <Text style={styles.dropdownItemText}>
-                            🛠️ {item.title || 'Unnamed Services'}
-                          </Text>
-                        </TouchableOpacity>
-                      )}
-                      keyExtractor={(item, index) => index.toString()}
-                    />
-                  ) : (
-
-                    <Text style={styles.noProductsText}>No services available</Text>
-
-                  )}
-                </View>
-              </Pressable>
-            </Modal>
-
+          <View style={commonStyles.labValContainer}>
+            <Text style={commonStyles.label}>Company     </Text>
+            <Text style={commonStyles.colon}>:</Text>
+            <Text style={commonStyles.value}>{(profile?.company_name || "").trimStart().trimEnd()}</Text>
           </View>
 
-          <Modal visible={isModalVisibleImage} transparent={true}>
-            <View style={styles.modalContainerImage}>
-              <FastImage
-                source={{ uri: imageUrl }}
-                style={styles.modalImage}
-                resizeMode='contain'
-                onError={() => setImageUrl(null)}
-              />
+          <View style={commonStyles.labValContainer}>
+            <Text style={commonStyles.label}>Category      </Text>
+            <Text style={commonStyles.colon}>:</Text>
 
-              <TouchableOpacity onPress={handleCancel} style={styles.closeButton1}>
-                <Ionicons name="close" size={24} color="white" />
+            <Text style={commonStyles.value}>{profile?.category || ""}</Text>
+          </View>
+          <View style={commonStyles.labValContainer}>
+            <Text style={commonStyles.label}>City              </Text>
+            <Text style={commonStyles.colon}>:</Text>
 
-              </TouchableOpacity>
+            <Text style={commonStyles.value}>{profile?.company_located_city || ""}</Text>
+          </View>
+          <View style={commonStyles.labValContainer}>
+            <Text style={commonStyles.label}>State            </Text>
+            <Text style={commonStyles.colon}>:</Text>
+
+            <Text style={commonStyles.value}>{profile?.company_located_state || ""}</Text>
+          </View>
+          {profile?.company_address?.trimStart().trimEnd() ? (
+            <View style={commonStyles.labValContainer}>
+              <Text style={commonStyles.label}>Address</Text>
+              <Text style={commonStyles.colon}>:</Text>
+              <Text style={commonStyles.value}>{profile.company_address.trim()}</Text>
             </View>
+          ) : null}
+          {profile?.Website?.trimStart().trimEnd() ? (
+            <View style={commonStyles.labValContainer}>
+              <Text style={commonStyles.label}>Website</Text>
+              <Text style={commonStyles.colon}>:</Text>
+              <Text style={commonStyles.value}>
+                <TouchableOpacity onPress={() => openLink(profile.Website)}>
+                  <Text style={[commonStyles.value, { color: "#075cab", textDecorationLine: "underline" }]}>
+                    {profile.Website.trim()}
+                  </Text>
+                </TouchableOpacity>
+              </Text>
+            </View>
+          ) : null}
+
+          {profile?.company_description?.trimStart().trimEnd() ? (
+            <View style={[commonStyles.labValContainer]}>
+              <Text style={commonStyles.label}>Description</Text>
+              <Text style={commonStyles.colon}>:</Text>
+              <Text style={[commonStyles.value]}>{profile.company_description.trim()}</Text>
+            </View>
+          ) : null}
+
+          {
+            profile?.brochureKey &&
+            (<TouchableOpacity onPress={handleOpenResume} disabled={loading1} style={styles.pdfButton}>
+              {loading1 ? (
+                <ActivityIndicator size="small" color="#075cab" style={styles.pdfButtonText} />
+              ) : (
+                <Text style={styles.pdfButtonText}>View Catalogue</Text>
+              )}
+            </TouchableOpacity>)
+          }
+
+          <View style={styles.rowContainer}>
+            <TouchableOpacity
+              activeOpacity={1}
+              style={[styles.tabButton]}
+              onPress={() => setProductDropdownVisible(true)}
+            >
+              <Text style={styles.tabButtonText}>Products</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              activeOpacity={1}
+              style={[styles.tabButton]}
+              onPress={() => setServiceDropdownVisible(true)}
+            >
+              <Text style={styles.tabButtonText}>Services</Text>
+            </TouchableOpacity>
+          </View>
+
+
+          <Modal
+            transparent={true}
+            visible={isProductDropdownVisible}
+            onRequestClose={() => setProductDropdownVisible(false)}
+          >
+            <Pressable style={styles.modalContainer} onPress={() => setProductDropdownVisible(false)}>
+              <View style={styles.modalContent}>
+                {products && products.length > 0 ? (
+                  <FlatList
+                    data={products}
+                    renderItem={({ item }) => (
+                      <TouchableOpacity
+                        activeOpacity={1}
+                        style={styles.dropdownItem}
+                        onPress={() => handleProductSelect(item)}
+                      >
+                        <Text style={styles.dropdownItemText}>
+                          🛒 {item.title || 'Unnamed Product'}
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+                    keyExtractor={(item, index) => index.toString()}
+                  />
+                ) : (
+
+                  <Text style={styles.noProductsText}>No products available</Text>
+
+                )}
+              </View>
+            </Pressable>
           </Modal>
 
 
-          {myId !== userId && (
-            <>
-              <TouchableOpacity onPress={() => setModalVisible1(true)} style={{ padding: 10 }}>
-                <Text style={styles.contact}>Contact details</Text>
-              </TouchableOpacity>
+          <Modal
+            transparent={true}
+            visible={isServiceDropdownVisible}
+            onRequestClose={() => setServiceDropdownVisible(false)}
+          >
+            <Pressable style={styles.modalContainer} onPress={() => setServiceDropdownVisible(false)}>
+              <View style={styles.modalContent}>
+                {services && services.length > 0 ? (
+                  <FlatList
+                    data={services}
+                    renderItem={({ item }) => (
+                      <TouchableOpacity
+                        activeOpacity={1}
+                        style={styles.dropdownItem}
+                        onPress={() => handleSevicesSelect(item)}
+                      >
+                        <Text style={styles.dropdownItemText}>
+                          🛠️ {item.title || 'Unnamed Services'}
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+                    keyExtractor={(item, index) => index.toString()}
+                  />
+                ) : (
 
-              <ContactSupplierModal
-                visible={modalVisible1}
-                onClose={() => setModalVisible1(false)}
-                company_id={userId}
-              />
-            </>
-          )}
-  
+                  <Text style={styles.noProductsText}>No services available</Text>
+
+                )}
+              </View>
+            </Pressable>
+          </Modal>
+
+        </View>
+
+        <Modal visible={isModalVisibleImage} transparent={true}>
+          <View style={styles.modalContainerImage}>
+            <FastImage
+              source={{ uri: imageUrl }}
+              style={styles.modalImage}
+              resizeMode='contain'
+              onError={() => setImageUrl(null)}
+            />
+
+            <TouchableOpacity onPress={handleCancel} style={styles.closeButton1}>
+              <Ionicons name="close" size={24} color="white" />
+
+            </TouchableOpacity>
+          </View>
+        </Modal>
+
+
+        {myId !== userId && (
+          <>
+            <TouchableOpacity onPress={() => setModalVisible1(true)} style={{ padding: 10 }}>
+              <Text style={styles.contact}>Contact details</Text>
+            </TouchableOpacity>
+
+            <ContactSupplierModal
+              visible={modalVisible1}
+              onClose={() => setModalVisible1(false)}
+              company_id={userId}
+            />
+          </>
+        )}
+
       </ScrollView>
 
     </View>
@@ -591,7 +598,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#ffffff',
-
+    paddingTop: STATUS_BAR_HEIGHT
   },
   headerContainer: {
     flexDirection: 'row',
@@ -671,7 +678,7 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
     borderRadius: 10,
     padding: 10,
-    elevation:3
+    elevation: 3
   },
   detailsContainer: {
 

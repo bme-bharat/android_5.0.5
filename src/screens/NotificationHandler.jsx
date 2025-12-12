@@ -20,6 +20,8 @@ import {
 import notifee, { EventType } from '@notifee/react-native';
 import { navigationRef } from './../../App';
 import LinearGradient from 'react-native-linear-gradient';
+import { STATUS_BAR_HEIGHT } from './AppUtils/AppStyles';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const NotificationHandler = () => {
   const notificationListener = useRef(null);
@@ -163,7 +165,7 @@ const NotificationHandler = () => {
       waitForNavigation(() => navigateToAppliedJobs(parsedData));
     } else if (notificationType === "contact_alert") {
       waitForNavigation(() => navigateToContactViewed(parsedData));
-    }else if (notificationType === "job_suggestion") {
+    } else if (notificationType === "job_suggestion") {
       waitForNavigation(() => {
         const params = {
           ...parsedData,
@@ -294,29 +296,32 @@ const NotificationHandler = () => {
   return (
     <>
       {inAppNotification && (
-        <View style={styles.safeArea}>
-          <Animated.View
-            style={[
-              styles.bannerContainer,
-              {
-                transform: [{ translateY: slideAnim }],
-                opacity: fadeAnim,
-              },
-            ]}
-          >
-            <TouchableOpacity onPress={handleBannerPress} activeOpacity={0.95}>
-              <View style={styles.banner}>
-                <View style={styles.iconContainer}>
-                  <Text style={styles.icon}>🔔</Text>
+     
+
+          <View style={styles.safeArea}>
+            <Animated.View
+              style={[
+                styles.bannerContainer,
+                {
+                  transform: [{ translateY: slideAnim }],
+                  opacity: fadeAnim,
+                },
+              ]}
+            >
+              <TouchableOpacity onPress={handleBannerPress} activeOpacity={0.95}>
+                <View style={styles.banner}>
+                  <View style={styles.iconContainer}>
+                    <Text style={styles.icon}>🔔</Text>
+                  </View>
+                  <View style={styles.textContainer}>
+                    <Text style={styles.title}>{inAppNotification.title}</Text>
+                    <Text style={styles.body}>{inAppNotification.body}</Text>
+                  </View>
                 </View>
-                <View style={styles.textContainer}>
-                  <Text style={styles.title}>{inAppNotification.title}</Text>
-                  <Text style={styles.body}>{inAppNotification.body}</Text>
-                </View>
-              </View>
-            </TouchableOpacity>
-          </Animated.View>
-        </View>
+              </TouchableOpacity>
+            </Animated.View>
+          </View>
+
       )}
     </>
   );
@@ -327,7 +332,7 @@ const NotificationHandler = () => {
 const styles = StyleSheet.create({
   safeArea: {
     position: 'absolute',
-    top: 0,
+    top: STATUS_BAR_HEIGHT +60,
     left: 0,
     right: 0,
     zIndex: 9999,

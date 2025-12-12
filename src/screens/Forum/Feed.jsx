@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useCallback, useRef, Profiler, useMemo } from "react";
-import { View, Text, TouchableOpacity, TextInput, Dimensions, StyleSheet, Keyboard, ActivityIndicator, RefreshControl, InputAccessoryView } from "react-native";
+import { View, Text, TouchableOpacity, TextInput, Dimensions, StyleSheet, Keyboard, ActivityIndicator, RefreshControl, InputAccessoryView, StatusBar, Platform } from "react-native";
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { useIsFocused } from "@react-navigation/native";
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -39,11 +39,14 @@ const CompanySettingScreen = React.lazy(() => import('../Profile/CompanySettingS
 const CompanyHomeScreen = React.lazy(() => import('../CompanyHomeScreen'));
 
 const { height: screenHeight } = Dimensions.get('window');
+const STATUS_BAR_HEIGHT =
+    Platform.OS === "android" ? StatusBar.currentHeight || 24 : 44;
 
+const headerHeight = STATUS_BAR_HEIGHT + 60;
 
 const AllPosts = () => {
     const navigation = useNavigation();
-    const { onScroll, headerStyle, bottomStyle } = scrollAnimations();
+    const { onScroll, headerStyle, bottomStyle, toolbarBgStyle, barStyle } = scrollAnimations();
 
     const tabConfig = [
         { name: "Home", component: CompanyHomeScreen, focusedIcon: 'home', unfocusedIcon: 'home-outline', iconComponent: Icon },
@@ -103,7 +106,7 @@ const AllPosts = () => {
         isConnected,
         myId
     });
-console.log('localPosts',localPosts[0])
+    console.log('localPosts', localPosts[0])
 
     const {
 
@@ -335,7 +338,6 @@ console.log('localPosts',localPosts[0])
         context: "latest"
     });
 
-    // 2. Extend renderItem to handle the footer
 
     const lastCheckedTimeRef = useRef(Math.floor(Date.now() / 1000));
     const [lastCheckedTime, setLastCheckedTime] = useState(lastCheckedTimeRef.current);
@@ -484,65 +486,43 @@ console.log('localPosts',localPosts[0])
 
     return (
 
-        <View style={{ flex: 1, backgroundColor: colors.app_background }}>
 
-            <Animated.View style={[AppStyles.headerContainer, headerStyle]}>
-                <View style={AppStyles.searchContainer}>
-                    <View style={AppStyles.inputContainer}>
+        <>
+            <StatusBar translucent backgroundColor="transparent" barStyle={"light-content"} />
+
+            <Animated.View style={[AppStyles.toolbar, toolbarBgStyle]}>
+
+                <Animated.View style={[AppStyles.searchRow, headerStyle]}>
+                    <View style={AppStyles.searchBar}>
+                        <Search width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.text_secondary} />
+
                         <TextInput
                             ref={searchInputRef}
+                            placeholder="Search posts..."
                             style={AppStyles.searchInput}
-                            placeholder="Search"
-                            placeholderTextColor="gray"
+                            placeholderTextColor="#666"
                             value={searchQuery}
-                            onChangeText={setSearchQuery}      // <--- Add this
-                            onSubmitEditing={() => handleSearch(searchQuery)}
+                            onChangeText={handleDebouncedTextChange}
                         />
-
-
-                        {searchQuery.trim() !== '' ? (
-                            <TouchableOpacity
-                                onPress={() => {
-                                    setSearchQuery('');
-                                    setSearchTriggered(false);
-                                    setSearchResults([]);
-
-                                }}
-                                activeOpacity={0.8}
-                                style={AppStyles.iconButton}
-                            >
-                                <Close width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-
-                            </TouchableOpacity>
-                        ) : (
-                            <TouchableOpacity
-                                activeOpacity={1}
-                                style={AppStyles.searchIconButton}
-                            >
-                                <Search width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-
-                            </TouchableOpacity>
-
-                        )}
-
                     </View>
-                </View>
+                    <TouchableOpacity
+                        style={AppStyles.circle}
+                        onPress={() => { navigation.navigate('ForumPost'); }}
+                        activeOpacity={1}
+                    >
+                        <Add width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.background} />
 
-                <TouchableOpacity
-                    style={AppStyles.circle}
-                    onPress={() => { navigation.navigate('ForumPost'); }}
-                    activeOpacity={1}
-                >
-                    <Add width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-
-                    <Text style={AppStyles.shareText}> Post</Text>
-                </TouchableOpacity>
+                        <Text style={AppStyles.shareText}> Post</Text>
+                    </TouchableOpacity>
+                </Animated.View>
                 {showNewJobAlert && (
-                    <TouchableOpacity onPress={handleRefresh} style={{ position: 'absolute', top: 60, alignSelf: 'center', backgroundColor: '#075cab', padding: 10, margin: 10, borderRadius: 10, zIndex: 10 }}>
+                    <TouchableOpacity onPress={handleRefresh} style={{ position: 'absolute', top: headerHeight, alignSelf: 'center', backgroundColor: '#075cab', padding: 10, margin: 10, borderRadius: 10, zIndex: 10 }}>
                         <Text style={{ color: 'white', fontWeight: '500' }}>{newJobCount} new post{newJobCount > 1 ? 's' : ''} available — Tap to refresh</Text>
                     </TouchableOpacity>
                 )}
             </Animated.View>
+
+
 
             <Animated.FlatList
                 data={!searchTriggered || searchQuery.trim() === '' ? localPosts : searchResults}
@@ -557,18 +537,20 @@ console.log('localPosts',localPosts[0])
                 }}
                 onScroll={onScroll}
                 scrollEventThrottle={16}
-
+                overScrollMode={'never'}
                 keyExtractor={(item, index) => `${item.forum_id}-${index}`}
 
                 onViewableItemsChanged={onViewableItemsChanged}
                 viewabilityConfig={viewabilityConfig}
                 refreshControl={
-                    <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />
+                    <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh}
+                        progressViewOffset={headerHeight} />
                 }
 
                 onEndReached={handleEndReached}
                 onEndReachedThreshold={0.3}
-                contentContainerStyle={AppStyles.scrollView}
+                contentContainerStyle={{ paddingTop: headerHeight, backgroundColor: colors.app_background }}
+
                 ListHeaderComponent={
                     <>
                         {searchTriggered && searchResults.length > 0 && (
@@ -587,7 +569,7 @@ console.log('localPosts',localPosts[0])
                 }
 
                 ListFooterComponent={
-                     loadingMore || loading ? (
+                    loadingMore || loading ? (
                         <View >
                             <ShimmerSkeleton />
                         </View>
@@ -597,8 +579,7 @@ console.log('localPosts',localPosts[0])
             />
 
 
-            <ReactionSheet ref={reactionSheetRef} />
-            <Animated.View style={[AppStyles.bottom, bottomStyle]}>
+            <Animated.View style={[AppStyles.bottom,]}>
 
                 <BottomNavigationBar
                     tabs={tabConfig}
@@ -609,7 +590,9 @@ console.log('localPosts',localPosts[0])
                     handleRefresh={handleRefresh}
                 />
             </Animated.View>
-        </View>
+            <ReactionSheet ref={reactionSheetRef} />
+
+        </>
 
     );
 };

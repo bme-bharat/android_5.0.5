@@ -15,7 +15,16 @@ const DeepLinkHandler = () => {
           return;
         }
 
-        const path = url.replace(/^https?:\/\/bmebharat.com\//, '').replace(/^bmebharat:\/\//, '');
+        const path = url
+          .replace(/^https?:\/\/bmebharat.com\//, '')
+          .replace(/^bmebharat:\/\//, '');
+
+        if (url === "https://bmebharat.com" || url === "https://bmebharat.com/" || path.trim() === "") {
+          
+          EventRegister.emit("deepLinkDone");
+          return;
+        }
+
         const pathParts = path.split('/');
         const id = pathParts[pathParts.length - 1];
 
@@ -58,14 +67,14 @@ const DeepLinkHandler = () => {
           while (!navigationRef.isReady()) {
             await new Promise((resolve) => setTimeout(resolve, 100));
           }
-        
+
           console.log('✅ Navigation is ready');
-        
+
           try {
             if (navigationRef.current) {
               const currentRoutes = navigationRef.current.getRootState()?.routes || [];
               console.log('🧭 Current routes:', currentRoutes);
-        
+
               if (currentRoutes.length > 1) {
                 console.log(`📍 Navigating to existing stack screen: ${routeName}`, params);
                 navigationRef.current.navigate(routeName, params);
@@ -84,10 +93,10 @@ const DeepLinkHandler = () => {
           } catch (err) {
             console.error('❌ Error during navigation:', err);
           }
-        
+
           EventRegister.emit('deepLinkDone');
         };
-        
+
 
         waitForNavigationReady();
       } catch (error) {
@@ -107,7 +116,7 @@ const DeepLinkHandler = () => {
         EventRegister.emit('deepLinkDone');
       }
     };
-    
+
 
     handleInitialURL();
 

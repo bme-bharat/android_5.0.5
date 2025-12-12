@@ -11,7 +11,7 @@ import Message3 from '../../components/Message3';
 import { showToast } from '../AppUtils/CustomToast';
 import { useNetwork } from '../AppUtils/IdProvider';
 import apiClient from '../ApiClient';
-import AppStyles from '../AppUtils/AppStyles';
+import AppStyles, { STATUS_BAR_HEIGHT } from '../AppUtils/AppStyles';
 
 import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
 import { colors, dimensions } from '../../assets/theme.jsx';
@@ -356,9 +356,9 @@ const UserJobProfileCreateScreen = () => {
 
 
   const handlePostSubmission = async () => {
-    console.log('🟡 Starting handlePostSubmission');
-    setHasChanges(false);
 
+    setHasChanges(false);
+    setLoading(true);
     const trimmedPostData = {
       domain_strength: postData.domain_strength?.trim(),
       work_experience: postData.work_experience?.trim(),
@@ -370,9 +370,7 @@ const UserJobProfileCreateScreen = () => {
       industry_type: postData.industry_type?.trim(),
     };
 
-    console.log('📋 Trimmed Post Data:', trimmedPostData);
 
-    // Mandatory field validation
     if (
       !trimmedPostData.domain_strength ||
       !trimmedPostData.work_experience ||
@@ -438,7 +436,7 @@ const UserJobProfileCreateScreen = () => {
         showToast('Something went wrong.', 'error');
       }
     }
-
+    setLoading(true);
     setHasChanges(false);
     console.log('✅ handlePostSubmission complete');
   };
@@ -470,6 +468,8 @@ const UserJobProfileCreateScreen = () => {
   return (
 
     <View style={styles.container}>
+      <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
+
       <View style={styles.headerContainer}>
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
           <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
@@ -482,7 +482,7 @@ const UserJobProfileCreateScreen = () => {
         keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
       >
         <KeyboardAwareScrollView
-          contentContainerStyle={{ paddingBottom: '40%', paddingHorizontal: 10, backgroundColor: 'whitesmoke' }}
+          contentContainerStyle={{ paddingBottom: '40%', paddingHorizontal: 5, backgroundColor: 'whitesmoke' }}
           keyboardShouldPersistTaps="handled"
           extraScrollHeight={20}
         >
@@ -554,7 +554,6 @@ const UserJobProfileCreateScreen = () => {
               onSelect={Salary}
               buttonStyle={styles.dropdownButton}
               buttonTextStyle={styles.dropdownButtonText}
-
               placeholderTextColor="gray"
 
             />
@@ -563,7 +562,7 @@ const UserJobProfileCreateScreen = () => {
           <View style={styles.inputContainer}>
             <Text style={styles.label}>Educational Qualification <Text style={{ color: colors.danger }}>*</Text></Text>
             <TextInput
-              style={[styles.input, { height: 90 }]}
+              style={[styles.input]}
               multiline
               onChangeText={(value) => handleInputChange('education_qualifications', value)}
               value={postData.education_qualifications} // Ensure controlled input
@@ -593,7 +592,7 @@ const UserJobProfileCreateScreen = () => {
           <View style={styles.inputContainer}>
             <Text style={styles.label}>Languages Known </Text>
             <TextInput
-              style={[styles.input, { height: 90 }]}
+              style={[styles.input]}
               multiline
               onChangeText={(value) => handleInputChange('languages', value)}
               value={postData.languages}
@@ -630,7 +629,8 @@ const UserJobProfileCreateScreen = () => {
             name={file?.name}
             onRemove={handleRemoveMedia}
           />
-          <TouchableOpacity style={AppStyles.Postbtn} onPress={handlePostSubmission}>
+          <TouchableOpacity style={AppStyles.Postbtn} onPress={handlePostSubmission}
+            disabled={loading}>
             <Text style={AppStyles.PostbtnText}>Submit</Text>
           </TouchableOpacity>
 
@@ -657,7 +657,8 @@ const UserJobProfileCreateScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'whitesmoke'
+    backgroundColor: 'whitesmoke',
+    paddingTop: STATUS_BAR_HEIGHT
   },
 
   backButton: {
@@ -689,7 +690,8 @@ const styles = StyleSheet.create({
     top: 10,
   },
   input: {
-    height: 40,
+    minHeight: 40,
+    maxHeight: 120,
     backgroundColor: '#fff',
     paddingHorizontal: 15,
     borderRadius: 8,
@@ -783,7 +785,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   dropdownButton: {
-    height: 50,
+    height: 40,
     backgroundColor: '#fff',
     borderRadius: 8,
     flexDirection: 'row',
@@ -815,14 +817,14 @@ const styles = StyleSheet.create({
     padding: 2
   },
   label: {
-    marginBottom: 10,
+    marginBottom: 5,
     color: colors.text_primary,
     fontWeight: '500',
     fontSize: 14,
     paddingHorizontal: 10
   },
   inputContainer: {
-    marginBottom: 15,
+    marginBottom: 10,
   },
 });
 

@@ -1,8 +1,18 @@
-import { Platform, StyleSheet } from 'react-native';
+import { Dimensions, Platform, StatusBar, StyleSheet } from 'react-native';
 import { colors } from '../../assets/theme';
 
 const headerHeight = 60;
 const bottomHeight = 60;
+
+const HEADER_HEIGHT = 320;
+const { width } = Dimensions.get("window");
+
+const CARD_WIDTH = width * 0.6; // 70% of screen width
+
+
+export const STATUS_BAR_HEIGHT =
+  Platform.OS === "android" ? StatusBar.currentHeight || 24 : 44;
+
 
 export default AppStyle = StyleSheet.create({
 
@@ -104,11 +114,6 @@ padding:10
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.background,
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 10,
     borderBottomWidth: 1,
     borderColor: '#f0f0f0',
 
@@ -173,15 +178,7 @@ padding:10
     shadowRadius: 2,
     elevation: 2,
   },
-  searchInput: {
-    flex: 1,
-    fontSize: 14,
-    backgroundColor: "whitesmoke",
-    paddingHorizontal: 15,
-    borderTopLeftRadius: 10,
-    borderBottomLeftRadius: 10,
-    color: '#000'
-  },
+
 
   searchIconButton: {
     padding: 8,
@@ -216,13 +213,13 @@ padding:10
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 6,
+    padding: 4,
     borderRadius: 8,
 
   },
   shareText: {
-    color: '#075cab',
-    fontSize: 15,
+    color: '#fff',
+    fontSize: 16,
     fontWeight: '500',
 
   },
@@ -282,6 +279,48 @@ padding:10
     justifyContent: 'center',
     alignItems: 'center',
 
+  },
+  searchRow: {
+    width: "100%",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 12,
+    gap: 10,
+
+  },
+
+  searchBar: {
+    flex: 1,
+    backgroundColor: "#f2f2f2",
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    flexDirection: "row",
+    alignItems: "center",
+
+  },
+  searchIcon: {
+    fontSize: 18,
+    marginRight: 8,
+    color: "#666",
+  },
+  searchInput: {
+    fontSize: 16,
+    flex: 1,
+  },
+
+  toolbar: {
+    position: "absolute",
+    top: 0,
+    width: "100%",
+    paddingTop: STATUS_BAR_HEIGHT,
+    zIndex: 50,
+  },
+
+  topHeader: {
+    width: "100%",
+    flexDirection: "row",
+    alignItems: "center",
   },
 
 });
@@ -575,6 +614,7 @@ export const styles = StyleSheet.create({
 
   notificationContainer: {
     padding: 8,
+    marginRight:10
   },
 
   notificationBadge: {
@@ -710,7 +750,6 @@ export const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 0.5,
     borderColor: '#ddd',
-    marginHorizontal: 6,
     marginBottom: 5,
     shadowColor: "#000",
     shadowOpacity: 0.1,
@@ -814,7 +853,163 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 16,
     borderBottomWidth: 1,
     borderColor: '#ddd'
-  }
+  },
+  header: {
+    width: "100%",
+    overflow: "hidden",
+    marginBottom: 10,
+  },
+  headerImage: {
+    width: "100%",
+    height: '100%',
+    borderBottomLeftRadius: 18,
+    borderBottomRightRadius: 18
+
+  },
+
+  toolbar: {
+    position: "absolute",
+    top: 0,
+    width: "100%",
+    paddingTop: STATUS_BAR_HEIGHT,
+    zIndex: 50,
+    justifyContent: "flex-start",
+  },
+
+  // Top header row (above the search bar)
+  topHeader: {
+    width: "100%",
+    flexDirection: "row",
+    alignItems: "center",
+
+  },
+
+  iconTouch: {
+    width: 35,
+    height: 35,
+    marginRight:10,
+    overflow: 'hidden',
+    borderRadius: 20,
+    justifyContent: "center",
+    alignItems: "center",
+    
+  },
+  iconImage: {
+    width: 22,
+    height: 22,
+  },
+  avatarImage: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+  },
+
+  // center user info (username + category)
+  userInfo: {
+    flex: 1,
+    paddingHorizontal: 8,
+  },
+  userName: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#111",
+  },
+  userCategory: {
+    fontSize: 12,
+    color: "#666",
+    marginTop: 2,
+  },
+
+  // Search row (below the top header)
+  searchRow: {
+    width: "100%",
+    paddingBottom: 10,
+  },
+  searchBar: {
+    backgroundColor: "#f2f2f2",
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 2,
+    marginTop: 4,
+  },
+  searchInput: {
+    fontSize: 16,
+  },
+
+  card: {
+    height: 120,
+    backgroundColor: "#eee",
+    borderRadius: 16,
+    marginBottom: 16,
+  },
+
+  postCard: {
+    width: CARD_WIDTH,
+    marginRight: 16,
+    backgroundColor: "#fff",
+    borderRadius: 18,
+    padding: 14,
+    // shadowColor: "#000",
+    // shadowOpacity: 0.08,
+    // shadowRadius: 8,
+    // shadowOffset: { width: 0, height: 3 },
+    // elevation: 4,
+  },
+
+  // Header
+  postHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+
+  postAvatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  postAvatarText: {
+    fontSize: 22,
+    color: "#fff",
+    fontWeight: "600",
+  },
+
+  postAuthor: {
+    fontSize: 15,
+    color: "#111",
+    fontWeight: "600",
+  },
+
+  postCategory: {
+    fontSize: 12,
+    color: "#777",
+    marginTop: 1,
+  },
+
+  postTime: {
+    fontSize: 11,
+    color: "#999",
+    marginTop: 2,
+  },
+
+  // Post Image
+  postImage: {
+    width: "100%",
+    height: 150,
+    borderRadius: 14,
+    marginVertical: 12,
+    backgroundColor: "#f1f1f1",
+  },
+
+  // Body
+  postBody: {
+    fontSize: 14,
+    color: "#333",
+    lineHeight: 20,
+  },
 });
 
 export const commonStyles = StyleSheet.create({
@@ -881,6 +1076,8 @@ valContainer: {
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 80,
+    
+
   },
   avatarText: {
     fontSize: 50,

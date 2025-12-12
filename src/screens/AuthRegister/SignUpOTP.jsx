@@ -3,12 +3,13 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Keyboa
 import { CommonActions, useNavigation, useRoute } from '@react-navigation/native';
 import axios from 'axios';
 import { showToast } from '../AppUtils/CustomToast';
-import MaterialIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+
 import { OtpInput } from "react-native-otp-entry";
 import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
 import ArrowRight from '../../assets/svgIcons/arrow-right-circle.svg';
 
 import { colors, dimensions } from '../../assets/theme.jsx';
+import AppStyles, { STATUS_BAR_HEIGHT } from '../AppUtils/AppStyles.js';
 
 const VerifyOTPScreen = () => {
   const navigation = useNavigation();
@@ -181,8 +182,8 @@ const VerifyOTPScreen = () => {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor={colors.primary} />
-
+          <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
+    
       {/* ========== Header ========== */}
 
       <TouchableOpacity
@@ -276,6 +277,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: 'whitesmoke',
+    paddingTop:STATUS_BAR_HEIGHT
   },
 
   backButton: {

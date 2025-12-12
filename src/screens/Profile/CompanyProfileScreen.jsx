@@ -2,13 +2,12 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, TextInput, Modal, FlatList, Linking, Pressable, RefreshControl, ActivityIndicator } from 'react-native';
-import Ionicons from 'react-native-vector-icons/Ionicons';
+
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import axios from 'axios';
 import RNRestart from 'react-native-restart';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+
 import { Image as FastImage } from 'react-native';
 import Message from '../../components/Message';
 import { useDispatch, useSelector } from 'react-redux';
@@ -31,7 +30,7 @@ import Warning from '../../assets/svgIcons/warning.svg';
 import defaultImage from '../../images/homepage/buliding.jpg';
 
 import { colors, dimensions } from '../../assets/theme.jsx';
-import { commonStyles } from '../AppUtils/AppStyles.js';
+import AppStyles, { commonStyles, STATUS_BAR_HEIGHT } from '../AppUtils/AppStyles.js';
 
 const CompanyProfileScreen = ({ route }) => {
   const navigation = useNavigation();
@@ -400,6 +399,8 @@ const CompanyProfileScreen = ({ route }) => {
   return (
 
     <View style={styles.container}>
+      <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
+
       <View style={styles.headerContainer}>
         <TouchableOpacity style={styles.backButton}
           activeOpacity={1}
@@ -417,7 +418,7 @@ const CompanyProfileScreen = ({ route }) => {
       </View>
 
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: '20%', paddingHorizontal:5 }}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: '20%', paddingHorizontal: 5 }}>
 
         <TouchableOpacity activeOpacity={1} onPress={() => openMediaViewer([{ type: 'image', url: profile?.imageUrl }])}
           style={styles.imageContainer} >
@@ -806,7 +807,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#ffffff',
-
+    paddingTop: STATUS_BAR_HEIGHT
   },
   headerContainer: {
     flexDirection: 'row',

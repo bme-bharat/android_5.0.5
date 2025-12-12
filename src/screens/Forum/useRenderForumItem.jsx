@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, TouchableWithoutFeedback, Share, Dimensions, StyleSheet, ActivityIndicator } from 'react-native';
 import { Image as FastImage } from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+
 import { ForumBody, normalizeHtml } from './forumBody';
 import useForumReactions, { fetchForumReactionsRaw, reactionConfig } from './useForumReactions';
 import { getTimeDisplayForum } from '../helperComponents/signedUrls';
@@ -240,7 +240,7 @@ export default function useRenderForumItem({
           <View style={styles.textContainer}>
             <View style={styles.title3}>
               <TouchableOpacity onPress={() => handleNavigate(item)} style={{ flexDirection: 'row', alignItems: 'center' }} activeOpacity={1}>
-                <Text style={{ flex: 1, alignSelf: 'flex-start', color: 'black', fontSize: 15, fontWeight: '600', color:colors.text_primary }}>
+                <Text style={{ flex: 1, alignSelf: 'flex-start', color: 'black', fontSize: 15, fontWeight: '600', color: colors.text_primary }}>
                   {(item.author || '').trim()}
                 </Text>
 
@@ -268,79 +268,76 @@ export default function useRenderForumItem({
         </View>
 
         {/* Post content */}
-      
-          <ForumBody
-            html={normalizeHtml(item?.forum_body, searchQuery)}
-            forumId={item.forum_id}
-            isExpanded={expandedTexts[item.forum_id]}
-            toggleFullText={toggleFullText}
-          />
- 
 
-        {/* <Markdown style={{ body: { fontSize: 15, lineHeight: 20 } }}>
-          {item?.forum_body}
-        </Markdown> */}
+        <ForumBody
+          html={normalizeHtml(item?.forum_body, searchQuery)}
+          forumId={item.forum_id}
+          isExpanded={expandedTexts[item.forum_id]}
+          toggleFullText={toggleFullText}
+        />
 
-        {/* Media content */}
         {item.fileKey && (
-          <TouchableOpacity style={{
-            width: '100%', height: height,
-            overflow: 'hidden',
-            backgroundColor: '#fff'
+          <TouchableOpacity
+            style={{
+              width: "100%",
+              height: height,          // <-- LIMITED HEIGHT
+              overflow: "hidden",      // <-- IMP: enables cropping
+              justifyContent:'center',
+            }}
+            activeOpacity={1}
+          >
+            {item?.extraData?.type?.startsWith("video/") ? (
+              <TouchableOpacity
+                activeOpacity={0.9}
+                onPress={() =>
+                  navigation.navigate("InlineVideo", {
+                    source: item?.fileKeySignedUrl,
+                    poster: item?.thumbnailSignedUrl,
+                    videoHeight: item.extraData?.aspectRatio,
+                  })
+                } >
+                <BMEVideoPlayer
+                  ref={(ref) => {
+                    if (ref) {
+                      videoRefs[item.forum_id] = ref;
+                    } else {
+                      delete videoRefs[item.forum_id];
+                    }
+                  }}
+                  showProgressBar={true}
+                  source={item?.fileKeySignedUrl}
+                  style={{
+                    width: '100%',
 
-          }}
-            activeOpacity={1} >
-            {item?.extraData?.type?.startsWith('video/') ? (
-              <View style={{ position: 'relative' }}>
-                <TouchableOpacity
-                  activeOpacity={0.9}
-                  onPress={() =>
-                    navigation.navigate("InlineVideo", {
-                      source: item?.fileKeySignedUrl,   // video url
-                      poster: item?.thumbnailSignedUrl,   // thumbnail
-                      videoHeight: item.extraData?.aspectRatio
-                    })
-                  }>
-                  <BMEVideoPlayer
-                    ref={(ref) => {
-                      if (ref) {
-                        videoRefs[item.forum_id] = ref;
-                      } else {
-                        delete videoRefs[item.forum_id];
-                      }
-                    }}
-                    showProgressBar={true}  
-                    source={item?.fileKeySignedUrl}
-                    style={{
-                      width: '100%',
-                      height: height,
-                      backgroundColor: '#fff'
-                    }}
-                    controls
-                    paused={activeVideo !== item.forum_id || !isFocused}
-                    resizeMode="cover"
-                    poster={item?.thumbnailSignedUrl}
-                    posterResizeMode='cover'
+                    // 🔥 FULL NATURAL HEIGHT (not limited)
+                    height: item.extraData?.aspectRatio
+                      ? deviceWidth / item.extraData?.aspectRatio
+                      : deviceWidth,
 
-                  />
-
-
-                </TouchableOpacity>
-
-
-              </View>
-
+                  }}
+                  controls
+                  paused={activeVideo !== item.forum_id || !isFocused}
+                  resizeMode="cover"
+                  poster={item?.thumbnailSignedUrl}
+                  posterResizeMode="cover"
+                />
+              </TouchableOpacity>
             ) : (
-              <TouchableOpacity onPress={() => openMediaViewer([{ type: 'image', url: item?.fileKeySignedUrl }])} activeOpacity={1}>
+              <TouchableOpacity
+                onPress={() =>
+                  openMediaViewer([{ type: "image", url: item?.fileKeySignedUrl }])
+                }
+                activeOpacity={1}
+              >
                 <FastImage
                   source={{ uri: item?.fileKeySignedUrl }}
-                  style={{ width: '100%', height: height }}
-
+                  style={{ width: "100%", height: height }}
                 />
               </TouchableOpacity>
             )}
           </TouchableOpacity>
         )}
+
 
 
         <View style={styles.iconContainer}>
@@ -442,7 +439,7 @@ export default function useRenderForumItem({
           </View>
           <View>
             <TouchableOpacity style={styles.iconButton} onPress={() => sharePost(item)}>
-              <ShareIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} styles={{padding:10}}/>
+              <ShareIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} styles={{ padding: 10 }} />
 
               <Text style={styles.iconTextUnderlined}> Share</Text>
             </TouchableOpacity>

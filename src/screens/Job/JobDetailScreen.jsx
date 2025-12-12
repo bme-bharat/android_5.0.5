@@ -3,7 +3,7 @@ import React, { useCallback, useRef } from 'react';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Image, Modal, ToastAndroid, Linking, RefreshControl, Pressable, TouchableWithoutFeedback, Share, ActivityIndicator, Alert } from 'react-native';
 import { useState, useEffect } from 'react';
 import { useNavigation } from '@react-navigation/native';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+
 import { Image as FastImage } from 'react-native';
 import default_image from '../../images/homepage/buliding.jpg'
 import ImageViewer from 'react-native-image-zoom-viewer';
@@ -13,7 +13,7 @@ import { showToast } from '../AppUtils/CustomToast';
 import { useNetwork } from '../AppUtils/IdProvider';
 import { openMediaViewer } from '../helperComponents/mediaViewer';
 import { generateAvatarFromName } from '../helperComponents/useInitialsAvatar';
-import AppStyles, { commonStyles } from '../AppUtils/AppStyles';
+import AppStyles, { commonStyles, STATUS_BAR_HEIGHT } from '../AppUtils/AppStyles';
 import { openLink } from '../AppUtils/openLinks';
 import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
 import ShareIcon from '../../assets/svgIcons/share.svg';
@@ -32,7 +32,7 @@ const JobDetailScreen = ({ route }) => {
 
   const [jobImageUrls, setJobImageUrls] = useState({});
   const [isApplied, setIsApplied] = useState(false);
-  const [isModalVisibleImage, setModalVisibleImage] = useState(false);
+
   const [profile, setProfile] = useState(null);
   const [isModalVisible, setModalVisible] = useState(false);
   const [modalVisible1, setModalVisible1] = useState(false);
@@ -334,7 +334,7 @@ const JobDetailScreen = ({ route }) => {
         showToast('The application has been successfully revoked', 'success');
         setTimeout(() => {
           navigation.goBack()
-        },100)
+        }, 100)
       } else {
         showToast('Something went wrong', 'error');
 
@@ -349,12 +349,7 @@ const JobDetailScreen = ({ route }) => {
     navigation.navigate('CompanyDetailsPage', { userId: company_id });
   };
 
-  const toggleModal = useCallback(() => setModalVisibleImage(!isModalVisibleImage), [isModalVisibleImage]);
 
-  const handleCancel = () => {
-    toggleModal(false);
-
-  };
 
   const jobImage = jobImageUrls[post?.post_id];
 
@@ -389,7 +384,9 @@ const JobDetailScreen = ({ route }) => {
 
   if (post?.removed_by_author) {
     return (
-      <View style={styles.container}>
+      <>
+        <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
+
         <View style={styles.headerContainer}>
 
           <TouchableOpacity
@@ -410,12 +407,14 @@ const JobDetailScreen = ({ route }) => {
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
           <Text style={{ fontSize: 16, color: 'gray' }}>This post was removed by the author</Text>
         </View>
-      </View>
+      </>
     );
   }
   return (
 
-    <View style={styles.container}>
+    <>
+      <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
+
       <View style={styles.headerContainer}>
         <TouchableOpacity
           style={styles.backButton}
@@ -433,285 +432,268 @@ const JobDetailScreen = ({ route }) => {
 
         <TouchableOpacity onPress={() => shareJob(post)} style={AppStyles.circle}>
           <ShareIcon width={24} height={24} color={'#075cab'} />
-          <Text style={AppStyles.shareText}> Share </Text>
+          <Text style={{ fontSize: 16, color: '#075cab', fontWeight: '500' }}> Share </Text>
 
         </TouchableOpacity>
       </View>
 
-      <>
-        {post ? (
-          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: '30%', paddingTop: 5, paddingHorizontal:5 }}>
 
-            <TouchableOpacity
-              onPress={() => {
-                if (jobImage?.type === "url") {
-                  openMediaViewer([{ type: "image", url: jobImage.value }]);
-                }
-              }}
-              activeOpacity={1}
-              style={styles.imageContainer}
-            >
-              {jobImage?.type === "url" ? (
-                <FastImage
-                  source={{ uri: jobImage.value }}
-                  style={styles.detailImage}
+      {post ? (
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: '30%', paddingTop: 5, paddingHorizontal: 5 }}>
 
-                />
-              ) : (
-                <View
+          <TouchableOpacity
+            onPress={() => {
+              if (jobImage?.type === "url") {
+                openMediaViewer([{ type: "image", url: jobImage.value }]);
+              }
+            }}
+            activeOpacity={1}
+            style={styles.imageContainer}
+          >
+            {jobImage?.type === "url" ? (
+              <FastImage
+                source={{ uri: jobImage.value }}
+                style={styles.detailImage}
+
+              />
+            ) : (
+              <View
+                style={[
+                  AppStyles.avatarContainerDetails,
+                  { backgroundColor: jobImage?.value?.backgroundColor },
+                ]}
+              >
+                <Text
                   style={[
-                    AppStyles.avatarContainerDetails,
-                    { backgroundColor: jobImage?.value?.backgroundColor },
+                    AppStyles.avatarText,
+                    { color: jobImage?.value?.textColor },
                   ]}
                 >
-                  <Text
-                    style={[
-                      AppStyles.avatarText,
-                      { color: jobImage?.value?.textColor },
-                    ]}
-                  >
-                    {jobImage?.value?.initials}
-                  </Text>
-                </View>
-              )}
-            </TouchableOpacity>
-
-
-            <View style={styles.textContainer1}>
-              <Text style={commonStyles.title}>{post?.job_title || 'No Title'}</Text>
-            </View>
-            <View style={commonStyles.labValContainer}>
-              <Text style={commonStyles.label}>Company</Text>
-              <Text style={commonStyles.colon}>:</Text>
-              <Text style={commonStyles.value} onPress={() => handleNavigate(post?.company_id)} >{post?.company_name || ''}</Text>
-            </View>
-
-
-            <View style={commonStyles.labValContainer}>
-
-              <Text style={commonStyles.label}>Category</Text>
-
-              <Text style={commonStyles.colon}>:</Text>
-              <Text style={commonStyles.value}>{post?.company_category || ''}</Text>
-            </View>
-
-            {post?.Website ? (
-              <View style={commonStyles.labValContainer}>
-
-                <Text style={commonStyles.label}>Website</Text>
-
-                <Text style={commonStyles.colon}>:</Text>
-                <Text style={commonStyles.value}>
-                  <TouchableOpacity activeOpacity={1} onPress={() => openLink(post.Website)}>
-                    <Text style={[commonStyles.value, { color: "#075cab", textDecorationLine: "underline" }]}>
-                      {post.Website.trim()}
-                    </Text>
-                  </TouchableOpacity>
+                  {jobImage?.value?.initials}
                 </Text>
-
-              </View>
-            ) : null}
-
-            <View style={commonStyles.labValContainer}>
-
-              <Text style={commonStyles.label}>Industry type</Text>
-
-              <Text style={commonStyles.colon}>:</Text>
-              <Text style={commonStyles.value}>{post?.industry_type || ''}</Text>
-            </View>
-
-            {post?.required_qualifications?.trim() && (
-              <View style={commonStyles.labValContainer}>
-
-                <Text style={commonStyles.label}>Required qualification</Text>
-
-                <Text style={commonStyles.colon}>:</Text>
-                <Text style={commonStyles.value}>{post?.required_qualifications.trim()}</Text>
               </View>
             )}
+          </TouchableOpacity>
 
-            {post?.required_expertise?.trim() && (
-              <View style={commonStyles.labValContainer}>
 
-                <Text style={commonStyles.label}>Required expertise</Text>
+          <View style={styles.textContainer1}>
+            <Text style={commonStyles.title}>{post?.job_title || 'No Title'}</Text>
+          </View>
+          <View style={commonStyles.labValContainer}>
+            <Text style={commonStyles.label}>Company</Text>
+            <Text style={commonStyles.colon}>:</Text>
+            <Text style={commonStyles.value} onPress={() => handleNavigate(post?.company_id)} >{post?.company_name || ''}</Text>
+          </View>
 
-                <Text style={commonStyles.colon}>:</Text>
-                <Text style={commonStyles.value}>{post?.required_expertise.trim()}</Text>
-              </View>
-            )}
 
-            {post?.experience_required?.trim() && (
-              <View style={commonStyles.labValContainer}>
+          <View style={commonStyles.labValContainer}>
 
-                <Text style={commonStyles.label}>Required experience</Text>
+            <Text style={commonStyles.label}>Category</Text>
 
-                <Text style={commonStyles.colon}>:</Text>
-                <Text style={commonStyles.value}>{post?.experience_required.trim()}</Text>
-              </View>
-            )}
+            <Text style={commonStyles.colon}>:</Text>
+            <Text style={commonStyles.value}>{post?.company_category || ''}</Text>
+          </View>
 
+          {post?.Website ? (
             <View style={commonStyles.labValContainer}>
 
-              <Text style={[commonStyles.label]}>Required speicializations </Text>
-
-              <Text style={commonStyles.colon}>:</Text>
-
-              <Text style={[commonStyles.value]}>{post?.speicializations_required || ''}</Text>
-            </View>
-
-            {post?.working_location?.trim() && (
-              <View style={commonStyles.labValContainer}>
-
-                <Text style={commonStyles.label}>Work location</Text>
-
-                <Text style={commonStyles.colon}>:</Text>
-                <View style={{ flexDirection: "column", flex: 2 }}>
-                  {post.working_location
-                    .split(",")
-                    .map((city, index) => (
-                      <Text key={index} style={commonStyles.value}>
-                        {city.trim()}
-                      </Text>
-                    ))}
-                </View>
-              </View>
-            )}
-
-
-            <View style={commonStyles.labValContainer}>
-
-              <Text style={commonStyles.label}>Salary package</Text>
-
-              <Text style={commonStyles.colon}>:</Text>
-              <Text style={commonStyles.value}>{post?.Package || ''}</Text>
-            </View>
-
-            {post?.job_description?.trimStart().trimEnd() ? (
-              <View style={commonStyles.labValContainer}>
-                <Text style={commonStyles.label}>Job description</Text>
-                <Text style={commonStyles.colon}>:</Text>
-                <Text style={commonStyles.value}>{post?.job_description.trim()}</Text>
-              </View>
-            ) : null}
-
-
-
-            {post?.preferred_languages?.trimStart().trimEnd() ? (
-              <View style={commonStyles.labValContainer}>
-
-                <Text style={[commonStyles.label]}>Required languages</Text>
-
-                <Text style={commonStyles.colon}>:</Text>
-
-                <View style={{ flexDirection: "column", flex: 2 }}>
-                  {post.preferred_languages
-                    .split(",")
-                    .map((language, index) => (
-                      <Text key={index} style={commonStyles.value}>
-                        {language.trim()}
-                      </Text>
-                    ))}
-                </View>
-              </View>
-            ) : null}
-
-            <View style={commonStyles.labValContainer}>
-
-              <Text style={commonStyles.label}>Posted on</Text>
+              <Text style={commonStyles.label}>Website</Text>
 
               <Text style={commonStyles.colon}>:</Text>
               <Text style={commonStyles.value}>
-                {
-                  post?.job_post_created_on
-                    ? (() => {
-                      const date = new Date(post?.job_post_created_on * 1000);
-                      const day = String(date.getDate()).padStart(2, '0');
-                      const month = String(date.getMonth() + 1).padStart(2, '0');
-                      const year = String(date.getFullYear());
-
-                      return `${day}-${month}-${year}`;
-                    })()
-                    : ''
-                }
+                <TouchableOpacity activeOpacity={1} onPress={() => openLink(post.Website)}>
+                  <Text style={[commonStyles.value, { color: "#075cab", textDecorationLine: "underline" }]}>
+                    {post.Website.trim()}
+                  </Text>
+                </TouchableOpacity>
               </Text>
 
             </View>
+          ) : null}
 
-            {myId !== post?.company_id && (
-              <>
-                <TouchableOpacity
-                  onPress={() => {
-                    setModalVisible1(true);
-                  }}
-                  style={{ padding: 10 }}
-                >
-                  <Text style={styles.contact}>Contact details</Text>
-                </TouchableOpacity>
+          <View style={commonStyles.labValContainer}>
 
-                <ContactSupplierModal
-                  visible={modalVisible1}
-                  onClose={() => {
-                    setModalVisible1(false);
-                  }}
-                  company_id={post?.company_id}
-                />
-              </>
-            )}
+            <Text style={commonStyles.label}>Industry type</Text>
 
-          </ScrollView>
-        ) : null}
+            <Text style={commonStyles.colon}>:</Text>
+            <Text style={commonStyles.value}>{post?.industry_type || ''}</Text>
+          </View>
+
+          {post?.required_qualifications?.trim() && (
+            <View style={commonStyles.labValContainer}>
+
+              <Text style={commonStyles.label}>Required qualification</Text>
+
+              <Text style={commonStyles.colon}>:</Text>
+              <Text style={commonStyles.value}>{post?.required_qualifications.trim()}</Text>
+            </View>
+          )}
+
+          {post?.required_expertise?.trim() && (
+            <View style={commonStyles.labValContainer}>
+
+              <Text style={commonStyles.label}>Required expertise</Text>
+
+              <Text style={commonStyles.colon}>:</Text>
+              <Text style={commonStyles.value}>{post?.required_expertise.trim()}</Text>
+            </View>
+          )}
+
+          {post?.experience_required?.trim() && (
+            <View style={commonStyles.labValContainer}>
+
+              <Text style={commonStyles.label}>Required experience</Text>
+
+              <Text style={commonStyles.colon}>:</Text>
+              <Text style={commonStyles.value}>{post?.experience_required.trim()}</Text>
+            </View>
+          )}
+
+          <View style={commonStyles.labValContainer}>
+
+            <Text style={[commonStyles.label]}>Required speicializations </Text>
+
+            <Text style={commonStyles.colon}>:</Text>
+
+            <Text style={[commonStyles.value]}>{post?.speicializations_required || ''}</Text>
+          </View>
+
+          {post?.working_location?.trim() && (
+            <View style={commonStyles.labValContainer}>
+
+              <Text style={commonStyles.label}>Work location</Text>
+
+              <Text style={commonStyles.colon}>:</Text>
+              <View style={{ flexDirection: "column", flex: 2 }}>
+                {post.working_location
+                  .split(",")
+                  .map((city, index) => (
+                    <Text key={index} style={commonStyles.value}>
+                      {city.trim()}
+                    </Text>
+                  ))}
+              </View>
+            </View>
+          )}
+
+
+          <View style={commonStyles.labValContainer}>
+
+            <Text style={commonStyles.label}>Salary package</Text>
+
+            <Text style={commonStyles.colon}>:</Text>
+            <Text style={commonStyles.value}>{post?.Package || ''}</Text>
+          </View>
+
+          {post?.job_description?.trimStart().trimEnd() ? (
+            <View style={commonStyles.labValContainer}>
+              <Text style={commonStyles.label}>Job description</Text>
+              <Text style={commonStyles.colon}>:</Text>
+              <Text style={commonStyles.value}>{post?.job_description.trim()}</Text>
+            </View>
+          ) : null}
 
 
 
-        {(profile?.user_type === 'users') && (
-          <TouchableOpacity
-            style={[
-              styles.applyButton,
-              isApplied && styles.applyButtonRevoke,
-            ]}
-            onPress={() => {
-              if (!profileCreated) {
+          {post?.preferred_languages?.trimStart().trimEnd() ? (
+            <View style={commonStyles.labValContainer}>
 
-                showToast("Job profile doesn't exists. Create one before applying for a job", 'info');
+              <Text style={[commonStyles.label]}>Required languages</Text>
 
-                setTimeout(() => {
-                  navigation.navigate('UserJobProfileCreate');
-                }, 300);
-              } else {
-                if (isApplied) {
-                  openModal('revoke');
-                } else {
-                  handleApplyJob();
-                }
+              <Text style={commonStyles.colon}>:</Text>
+
+              <View style={{ flexDirection: "column", flex: 2 }}>
+                {post.preferred_languages
+                  .split(",")
+                  .map((language, index) => (
+                    <Text key={index} style={commonStyles.value}>
+                      {language.trim()}
+                    </Text>
+                  ))}
+              </View>
+            </View>
+          ) : null}
+
+          <View style={commonStyles.labValContainer}>
+
+            <Text style={commonStyles.label}>Posted on</Text>
+
+            <Text style={commonStyles.colon}>:</Text>
+            <Text style={commonStyles.value}>
+              {
+                post?.job_post_created_on
+                  ? (() => {
+                    const date = new Date(post?.job_post_created_on * 1000);
+                    const day = String(date.getDate()).padStart(2, '0');
+                    const month = String(date.getMonth() + 1).padStart(2, '0');
+                    const year = String(date.getFullYear());
+
+                    return `${day}-${month}-${year}`;
+                  })()
+                  : ''
               }
-            }}
-
-            activeOpacity={0.8}
-          >
-            <Text style={[styles.buttonText, isApplied && styles.revokeText]}>
-              {isApplied ? 'Revoke' : 'Apply'}
             </Text>
-          </TouchableOpacity>
-        )}
-      </>
+
+          </View>
+
+          {myId !== post?.company_id && (
+            <>
+              <TouchableOpacity
+                onPress={() => {
+                  setModalVisible1(true);
+                }}
+                style={{ padding: 10 }}
+              >
+                <Text style={styles.contact}>Contact details</Text>
+              </TouchableOpacity>
+
+              <ContactSupplierModal
+                visible={modalVisible1}
+                onClose={() => {
+                  setModalVisible1(false);
+                }}
+                company_id={post?.company_id}
+              />
+            </>
+          )}
+
+        </ScrollView>
+      ) : null}
 
 
-      <Modal visible={isModalVisibleImage} transparent={true} animationType="slide"
-        onRequestClose={handleCancel}>
-        <View style={styles.modalContainerImage}>
-          <ImageViewer
-            imageUrls={[{ url: jobImageUrls[post?.post_id] }]}
-            enableSwipeDown={true}
-            onSwipeDown={toggleModal}
-            showIndicators={false}
-            renderIndicator={() => null}
-          />
-          <TouchableOpacity onPress={handleCancel} style={styles.closeButton1}>
-            <Icon name="close" size={24} color="white" />
-          </TouchableOpacity>
 
-        </View>
-      </Modal>
+      {(profile?.user_type === 'users') && (
+        <TouchableOpacity
+          style={[
+            styles.applyButton,
+            isApplied && styles.applyButtonRevoke,
+          ]}
+          onPress={() => {
+            if (!profileCreated) {
+
+              showToast("Job profile doesn't exists. Create one before applying for a job", 'info');
+
+              setTimeout(() => {
+                navigation.navigate('UserJobProfileCreate');
+              }, 300);
+            } else {
+              if (isApplied) {
+                openModal('revoke');
+              } else {
+                handleApplyJob();
+              }
+            }
+          }}
+
+          activeOpacity={0.8}
+        >
+          <Text style={[styles.buttonText, isApplied && styles.revokeText]}>
+            {isApplied ? 'Revoke' : 'Apply'}
+          </Text>
+        </TouchableOpacity>
+      )}
+
+
 
       <Modal
         transparent={true}
@@ -749,7 +731,7 @@ const JobDetailScreen = ({ route }) => {
 
 
 
-    </View >
+    </ >
 
   );
 };
@@ -761,7 +743,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#ffff',
-
+    paddingTop: STATUS_BAR_HEIGHT
   },
   headerContainer: {
     flexDirection: 'row',
@@ -769,7 +751,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     backgroundColor: 'white',
     borderBottomWidth: 1,
-    borderColor: '#f0f0f0'
+    borderColor: '#f0f0f0',
+    paddingTop: STATUS_BAR_HEIGHT
   },
 
   backButton: {
@@ -867,7 +850,7 @@ const styles = StyleSheet.create({
     height: '100%',
     resizeMode: 'contain'
   },
-  
+
   body: {
     fontSize: 16,
     color: '#333',

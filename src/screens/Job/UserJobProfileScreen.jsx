@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { View, Image, StyleSheet, TouchableOpacity, Text, Alert, Linking, ScrollView, ToastAndroid, Button, ActivityIndicator } from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import Message from '../../components/Message';
 import { useSelector } from 'react-redux';
@@ -15,7 +14,7 @@ import Edit from '../../assets/svgIcons/edit.svg';
 import Add from '../../assets/svgIcons/add.svg';
 
 import { colors, dimensions } from '../../assets/theme.jsx';
-import { commonStyles } from '../AppUtils/AppStyles.js';
+import AppStyles, { commonStyles, STATUS_BAR_HEIGHT } from '../AppUtils/AppStyles.js';
 
 const UserJobProfilescreen = () => {
   const { myId, myData } = useNetwork();
@@ -187,6 +186,8 @@ const UserJobProfilescreen = () => {
   if (profile?.removed_by_author) {
     return (
       <View style={styles.container}>
+              <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
+        
         <View style={styles.headerContainer}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
             <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
@@ -213,6 +214,8 @@ const UserJobProfilescreen = () => {
 
   return (
     <View style={styles.container} >
+            <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
+      
       <View style={styles.headerContainer}>
         {/* Back Button */}
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
@@ -444,6 +447,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
+    paddingTop: STATUS_BAR_HEIGHT
   },
 
   container3: {

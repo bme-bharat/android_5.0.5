@@ -22,6 +22,7 @@ import ArrowRight from '../../assets/svgIcons/arrow-right-circle.svg';
 
 import { colors, dimensions } from '../../assets/theme.jsx';
 import { addSmsListener, startSmsListener, useOtpRetriever } from '../SmsRetriever.js';
+import AppStyles, { STATUS_BAR_HEIGHT } from '../AppUtils/AppStyles.js';
 
 const LoginVerifyOTPScreen = () => {
   const navigation = useNavigation();
@@ -38,17 +39,15 @@ const LoginVerifyOTPScreen = () => {
   const otpInputRef = useRef(null); // 👈 reference to OTP input
 
   useEffect(() => {
-    const keyboardDidHideListener = Keyboard.addListener('keyboardDidHide', () => {
-      // When keyboard hides, blur the input to remove focus
-      if (otpInputRef.current) {
-        otpInputRef.current.blur();
+    const hide = Keyboard.addListener("keyboardDidHide", () => {
+      if (otpMode === "user") {
+        otpInputRef.current?.blur();
       }
     });
-
-    return () => {
-      keyboardDidHideListener.remove();
-    };
-  }, []);
+  
+    return () => hide.remove();
+  }, [otpMode]);
+  
   
   useEffect(() => {
     if (timer > 0) {
@@ -363,8 +362,8 @@ const LoginVerifyOTPScreen = () => {
 
   return (
     <View style={styles.container}>
-      <StatusBar backgroundColor="#075cab" barStyle="default" />
-
+        <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
+  
       <View style={styles.headerContainer}>
 
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
@@ -434,14 +433,14 @@ const LoginVerifyOTPScreen = () => {
 
         </View>
       </View>
-      {(otpMode === "loading" || otpMode === "auto") && (
+      {/* {(otpMode === "loading" || otpMode === "auto") && (
         <View style={styles.overlay}>
           <ActivityIndicator size="large" color="#fff" />
           <Text style={styles.overlayText}>
             {otpMode === "loading" ? "Reading OTP..." : "Verifying..."}
           </Text>
         </View>
-      )}
+      )} */}
     </View>
   );
 };
@@ -450,6 +449,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: 'whitesmoke',
+    paddingTop:STATUS_BAR_HEIGHT
   },
 
   backButton: {

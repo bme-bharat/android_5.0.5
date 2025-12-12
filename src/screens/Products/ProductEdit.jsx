@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { StackActions, useNavigation, useRoute } from "@react-navigation/native";
 import { View, Text, TextInput, Image, ScrollView, StyleSheet, TouchableOpacity, Alert, Keyboard, ActivityIndicator, NativeModules, } from "react-native";
 import axios from "axios";
-import Icon from "react-native-vector-icons/MaterialCommunityIcons";
+
 import Video from "react-native-video";
 import { launchImageLibrary } from "react-native-image-picker";
 import ImageResizer from 'react-native-image-resizer';
@@ -17,13 +17,14 @@ import CustomDropDownMenu from "../../components/DropDownMenu";
 import Message3 from "../../components/Message3";
 import { showToast } from "../AppUtils/CustomToast";
 import { EventRegister } from "react-native-event-listeners";
-import AppStyles from "../AppUtils/AppStyles";
+import AppStyles, { STATUS_BAR_HEIGHT } from "../AppUtils/AppStyles";
 import apiClient from "../ApiClient";
 import { useMediaPicker } from "../helperComponents/MediaPicker";
 import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
 import Pdf from '../../assets/svgIcons/pdf.svg';
 import Close from '../../assets/svgIcons/close.svg';
 import { colors, dimensions } from '../../assets/theme.jsx';
+import KeyboardAvoid from "../AppUtils/KeyboardAvoid.jsx";
 
 const BASE_API_URL = 'https://h7l1568kga.execute-api.ap-south-1.amazonaws.com/dev';
 const API_KEY = 'k1xuty5IpZ2oHOEOjgMz57wHfdFT8UQ16DxCFkzk';
@@ -812,8 +813,10 @@ const EditProduct = () => {
 
 
     return (
-
+        <KeyboardAvoid>
         <View style={styles.container} >
+                  <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
+            
             <View style={styles.searchContainer}>
 
                 <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
@@ -821,13 +824,10 @@ const EditProduct = () => {
 
                 </TouchableOpacity>
             </View>
-            <KeyboardAwareScrollView
-                contentContainerStyle={{ flexGrow: 1, backgroundColor: "#f8f9fa", paddingHorizontal: 5, paddingBottom: '40%' }}
-                keyboardShouldPersistTaps="handled"
-                extraScrollHeight={20}
-                onScrollBeginDrag={() => Keyboard.dismiss()}
-                showsVerticalScrollIndicator={false}>
-
+             <ScrollView
+                   contentContainerStyle={{ paddingBottom: '10%', paddingHorizontal: 5, backgroundColor: 'whitesmoke' }}
+                   keyboardShouldPersistTaps="handled"
+                 >
 
                 <Text style={styles.title}>Edit a product</Text>
                 <TouchableOpacity activeOpacity={1}>
@@ -1195,7 +1195,7 @@ const EditProduct = () => {
                     </TouchableOpacity>
 
                 </TouchableOpacity>
-            </KeyboardAwareScrollView>
+            </ScrollView>
 
             <Message3
                 visible={showModal}
@@ -1208,7 +1208,7 @@ const EditProduct = () => {
             />
             <Toast />
         </View>
-
+        </KeyboardAvoid>
     );
 };
 
@@ -1219,7 +1219,7 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: "#f8f9fa",
-
+paddingTop: STATUS_BAR_HEIGHT
     },
 
     header: {

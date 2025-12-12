@@ -5,7 +5,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useRoute, useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Image as FastImage } from 'react-native';
 import Video from 'react-native-video';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import maleImage from '../../images/homepage/dummy.png';
@@ -20,7 +20,8 @@ import Pdf from '../../assets/svgIcons/pdf.svg';
 
 import { colors, dimensions } from '../../assets/theme.jsx';
 import { useSelector } from 'react-redux';
-import { commonStyles } from '../AppUtils/AppStyles.js';
+import AppStyles, { commonStyles, STATUS_BAR_HEIGHT } from '../AppUtils/AppStyles.js';
+import { generateAvatarFromName } from '../helperComponents/useInitialsAvatar.jsx';
 
 const EnquiryDetails = () => {
     const route = useRoute();
@@ -29,6 +30,7 @@ const EnquiryDetails = () => {
     const [postData, setPostData] = useState(null);
     const [mediaUrl, setMediaUrl] = useState(null);
     const [authorImageUrl, setAuthorImageUrl] = useState(null);
+
     const [loadingMedia, setLoadingMedia] = useState(false);
     const [isVideoPlaying, setIsVideoPlaying] = useState(false);
     const [thumbnailUrl, setThumbnailUrl] = useState(null);
@@ -65,7 +67,7 @@ const EnquiryDetails = () => {
             );
 
             if (res.data.status === 'success') {
-                console.log(res.data)
+
                 if (res.data.status === 'success' && res.data.response.length > 0) {
                     setPostData(res.data.response[0]);
                 } else {
@@ -82,8 +84,13 @@ const EnquiryDetails = () => {
                 // Fetch author image URL if author has fileKey
                 if (res.data.response[0]?.user_fileKey) {
                     fetchMediaUrl(res.data.response[0].user_fileKey, 'author');
+
+                } else {
+                    const avatar = generateAvatarFromName(res.data.response?.first_name || 'user');
+                    setAuthorImageUrl(avatar)
                 }
             }
+
         } catch (error) {
 
         } finally {
@@ -213,6 +220,8 @@ const EnquiryDetails = () => {
     return (
 
         <View style={styles.mainContainer}>
+            <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
+
             <View style={styles.headerContainer}>
                 <TouchableOpacity
                     style={styles.backButton}
@@ -233,21 +242,33 @@ const EnquiryDetails = () => {
                     <View style={styles.container}>
                         {/* Author section */}
                         <View style={styles.authorContainer}>
-                            {profile?.imageUrl ? (
+                            {typeof authorImageUrl === 'string' ? (
+                                // 🔹 User has uploaded image
                                 <FastImage
-                                    source={{ uri: profile?.imageUrl, }}
-
+                                    source={{ uri: authorImageUrl }}
                                     style={styles.authorImage}
-                                    resizeMode='contain'
+                                    resizeMode="contain"
                                     onError={() => { }}
                                 />
                             ) : (
-                                <View style={[styles.authorImage, { backgroundColor: profile?.companyAvatar?.backgroundColor }]}>
-                                    <Text style={[styles.avatarText, { color: profile?.companyAvatar?.textColor }]}>
-                                        {profile?.companyAvatar?.initials}
+                                // 🔹 Generated avatar
+                                <View
+                                    style={[
+                                        styles.authorImage,
+                                        { backgroundColor: authorImageUrl?.backgroundColor }
+                                    ]}
+                                >
+                                    <Text
+                                        style={[
+                                            styles.avatarText,
+                                            { color: authorImageUrl?.textColor }
+                                        ]}
+                                    >
+                                        {authorImageUrl?.initials}
                                     </Text>
                                 </View>
                             )}
+
                             <View style={styles.authorInfo}>
                                 <View style={styles.authorNameRow}>
                                     <Text style={styles.authorName} onPress={() => handleNavigate(postData)}>
@@ -263,7 +284,7 @@ const EnquiryDetails = () => {
                         {/* Content section */}
                         <Text style={commonStyles.label}>{postData?.service_title}</Text>
 
-                        <Text style={[commonStyles.value,{marginTop:10}]}>{postData?.enquiry_description}</Text>
+                        <Text style={[commonStyles.value, { marginTop: 10 }]}>{postData?.enquiry_description}</Text>
 
 
                         {loadingMedia ? (
@@ -298,7 +319,7 @@ const EnquiryDetails = () => {
 };
 
 const styles = StyleSheet.create({
-    mainContainer: { flex: 1, backgroundColor: '#fff' },
+    mainContainer: { flex: 1, backgroundColor: '#fff', paddingTop: STATUS_BAR_HEIGHT },
     backButton: { padding: 10, alignSelf: 'flex-start' },
     container: { padding: 10 },
     authorContainer: {
@@ -362,7 +383,7 @@ const styles = StyleSheet.create({
     avatarText: {
         fontSize: 22,
         fontWeight: 'bold',
-       
+
     },
     authorPlaceholder: {
         backgroundColor: '#f0f0f0',

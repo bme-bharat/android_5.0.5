@@ -2,7 +2,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Alert, View, Text, ScrollView, StyleSheet, TouchableOpacity, Modal, TouchableWithoutFeedback, Easing, Animated, ActivityIndicator } from 'react-native';
 import axios from 'axios';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import RazorpayCheckout from 'react-native-razorpay';
 import RNRestart from 'react-native-restart';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -18,6 +17,7 @@ import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
 import Close from '../../assets/svgIcons/close-large.svg';
 import { colors, dimensions } from '../../assets/theme.jsx';
 import SubscriptionCard from "./SubscriptionCard.jsx"
+import AppStyles, { STATUS_BAR_HEIGHT } from '../AppUtils/AppStyles.js';
 
 const LoginTimeUserSubscriptionScreen = () => {
 
@@ -50,16 +50,16 @@ const LoginTimeUserSubscriptionScreen = () => {
     {
       name: 'Basic',
       day: '30',
-      price: '59',
-      amount: 59,
+      price: '79',
+      amount: 79,
       validity: '30',
       features: [true, true, true, true, true, true, true, true, true],
     },
     {
       name: 'Premium',
       day: '365',
-      price: '649',
-      amount: 649,
+      price: '869',
+      amount: 869,
       validity: '365',
       features: [true, true, true, true, true, true, true, true, true],
     },
@@ -515,6 +515,8 @@ const LoginTimeUserSubscriptionScreen = () => {
 
   return (
     <View style={styles.container}>
+            <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
+      
       <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
         <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
 
@@ -704,18 +706,12 @@ const LoginTimeUserSubscriptionScreen = () => {
 
                 <View style={styles.planBlock}>
                   <Text style={styles.strikePrice}>
-                    ₹59 x 12 = <Text style={styles.strikeOnly}>₹708</Text>
+                    ₹79 x 12 = <Text style={styles.strikeOnly}>₹948</Text>
                   </Text>
                   <Text style={styles.realPrice}>
-                    ₹649 <Text style={styles.savingsText}>(Save ₹59)</Text>
+                    ₹869 <Text style={styles.savingsText}>(Save ₹79)</Text>
                   </Text>
 
-                  {/* <Text style={styles.strikePrice}>
-                    499 x 12 = <Text style={styles.strikeOnly}>₹5,988</Text>
-                  </Text>
-                  <Text style={styles.realPrice}>
-                    ₹5,489 <Text style={styles.savingsText}>(Save ₹499)</Text>
-                  </Text> */}
                 </View>
 
 
@@ -978,6 +974,7 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: 'white',
     flex: 1,
+        paddingTop: STATUS_BAR_HEIGHT
   },
 
   scrollViewContent: {

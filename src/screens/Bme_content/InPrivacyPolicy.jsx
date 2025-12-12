@@ -1,12 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Modal, TextInput, Image } from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Modal, TextInput, Image, StatusBar } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { Linking } from 'react-native';
 import apiClient from '../ApiClient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import Ionicons from 'react-native-vector-icons/Ionicons';
-import Toast from 'react-native-toast-message';
 import { useSelector } from 'react-redux';
 import RNRestart from 'react-native-restart';
 import { showToast } from '../AppUtils/CustomToast';
@@ -16,6 +13,7 @@ import Warning from '../../assets/svgIcons/warning.svg';
 import Close from '../../assets/svgIcons/close-large.svg';
 
 import { colors, dimensions } from '../../assets/theme.jsx';
+import AppStyles, { STATUS_BAR_HEIGHT } from '../AppUtils/AppStyles.js';
 
 
 const InPrivacyPolicy = () => {
@@ -182,7 +180,9 @@ const InPrivacyPolicy = () => {
   };
 
   return (
-    <View style={styles.container1} >
+    < >
+      <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
+
       <View style={styles.headerContainer}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
@@ -319,7 +319,7 @@ const InPrivacyPolicy = () => {
 
               <>
                 <View style={styles.warningContainer}>
-                <Warning width={dimensions.icon.large} height={dimensions.icon.large} color={colors.warning} />
+                  <Warning width={dimensions.icon.large} height={dimensions.icon.large} color={colors.warning} />
 
                 </View>
                 <Text style={styles.modalTitle}>Confirm Deletion</Text>
@@ -380,7 +380,7 @@ const InPrivacyPolicy = () => {
         </View>
       </Modal>
 
-    </View >
+    </ >
   );
 };
 
@@ -397,13 +397,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     backgroundColor: 'white',
     borderBottomWidth: 1,
-    borderColor: '#f0f0f0'
+    borderColor: '#f0f0f0',
+    paddingTop: STATUS_BAR_HEIGHT,
   },
-  container1: {
-    flex: 1,
 
-    backgroundColor: '#fff',
-  },
   container: {
     padding: 10,
     backgroundColor: "white"
@@ -517,7 +514,7 @@ const styles = StyleSheet.create({
   },
   deletionText: {
     fontSize: 13,
-    fontWeight:'500',
+    fontWeight: '500',
     color: colors.text_secondary,
     textAlign: 'justify',
     lineHeight: 22,

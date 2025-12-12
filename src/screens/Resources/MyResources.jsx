@@ -30,13 +30,14 @@ import File from '../../assets/svgIcons/file.svg';
 import Add from '../../assets/svgIcons/add.svg';
 
 import { colors, dimensions } from '../../assets/theme.jsx';
+import AppStyles, { STATUS_BAR_HEIGHT } from '../AppUtils/AppStyles.js';
 const defaultLogo = Image.resolveAssetSource(defaultImage).uri;
 
 const YourResourcesList = ({ navigation, route }) => {
   const { myId, myData } = useNetwork();
 
   const [allForumPost, setAllForumPost] = useState([]);
-console.log('allForumPost',allForumPost)
+  console.log('allForumPost', allForumPost)
   const [imageUrls, setImageUrls] = useState({});
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [postToDelete, setPostToDelete] = useState(null);
@@ -398,6 +399,8 @@ console.log('allForumPost',allForumPost)
   ) {
     return (
       <View style={styles.container}>
+        <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
+
         <View style={styles.headerContainer}>
           <TouchableOpacity
             style={styles.backButton}
@@ -439,6 +442,8 @@ console.log('allForumPost',allForumPost)
 
   return (
     <View style={styles.container}>
+      <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
+
       <View style={styles.headerContainer}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
@@ -569,6 +574,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: 'white',
+    paddingTop: STATUS_BAR_HEIGHT
   },
   createPostButton: {
     position: 'absolute',
@@ -686,4 +692,3 @@ const styles = StyleSheet.create({
 
 
 export default YourResourcesList
-

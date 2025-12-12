@@ -9,11 +9,10 @@ import {
   Pressable,
   Text,
   Dimensions,
-  StatusBar,
   Animated,
 } from 'react-native';
 import apiClient from '../ApiClient';
-import Icon from 'react-native-vector-icons/MaterialIcons';
+
 import { showToast } from './CustomToast';
 import { useBottomSheet } from './SheetProvider';
 import { EventRegister } from 'react-native-event-listeners';
@@ -30,8 +29,6 @@ import { colors, dimensions } from '../../assets/theme.jsx';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 const COLOR_PLACEHOLDER = '#888';
 
-const screenHeight = Dimensions.get('window').height;
-const inputHeight = StatusBar.currentHeight + 40
 const CommentInputBar = ({
   storedUserId,
   forum_id,
@@ -47,7 +44,7 @@ const CommentInputBar = ({
   const [loading, setLoading] = useState(false);
   const [selectedComment, setSelectedComment] = useState(null);
   const profile = useSelector(state => state.CompanyProfile.profile);
-const safeAreaInsets = useSafeAreaInsets();
+  const safeAreaInsets = useSafeAreaInsets();
 
   useEffect(() => {
     const editListener = EventRegister.addEventListener('onEditComment', (comment) => {
@@ -204,36 +201,36 @@ const safeAreaInsets = useSafeAreaInsets();
   return (
 
     <Animated.View
-      style={[styles.inputContainer, { transform: [{ translateY: inputTranslateY }] , bottom:safeAreaInsets.top + 16 }]}
+      style={[styles.inputContainer, { transform: [{ translateY: inputTranslateY }], bottom: safeAreaInsets.bottom  }]}
     >
-   
-        {profile?.fileKey ? (
-          <Image
-            source={{ uri: profile?.imageUrl }}
-            style={{
-              width: 35,
-              height: 35,
-              borderRadius: 20,
-              marginRight: 10,
-            }}
-          />
-        ) : (
-          <View
-            style={{
-              width: 35,
-              height: 35,
-              borderRadius: 20,
-              marginRight: 10,
-              backgroundColor: profile?.companyAvatar?.backgroundColor || '#ccc',
-              justifyContent: 'center',
-              alignItems: 'center',
-            }}
-          >
-            <Text style={{ color: profile?.companyAvatar?.textColor || '#000', fontWeight: 'bold' }}>
-              {profile?.companyAvatar?.initials || '?'}
-            </Text>
-          </View>
-        )}
+
+      {profile?.fileKey ? (
+        <Image
+          source={{ uri: profile?.imageUrl }}
+          style={{
+            width: 35,
+            height: 35,
+            borderRadius: 20,
+            marginRight: 10,
+          }}
+        />
+      ) : (
+        <View
+          style={{
+            width: 35,
+            height: 35,
+            borderRadius: 20,
+            marginRight: 10,
+            backgroundColor: profile?.companyAvatar?.backgroundColor || '#ccc',
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}
+        >
+          <Text style={{ color: profile?.companyAvatar?.textColor || '#000', fontWeight: 'bold' }}>
+            {profile?.companyAvatar?.initials || '?'}
+          </Text>
+        </View>
+      )}
 
 
 
@@ -290,21 +287,10 @@ const safeAreaInsets = useSafeAreaInsets();
 
 
 const styles = StyleSheet.create({
-  container: {
 
-    flexDirection: 'row',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderTopWidth: 1,
-    borderColor: '#e0e0e0',
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    marginBottom: inputHeight
-  },
   inputContainer: {
     position: "absolute",
-    left: 0,
-    right: 0,
+    bottom: 0,
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 10,
@@ -312,11 +298,13 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: "#ddd",
     backgroundColor: "#fff",
+    paddingBottom:60
   },
 
   input: {
     flex: 1,
-    fontSize: 15,
+    fontSize: 14,
+    fontWeight:'500',
     paddingRight: 6, // Space between text and icon
     color: '#000',
     maxHeight: 120,
@@ -328,7 +316,7 @@ const styles = StyleSheet.create({
     padding: 10,
     justifyContent: 'center',
     alignItems: 'center',
-   
+
   },
   loadingIconWrapper: {
     padding: 7,

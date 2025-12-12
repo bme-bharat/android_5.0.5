@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { StyleSheet, Text, View, FlatList, ActivityIndicator, TouchableOpacity, Linking, Image, Keyboard, ScrollView, RefreshControl, useWindowDimensions, Dimensions } from 'react-native';
+import { StyleSheet, Text, View, FlatList, ActivityIndicator, TouchableOpacity, Linking, Image, Keyboard, ScrollView, RefreshControl, useWindowDimensions, Dimensions, StatusBar, Platform } from 'react-native';
 import axios from 'axios';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+
 import { useNavigation } from '@react-navigation/native';
 import { Image as FastImage } from 'react-native';
 import { TextInput } from 'react-native-gesture-handler';
@@ -16,6 +16,13 @@ import Search from '../../assets/svgIcons/search.svg';
 import Close from '../../assets/svgIcons/close.svg';
 
 import { colors, dimensions } from '../../assets/theme.jsx';
+import scrollAnimations from '../helperComponents/scrollAnimations.jsx';
+import Animated from 'react-native-reanimated';
+
+const STATUS_BAR_HEIGHT =
+  Platform.OS === "android" ? StatusBar.currentHeight || 24 : 44;
+
+const headerHeight = STATUS_BAR_HEIGHT + 60;
 
 const AllEvents = () => {
   const [events, setEvents] = useState([]);
@@ -30,6 +37,7 @@ const AllEvents = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [searchTriggered, setSearchTriggered] = useState(false);
   const [searchResults, setSearchResults] = useState([]);
+  const { onScroll, headerStyle, bottomStyle, toolbarBgStyle, barStyle } = scrollAnimations();
 
 
 
@@ -268,56 +276,42 @@ const AllEvents = () => {
   }
 
   return (
-    <View style={styles.mainContainer}>
-      <View style={styles.headerContainer}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
+    <>
+      <StatusBar translucent backgroundColor="transparent" barStyle={"light-content"} />
 
-        </TouchableOpacity>
-        <View style={AppStyles.searchContainer}>
-          <View style={AppStyles.inputContainer}>
+      <Animated.View style={[AppStyles.toolbar, toolbarBgStyle]}>
+
+        <Animated.View style={[AppStyles.searchRow, headerStyle]}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton} activeOpacity={1}>
+            <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.text_secondary} />
+
+          </TouchableOpacity>
+          <View style={AppStyles.searchBar}>
+            <Search width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.text_secondary} />
+
             <TextInput
+              ref={searchInputRef}
+              placeholder="Search events..."
               style={AppStyles.searchInput}
-              placeholder="Search"
-              placeholderTextColor="gray"
+              placeholderTextColor={colors.text_secondary}
               value={searchQuery}
               onChangeText={handleDebouncedTextChange}
-
             />
-            {searchQuery.trim() !== '' ? (
-              <TouchableOpacity
-                onPress={() => {
-                  setSearchQuery('');
-                  setSearchTriggered(false);
-                  setSearchResults([]);
-
-                }}
-                style={AppStyles.iconButton}
-              >
-                <Close width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-
-              </TouchableOpacity>
-            ) : (
-              <TouchableOpacity
-                style={AppStyles.searchIconButton}
-              >
-                <Search width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-
-              </TouchableOpacity>
-
-            )}
           </View>
-        </View>
-      </View>
+        </Animated.View>
 
+      </Animated.View>
 
-      <FlatList
+      <Animated.FlatList
         ref={scrollViewRef}
         data={!searchTriggered || searchQuery.trim() === '' ? events : searchResults}
         renderItem={renderItem}
+        onScroll={onScroll}
+        overScrollMode={'never'}
+        scrollEventThrottle={16}
         keyExtractor={(item, index) => `${item.event_id}-${index}`}
         onScrollBeginDrag={() => Keyboard.dismiss()}
-        contentContainerStyle={{ paddingBottom: '20%', backgroundColor: colors.app_background, paddingHorizontal:5, }}
+        contentContainerStyle={{ paddingTop: headerHeight, backgroundColor: colors.app_background }}
         onEndReached={() => {
           if (hasMore && !loadingMore) fetchEvents(lastKey);
         }}
@@ -327,6 +321,7 @@ const AllEvents = () => {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={handleRefresh}
+            progressViewOffset={headerHeight}
           />
         }
         ListFooterComponent={
@@ -353,7 +348,7 @@ const AllEvents = () => {
         }
       />
 
-    </View>
+    </>
   );
 };
 
@@ -370,13 +365,13 @@ const styles = StyleSheet.create({
     padding: 8,
     paddingBottom: 5,
     borderWidth: 0.5,
-    borderRadius:8,
+    borderRadius: 8,
     borderColor: '#ddd',
   },
 
   expiredText: {
     color: '#888',
-    backgroundColor:'#e0e0e0',
+    backgroundColor: '#e0e0e0',
   },
 
   expiredImage: {
@@ -410,8 +405,9 @@ const styles = StyleSheet.create({
     padding: 8,
     paddingBottom: 5,
     borderWidth: 0.5,
-    borderRadius:8,
+    borderRadius: 8,
     borderColor: '#ddd',
+    marginHorizontal: 5
   },
   events: {
     fontSize: 16,
@@ -510,8 +506,10 @@ const styles = StyleSheet.create({
   },
 
   backButton: {
+    padding: 12,
     alignSelf: 'center',
-    padding: 10
+    borderRadius: 10,
+    backgroundColor: colors.background
 
   },
 

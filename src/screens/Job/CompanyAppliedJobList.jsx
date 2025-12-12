@@ -3,14 +3,13 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import Toast from 'react-native-toast-message';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import apiClient from '../ApiClient';
 import { showToast } from '../AppUtils/CustomToast';
 import { useNetwork } from '../AppUtils/IdProvider';
 import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
 
 import { colors, dimensions } from '../../assets/theme.jsx';
-import { commonStyles } from '../AppUtils/AppStyles.js';
+import AppStyles, { commonStyles, STATUS_BAR_HEIGHT } from '../AppUtils/AppStyles.js';
 
 const CompanyAppliedJobScreen = () => {
   const { myId, myData } = useNetwork();
@@ -82,37 +81,37 @@ const CompanyAppliedJobScreen = () => {
       style={styles.jobCard}
     >
 
-        <View style={commonStyles.valContainer}>
-          <Text style={commonStyles.label}>First name        </Text>
-          <Text style={commonStyles.colon}>:</Text>
+      <View style={commonStyles.valContainer}>
+        <Text style={commonStyles.label}>First name        </Text>
+        <Text style={commonStyles.colon}>:</Text>
 
-          <Text style={commonStyles.value} numberOfLines={1}>{(getSlicedTitle(item.first_name || "").trimStart().trimEnd())}</Text>
-        </View>
-        <View style={commonStyles.valContainer}>
-          <Text style={commonStyles.label}>Last name         </Text>
-          <Text style={commonStyles.colon}>:</Text>
+        <Text style={commonStyles.value} numberOfLines={1}>{(getSlicedTitle(item.first_name || "").trimStart().trimEnd())}</Text>
+      </View>
+      <View style={commonStyles.valContainer}>
+        <Text style={commonStyles.label}>Last name         </Text>
+        <Text style={commonStyles.colon}>:</Text>
 
-          <Text style={commonStyles.value}>{(item.last_name).trimStart().trimEnd()}</Text>
-        </View>
-        <View style={commonStyles.valContainer}>
-          <Text style={commonStyles.label}>Email ID                 </Text>
-          <Text style={commonStyles.colon}>:</Text>
+        <Text style={commonStyles.value}>{(item.last_name).trimStart().trimEnd()}</Text>
+      </View>
+      <View style={commonStyles.valContainer}>
+        <Text style={commonStyles.label}>Email ID                 </Text>
+        <Text style={commonStyles.colon}>:</Text>
 
-          <Text style={commonStyles.value} numberOfLines={1}>{((item.user_email_id).trimStart().trimEnd())}</Text>
-        </View>
-        <View style={commonStyles.valContainer}>
-          <Text style={commonStyles.label}>Phone no.    </Text>
-          <Text style={commonStyles.colon}>:</Text>
+        <Text style={commonStyles.value} numberOfLines={1}>{((item.user_email_id).trimStart().trimEnd())}</Text>
+      </View>
+      <View style={commonStyles.valContainer}>
+        <Text style={commonStyles.label}>Phone no.    </Text>
+        <Text style={commonStyles.colon}>:</Text>
 
-          <Text style={commonStyles.value}>{item.user_phone_number}</Text>
-        </View>
+        <Text style={commonStyles.value}>{item.user_phone_number}</Text>
+      </View>
 
-        <TouchableOpacity onPress={() => {
-          navigation.navigate('CompanyGetAppliedJobs', { userId: item.user_id, post: item });
-        }} activeOpacity={0.8} 
+      <TouchableOpacity onPress={() => {
+        navigation.navigate('CompanyGetAppliedJobs', { userId: item.user_id, post: item });
+      }} activeOpacity={0.8}
         style={styles.applyButton}>
-          <Text style={styles.buttonText}>View profile</Text>
-        </TouchableOpacity>
+        <Text style={styles.buttonText}>View profile</Text>
+      </TouchableOpacity>
 
     </TouchableOpacity>
   );
@@ -125,6 +124,8 @@ const CompanyAppliedJobScreen = () => {
   if (appliedJobs.length === 0) {
     return (
       <View style={styles.container}>
+        <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
+
         <View style={styles.headerContainer}>
 
           <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
@@ -141,6 +142,8 @@ const CompanyAppliedJobScreen = () => {
   }
   return (
     <View style={styles.container}>
+      <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
+
       <View style={styles.headerContainer}>
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
           <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
@@ -179,6 +182,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: 'whitesmoke',
+    paddingTop: STATUS_BAR_HEIGHT
   },
 
 
@@ -252,12 +256,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     borderRadius: 5,
     backgroundColor: '#fff',
-    elevation:2,
+    elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 2,
-    alignSelf:'flex-end'
+    alignSelf: 'flex-end'
   },
   buttonText: {
     marginLeft: 5,

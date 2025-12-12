@@ -6,7 +6,6 @@ import { View, Text, TouchableOpacity, ScrollView, Modal, FlatList, TextInput, S
 import axios from 'axios';
 import { useNavigation } from '@react-navigation/native';
 import { COLORS, CountryCodes } from '../../assets/Constants';
-import MerticalIcon from 'react-native-vector-icons/MaterialCommunityIcons';
 import logo_png from '../../images/homepage/bmelogo.jpeg';
 import { Keyboard } from 'react-native';
 import { Image as FastImage } from 'react-native';
@@ -32,8 +31,8 @@ const LoginPhoneScreen = () => {
   const [isPhoneLogin, setIsPhoneLogin] = useState(true);
   const [phone, setPhone] = useState('');
 
-  const { fcmToken, refreshFcmToken } = useFcmToken();
   const [message, setMessage] = useState('');
+  const { fcmToken, refreshFcmToken } = useFcmToken();
 
   useEffect(() => {
     // Subscribe to Phone Hint events
@@ -41,16 +40,23 @@ const LoginPhoneScreen = () => {
       setPhone(number);
   
       if (number) {
-        await sendOTPHandle(number); // pass number directly or use state after it's set
+        await sendOTPHandle(number);
       }
     });
   
-    // Auto trigger the phone hint picker on mount
-    requestPhoneNumber();
+    // Delay showing the phone hint picker
+    const timer = setTimeout(() => {
+      console.log("useEffect ran after 500ms");
+      requestPhoneNumber();
+    }, 100);
   
-    // Cleanup listener on unmount
-    return () => removeListener();
+    // ONE cleanup function
+    return () => {
+      clearTimeout(timer);
+      removeListener();
+    };
   }, []);
+  
   
 
 
@@ -156,8 +162,6 @@ const LoginPhoneScreen = () => {
 
   return (
     <View style={styles.safeArea}>
-      <StatusBar barStyle="light-content" backgroundColor={colors.primary} />
-
       <View style={styles.headerContainer}>
           <FastImage source={logo_png} style={styles.logo} resizeMode="contain" />
        

@@ -11,7 +11,7 @@ import {
     StyleSheet,
 } from 'react-native';
 import apiClient from '../ApiClient';
-import Icon from 'react-native-vector-icons/MaterialIcons';
+
 import { showToast } from '../AppUtils/CustomToast';
 import { useNetwork } from '../AppUtils/IdProvider';
 import { useFileOpener } from './fileViewer';

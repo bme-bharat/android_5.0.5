@@ -6,7 +6,7 @@ import { View, Image, StyleSheet, TouchableOpacity, Text, ScrollView, TextInput,
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import Toast from 'react-native-toast-message';
 
-import Ionicons from 'react-native-vector-icons/Ionicons';
+
 import Message3 from '../../components/Message3';
 import RNFS from 'react-native-fs';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
@@ -28,6 +28,8 @@ import ImageResizer from 'react-native-image-resizer';
 import { useS3Uploader } from '../helperComponents/useS3Uploader';
 import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
 import { colors, dimensions } from '../../assets/theme.jsx';
+import AppStyles, { STATUS_BAR_HEIGHT } from '../AppUtils/AppStyles.js';
+import { sanitizeHtmlBody } from '../Forum/forumBody.jsx';
 
 const { DocumentPicker } = NativeModules;
 
@@ -130,18 +132,6 @@ const ResourcesEditScreen = () => {
     return unsubscribe;
   }, [navigation, hasChanges]);
 
-  const sanitizeHtmlBody = (html) => {
-    const cleaned = cleanForumHtml(html); // your existing cleaner
-
-    return cleaned
-      .replace(/<div><br><\/div>/gi, '') // remove empty div lines
-      .replace(/<p>(&nbsp;|\s)*<\/p>/gi, '') // remove empty <p>
-      .replace(/<div>(&nbsp;|\s)*<\/div>/gi, '') // remove empty <div>
-      .replace(/(<br\s*\/?>\s*){2,}/gi, '<br>') // collapse multiple <br> into one
-      .replace(/^(<br\s*\/?>)+/gi, '') // remove leading <br>
-      .replace(/(<br\s*\/?>)+$/gi, '') // remove trailing <br>
-      .trim();
-  };
 
 
   const handleMediaPickerPress = () => {
@@ -274,13 +264,36 @@ const ResourcesEditScreen = () => {
     }
   };
 
+  const cleanHtmlSpaces = (html) => {
+    if (!html) return "";
+  
+    let cleaned = html;
+
+    const emptyBlock = /<div>\s*(?:<span>\s*)?(?:<br\s*\/?>)\s*(?:<\/span>)?\s*<\/div>/gi;
+    cleaned = cleaned.replace(new RegExp(`^(?:${emptyBlock.source})+`, "i"), "");
+    cleaned = cleaned.replace(new RegExp(`(?:${emptyBlock.source})+$`, "i"), "");
+    cleaned = cleaned.trim();
+  
+    return cleaned;
+  };
+
+  const handleForumBodyChange = (html) => {
+  
+    const cleanedBody = sanitizeHtmlBody(html);
+    const finalBody = cleanHtmlSpaces(cleanedBody);
+
+    setPostData(prev => ({
+      ...prev,
+      resource_body: finalBody
+    }));
+  };
+
   const handlePostSubmission = async () => {
 
     setIsLoading(true);
 
     try {
       const trimmedTitle = stripHtmlTags(postData.title)?.trim();
-      const cleanedBody = sanitizeHtmlBody(postData.resource_body?.trim() || '');
 
       if (!trimmedTitle) {
         showToast("Title field cannot be empty", 'info');
@@ -288,7 +301,7 @@ const ResourcesEditScreen = () => {
         return;
       }
 
-      if (!cleanedBody) {
+      if (!postData.resource_body) {
         showToast("Resource description field cannot be empty", 'info');
         setIsLoading(false);
         return;
@@ -334,7 +347,7 @@ const ResourcesEditScreen = () => {
         user_id: myId,
         resource_id: post.resource_id,
         title: trimmedTitle,
-        resource_body: cleanedBody,
+        resource_body: postData.resource_body,
         ...(fileKey && { fileKey }),
         ...(fileKey && thumbnailFileKey && { thumbnail_fileKey: thumbnailFileKey }),
         ...(fileKey && mediaMeta && Object.keys(mediaMeta).length > 0 && { extraData: mediaMeta }),
@@ -419,23 +432,12 @@ const ResourcesEditScreen = () => {
   };
 
 
-  const handleForumBodyChange = (html) => {
-    const plainText = html.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trimStart();
 
-    if (plainText === "") {
-      setPostData((prev) => ({ ...prev, resource_body: "" }));
-      return;
-    }
+  
+  
+  
+  
 
-    if (/^\s/.test(plainText)) {
-      showToast("Leading spaces are not allowed", "error");
-      return;
-    }
-
-    setPostData((prev) => ({ ...prev, resource_body: html }));
-    setHasChanges(true);
-
-  };
 
 
 
@@ -468,6 +470,7 @@ const ResourcesEditScreen = () => {
   return (
 
     <View style={styles.container1} >
+      <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
 
       <View style={styles.headerContainer}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
@@ -498,7 +501,7 @@ const ResourcesEditScreen = () => {
 
 
       <KeyboardAwareScrollView
-        contentContainerStyle={{ flexGrow: 1, paddingBottom: '40%',marginHorizontal:10, }}
+        contentContainerStyle={{ flexGrow: 1, paddingBottom: '40%', marginHorizontal: 10, }}
         keyboardShouldPersistTaps="handled"
         extraScrollHeight={20}
         showsVerticalScrollIndicator={false}
@@ -566,14 +569,12 @@ const ResourcesEditScreen = () => {
             borderWidth: 1,
             borderColor: '#ccc',
             overflow: 'hidden',
-            
+
           }}
           initialContentHTML={initialBodyRef.current}
           placeholder="Share your thoughts, questions or ideas..."
-          editorInitializedCallback={() => { }}
+          
           onChange={handleForumBodyChange}
-          onTouchStart={() => setActiveEditor('body')}
-          onFocus={() => handleBodyFocus('body')}
           editorStyle={{
             cssText: `
       * {
@@ -587,8 +588,7 @@ const ResourcesEditScreen = () => {
       body {
         padding: 10 !important;
         margin: 0 !important;
-      }
-    `
+      }`
           }}
         />
 
@@ -694,6 +694,7 @@ const styles = StyleSheet.create({
   container1: {
     flex: 1,
     backgroundColor: 'whitesmoke',
+    paddingTop: STATUS_BAR_HEIGHT
   },
 
 

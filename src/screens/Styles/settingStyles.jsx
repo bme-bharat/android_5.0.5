@@ -1,4 +1,7 @@
 import { StyleSheet } from "react-native";
+import { STATUS_BAR_HEIGHT } from "../AppUtils/AppStyles";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+const insets = useSafeAreaInsets();
 
 export const settingStyles = StyleSheet.create({
 
@@ -7,7 +10,7 @@ export const settingStyles = StyleSheet.create({
     justifyContent: 'space-around',
     alignItems: 'center',
     paddingVertical: 12,
-    paddingBottom: 15,
+    paddingBottom: insets.bottom + 10,
     backgroundColor: '#ffffff',
     position: 'absolute',
     bottom: 0,
@@ -26,7 +29,7 @@ export const settingStyles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 10,
-    paddingHorizontal: 15,
+    
     elevation: 4,
     shadowColor: '#aaa',
     shadowOffset: { width: 0, height: 3 },
@@ -113,7 +116,7 @@ export const settingStyles = StyleSheet.create({
     flexDirection: 'row',  // Align label and detail in a row
     alignItems: 'center',  // Center the items vertically
     borderRadius: 10,
-    paddingHorizontal: 5,
+
     paddingVertical: 3,
   },
   colon: {
@@ -148,10 +151,6 @@ export const settingStyles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 6,
-  },
-  container: {
-    flexGrow: 1,
-
   },
 
 
@@ -206,6 +205,7 @@ export const settingStyles = StyleSheet.create({
 
   container1: {
     flex: 1,
+    paddingTop: STATUS_BAR_HEIGHT
   },
 
   dropdownIcon: {

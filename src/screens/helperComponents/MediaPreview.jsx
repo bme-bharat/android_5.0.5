@@ -1,7 +1,6 @@
 import React from 'react';
 import { View, Image, TouchableOpacity, StyleSheet, Text } from 'react-native';
 import Video from 'react-native-video';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import Pdf from '../../assets/svgIcons/pdf.svg';
 import File from '../../assets/svgIcons/file.svg';
 import Close from '../../assets/svgIcons/close.svg';

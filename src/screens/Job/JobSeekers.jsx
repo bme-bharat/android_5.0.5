@@ -1,9 +1,9 @@
 
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { StyleSheet, Text, View, Image, TouchableOpacity, TextInput, Keyboard, FlatList, RefreshControl, ActivityIndicator } from 'react-native';
+import { StyleSheet, Text, View, Image, TouchableOpacity, TextInput, Keyboard, FlatList, RefreshControl, ActivityIndicator, StatusBar, Platform } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+
 import apiClient from '../ApiClient';
 import { useNetwork } from '../AppUtils/IdProvider';
 import { useConnection } from '../AppUtils/ConnectionProvider';
@@ -14,7 +14,14 @@ import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
 import Search from '../../assets/svgIcons/search.svg';
 import Close from '../../assets/svgIcons/close.svg';
 import { colors, dimensions } from '../../assets/theme.jsx';
+import scrollAnimations from '../helperComponents/scrollAnimations.jsx';
+import Animated from "react-native-reanimated";
 
+const STATUS_BAR_HEIGHT =
+  Platform.OS === "android" ? StatusBar.currentHeight || 24 : 44;
+
+const headerHeight = STATUS_BAR_HEIGHT + 60;
+const bottomHeight = 60;
 const CompanyListJobCandidates = () => {
   const { myId, myData } = useNetwork();
   const { isConnected } = useConnection();
@@ -31,6 +38,7 @@ const CompanyListJobCandidates = () => {
   const [loadingMore, setLoadingMore] = useState(false);
   const [searchTriggered, setSearchTriggered] = useState(false);
   const [searchResults, setSearchResults] = useState([]);
+  const { onScroll, headerStyle, bottomStyle, toolbarBgStyle, barStyle } = scrollAnimations();
 
 
 
@@ -206,7 +214,7 @@ const CompanyListJobCandidates = () => {
           );
           return deduped;
         });
-        
+
 
         // Reuse image fetching here
         fetchJobImageUrls(jobs);
@@ -265,7 +273,7 @@ const CompanyListJobCandidates = () => {
                   { color: imageUrls[item.user_id]?.textColor || '#000' },
                 ]}
               >
-                {imageUrls[item.user_id]?.initials }
+                {imageUrls[item.user_id]?.initials}
               </Text>
             </View>
           )}
@@ -297,65 +305,51 @@ const CompanyListJobCandidates = () => {
 
 
   return (
-    <View style={styles.container}>
-      <View style={AppStyles.headerContainer}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
 
-        </TouchableOpacity>
-        <View style={AppStyles.searchContainer}>
-          <View style={AppStyles.inputContainer}>
+    <>
+
+      <Animated.View style={[AppStyles.toolbar, toolbarBgStyle]}>
+
+        <Animated.View style={[AppStyles.searchRow, headerStyle]}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton} activeOpacity={1}>
+            <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.text_secondary} />
+
+          </TouchableOpacity>
+          <View style={AppStyles.searchBar}>
+            <Search width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.text_secondary} />
 
             <TextInput
               ref={searchInputRef}
+              placeholder="Search jobs..."
               style={AppStyles.searchInput}
-              placeholder="Search"
-              placeholderTextColor="gray"
+              placeholderTextColor="#666"
               value={searchQuery}
               onChangeText={handleDebouncedTextChange}
-
             />
-            {searchQuery.trim() !== '' ? (
-              <TouchableOpacity
-                onPress={() => {
-                  setSearchQuery('');
-                  setSearchTriggered(false);
-                  setSearchResults([]);
-
-
-                }}
-                style={AppStyles.iconButton}
-              >
-                <Close width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-
-              </TouchableOpacity>
-            ) : (
-              <TouchableOpacity
-
-                style={AppStyles.searchIconButton}
-              >
-                <Search width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-
-              </TouchableOpacity>
-
-            )}
           </View>
-        </View>
-      </View>
+
+        </Animated.View>
+
+
+
+      </Animated.View>
 
 
       {!loading ? (
-        <FlatList
+        <Animated.FlatList
           data={!searchTriggered || searchQuery.trim() === '' ? posts : searchResults}
           onScrollBeginDrag={() => Keyboard.dismiss()}
           refreshControl={
-            <RefreshControl refreshing={isRefreshing} onRefresh={handlerefresh} />
+            <RefreshControl refreshing={isRefreshing} onRefresh={handlerefresh}
+              progressViewOffset={headerHeight} />
           }
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={[AppStyles.scrollView, { paddingHorizontal: 5, }]}
+          contentContainerStyle={{ paddingTop: headerHeight }}
           renderItem={renderJob} // Use renderJob here
           keyExtractor={(item, index) => `${item.user_id}-${index}`}
-
+          onScroll={onScroll}
+          scrollEventThrottle={16}
+          overScrollMode={'never'}
           onEndReached={() => hasMoreJobs && fetchJobs(lastEvaluatedKey)}
           onEndReachedThreshold={0.5}
           ListFooterComponent={() =>
@@ -389,7 +383,7 @@ const CompanyListJobCandidates = () => {
         </View>
       )}
 
-    </View>
+    </>
   );
 
 }
@@ -398,7 +392,8 @@ const styles = StyleSheet.create({
 
   container: {
     flex: 1,
-    backgroundColor: 'whitesmoke',
+    backgroundColor: colors.app_background,
+    paddingTop: STATUS_BAR_HEIGHT
   },
   nofound: {
     flex: 1,
@@ -437,10 +432,11 @@ const styles = StyleSheet.create({
     textAlign: 'justify',
   },
   backButton: {
+    padding: 12,
     alignSelf: 'center',
-    padding: 10,
-
-  },
+    borderRadius: 10,
+    backgroundColor: colors.background
+},
 
   postContainer: {
     marginBottom: 5,

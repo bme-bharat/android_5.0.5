@@ -1,10 +1,7 @@
 import React, { useEffect, useLayoutEffect, useState } from 'react';
 import { View, Text, useWindowDimensions, TouchableOpacity, ScrollView, Modal, StyleSheet, FlatList, TextInput, StatusBar, Image, TouchableWithoutFeedback, Keyboard } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { ActivityIndicator } from 'react-native';
-import MaterialIcon from 'react-native-vector-icons/MaterialCommunityIcons';
-import logo_png from '../../images/homepage/logo.jpeg';
-import Icon from 'react-native-vector-icons/MaterialIcons';
+
 import { CountryCodes } from '../../assets/Constants';
 import axios from 'axios';
 import { showToast } from '../AppUtils/CustomToast';
@@ -14,6 +11,7 @@ import Check from '../../assets/svgIcons/check.svg';
 import ArrowDown from '../../assets/svgIcons/arrow-down.svg';
 
 import { colors, dimensions } from '../../assets/theme.jsx';
+import AppStyles, { STATUS_BAR_HEIGHT } from '../AppUtils/AppStyles.js';
 const EnterPhoneScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
@@ -142,7 +140,7 @@ const EnterPhoneScreen = () => {
 
   return (
     <View style={styles.screen}>
-      <StatusBar barStyle="light-content" backgroundColor={colors.primary} />
+      <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
 
       {/* Back Button */}
       <TouchableOpacity
@@ -296,6 +294,7 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: '#F8FAFD',
+    paddingTop: STATUS_BAR_HEIGHT
   },
   backButton: {
     alignSelf: 'flex-start',
@@ -447,7 +446,7 @@ const styles = StyleSheet.create({
     marginRight: 6,
     borderRadius: 4,
   },
-  
+
   checkboxText: {
     fontSize: 13,
     color: '#444',

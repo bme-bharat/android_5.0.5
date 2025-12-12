@@ -22,6 +22,7 @@ export const dimensions = {
   icon: {
     small: 18,
     medium: 20,
+    minlarge: 24,
     ml: 28,
     large: 32,
     xl:40

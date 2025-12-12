@@ -3,8 +3,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { UserForumNav, UserJobNav, UserProfileNav, UserStackNav, UserCompanyListNav, UserResources, UserProducts, EventsDrawer, CompanyServices } from './UserStackNav';
 
-import { Platform, Dimensions, StyleSheet, Text, StatusBar } from 'react-native';
-import { getStatusBarHeight } from 'react-native-status-bar-height';
+import { Platform, Dimensions, StyleSheet, Text } from 'react-native';
 import { createDrawerNavigator, DrawerContentScrollView } from '@react-navigation/drawer';
 import CustomDrawerContent from '../DrawerContent';
 import HelpCenter from '../../screens/Bme_content/HelpCenter';
@@ -27,9 +26,7 @@ import { colors, dimensions } from '../../assets/theme';
 
 const Drawer = createDrawerNavigator();
 const Tab = createBottomTabNavigator();
-const statusBarHeight = Platform.OS === 'android'
-  ? StatusBar.currentHeight
-  : getStatusBarHeight();
+
 const { width: screenWidth } = Dimensions.get('window');
 
 

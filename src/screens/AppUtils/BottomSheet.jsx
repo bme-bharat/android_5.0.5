@@ -22,16 +22,29 @@ import Animated, {
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { colors, dimensions } from '../../assets/theme';
 import Close from '../../assets/svgIcons/close-large.svg';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
-const MAX_TRANSLATE_Y = -SCREEN_HEIGHT;
+
 
 LogBox.ignoreLogs([
   'Sending `onAnimatedValueUpdate` with no listeners registered',
 ]);
 
 const BottomSheet = forwardRef(({ children, onClose }, ref) => {
-  const translateY = useSharedValue(0);
+  const insets = useSafeAreaInsets();
+
+  // height of sheet visible when fully open
+  const OPEN_HEIGHT = SCREEN_HEIGHT - insets.top - 10; 
+  
+  // fully open position
+  const MAX_TRANSLATE_Y = -OPEN_HEIGHT;
+  
+  // fully hidden position
+  const MIN_TRANSLATE_Y = 0;
+  
+  const translateY = useSharedValue(MIN_TRANSLATE_Y);
+  
   const gestureContext = useSharedValue({ startY: 0 });
   const isActive = useSharedValue(false);
   const [active, setActive] = useState(false);
@@ -45,28 +58,28 @@ const BottomSheet = forwardRef(({ children, onClose }, ref) => {
     }
   );
 
-  const scrollTo = (destination) => {
-    'worklet';
-    const clamped = Math.max(destination, MAX_TRANSLATE_Y);
-    const shouldClose = clamped === 0;
-
-    if (shouldClose) runOnJS(dismissKeyboard)();
-
+  const scrollTo = (dest) => {
+    "worklet";
+  
+    const clamped = Math.min(
+      Math.max(dest, MAX_TRANSLATE_Y),
+      MIN_TRANSLATE_Y
+    );
+  
+    const shouldClose = clamped === MIN_TRANSLATE_Y;
+  
     isActive.value = !shouldClose;
     runOnJS(setActive)(!shouldClose);
-
+  
     translateY.value = withSpring(
       clamped,
-      {
-        damping: 20,
-        stiffness: 200,
-        overshootClamping: true,
-      },
+      { damping: 20, stiffness: 200, overshootClamping: true },
       () => {
         if (shouldClose && onClose) runOnJS(onClose)();
       }
     );
   };
+  
 
   const closeSheet = () => {
     runOnJS(dismissKeyboard)();
@@ -94,13 +107,15 @@ const BottomSheet = forwardRef(({ children, onClose }, ref) => {
       );
     })
     .onEnd((event) => {
-      const SNAP_THRESHOLD = SCREEN_HEIGHT / 3;
-      if (event.velocityY > 500 || translateY.value > -SNAP_THRESHOLD) {
-        scrollTo(0);
+      const SNAP = OPEN_HEIGHT / 3;
+    
+      if (event.velocityY > 500 || translateY.value > MAX_TRANSLATE_Y + SNAP) {
+        scrollTo(MIN_TRANSLATE_Y);   // close
       } else {
-        scrollTo(MAX_TRANSLATE_Y);
+        scrollTo(MAX_TRANSLATE_Y);   // open
       }
     });
+    
 
   const animatedStyle = useAnimatedStyle(() => {
     const borderRadius = interpolate(
@@ -112,14 +127,17 @@ const BottomSheet = forwardRef(({ children, onClose }, ref) => {
 
     return {
       transform: [{ translateY: translateY.value }],
-      borderRadius,
+      borderTopLeftRadius: borderRadius,
+      borderTopRightRadius: borderRadius,
     };
+    
   });
 
   const backdropOpacity = useAnimatedStyle(() => ({
     opacity: withTiming(isActive.value ? 0.5 : 0, { duration: 150 }),
   }));
 
+  
   return (
     <>
       {/* Dimmed backdrop */}

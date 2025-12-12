@@ -1,17 +1,17 @@
 
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { View, Image, StyleSheet, TouchableOpacity, Text, ScrollView, TextInput, Alert, ActivityIndicator, Modal, Keyboard, ActionSheetIOS, KeyboardAvoidingView, TouchableWithoutFeedback, NativeModules } from 'react-native';
+import { View, Image, StyleSheet, TouchableOpacity, Text, ScrollView, TextInput, Alert, ActivityIndicator, Modal, Keyboard, ActionSheetIOS, KeyboardAvoidingView, TouchableWithoutFeedback, NativeModules, StatusBar } from 'react-native';
 import { launchImageLibrary } from 'react-native-image-picker';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import RNFS from 'react-native-fs';
 
 import Video from 'react-native-video';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+
 import Message3 from '../../components/Message3';
 import { Image as FastImage } from 'react-native';
 import ImageResizer from 'react-native-image-resizer';
-import Ionicons from 'react-native-vector-icons/Ionicons';
+
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { useDispatch, useSelector } from 'react-redux';
 import PlayOverlayThumbnail from '../Forum/Play';
@@ -19,9 +19,9 @@ import { showToast } from '../AppUtils/CustomToast';
 import { useNetwork } from '../AppUtils/IdProvider';
 import apiClient from '../ApiClient';
 import { EventRegister } from 'react-native-event-listeners';
-import AppStyles from '../AppUtils/AppStyles';
+import AppStyles, { STATUS_BAR_HEIGHT } from '../AppUtils/AppStyles';
 import { actions, RichEditor, RichToolbar } from 'react-native-pell-rich-editor';
-import { cleanForumHtml } from '../Forum/forumBody';
+import { cleanForumHtml, sanitizeHtmlBody } from '../Forum/forumBody';
 import { MediaPickerButton } from '../helperComponents/MediaPickerButton';
 import { useMediaPicker } from '../helperComponents/MediaPicker';
 import { uploadFromBase64 } from '../Forum/VideoParams';
@@ -86,34 +86,34 @@ const ResourcesPost = () => {
 
   const hasUnsavedChanges = Boolean(hasChanges);
   const [pendingAction, setPendingAction] = React.useState(null);
-console.log('hasUnsavedChanges',hasUnsavedChanges)
 
-useEffect(() => {
-  // Listener for preventing navigation using the bottom tab bar
-  const preventTabSwitch = navigation.addListener('tabPress', (e) => {
-    if (hasChanges) {
-      // Prevent tab switch if there are unsaved changes
-      e.preventDefault();
+
+  useEffect(() => {
+    // Listener for preventing navigation using the bottom tab bar
+    const preventTabSwitch = navigation.addListener('tabPress', (e) => {
+      if (hasChanges) {
+        // Prevent tab switch if there are unsaved changes
+        e.preventDefault();
+        setShowModal(true);  // Show custom modal
+      }
+    });
+
+    // Listener for preventing navigation using the back button
+    const unsubscribe = navigation.addListener('beforeRemove', (e) => {
+      if (!hasChanges) {
+        return; // Allow navigation if no changes
+      }
+
+      e.preventDefault(); // Prevent the default action
       setShowModal(true);  // Show custom modal
-    }
-  });
+    });
 
-  // Listener for preventing navigation using the back button
-  const unsubscribe = navigation.addListener('beforeRemove', (e) => {
-    if (!hasChanges) {
-      return; // Allow navigation if no changes
-    }
+    return () => {
+      preventTabSwitch();
+      unsubscribe();
+    };
+  }, [navigation, hasChanges]);
 
-    e.preventDefault(); // Prevent the default action
-    setShowModal(true);  // Show custom modal
-  });
-
-  return () => {
-    preventTabSwitch();
-    unsubscribe();
-  };
-}, [navigation, hasChanges]);
-  
 
   const handleLeave = () => {
     setHasChanges(false);
@@ -139,19 +139,6 @@ useEffect(() => {
 
 
   const bodyEditorRef = useRef();
-  const [activeEditor, setActiveEditor] = useState('title'); // not 'title'
-
-
-  const handleBodyFocus = () => {
-    setActiveEditor('body');
-    bodyEditorRef.current?.focus(); // Focus the body editor
-  };
-
-
-
-  const stripHtmlTags = (html) =>
-    html?.replace(/<\/?[^>]+(>|$)/g, '').trim() || '';
-
 
   // Title Input Handler
   const handleTitleChange = (text) => {
@@ -159,41 +146,47 @@ useEffect(() => {
       setPostData(prev => ({ ...prev, title: "" }));
       return;
     }
-
     const trimmed = text.trimStart();
     if (trimmed === "") {
       showToast("Leading spaces are not allowed", "error");
       return;
     }
-
     const withoutLeadingSpaces = text.replace(/^\s+/, "");
-
-    if (withoutLeadingSpaces.length > 100) {
-      showToast("Title cannot exceed 100 characters", "info");
-      return;
-    }
 
     setPostData(prev => ({ ...prev, title: withoutLeadingSpaces }));
   };
 
-  // RichEditor Body Input Handler
-  const handleBodyChange = (html) => {
-    if (html === "") {
-      setPostData(prev => ({ ...prev, body: "" }));
-      return;
-    }
+  const cleanHtmlSpaces = (html) => {
+    if (!html) return "";
+  
+    let cleaned = html;
 
-    // Extract plain text from HTML to validate leading spaces
-    const plainText = stripHtmlTags(html);
-
-    if (plainText.trimStart() === "") {
-      showToast("Leading spaces are not allowed", "error");
-      return;
-    }
-
-    // Save the cleaned HTML (if needed) or original input
-    setPostData(prev => ({ ...prev, body: html.replace(/^\s+/, "") }));
+    const emptyBlock = /<div>\s*(?:<span>\s*)?(?:<br\s*\/?>)\s*(?:<\/span>)?\s*<\/div>/gi;
+    cleaned = cleaned.replace(new RegExp(`^(?:${emptyBlock.source})+`, "i"), "");
+    cleaned = cleaned.replace(new RegExp(`(?:${emptyBlock.source})+$`, "i"), "");
+    cleaned = cleaned.trim();
+  
+    return cleaned;
   };
+  
+  
+  
+  
+  const handleBodyChange = (html) => {
+  
+    const cleanedBody = sanitizeHtmlBody(html);
+    const finalBody = cleanHtmlSpaces(cleanedBody);
+
+    setPostData(prev => ({
+      ...prev,
+      body: finalBody
+    }));
+  };
+  
+  
+  
+  
+
 
 
   const {
@@ -330,7 +323,7 @@ useEffect(() => {
       setLoading(false);
     }
   };
-  
+
   const handleMediaPickerPress = () => {
     Alert.alert(
       'Select Media',
@@ -358,7 +351,7 @@ useEffect(() => {
       { cancelable: true }
     );
   };
-  
+
 
   const openGallery = async () => {
     try {
@@ -459,32 +452,21 @@ useEffect(() => {
   };
 
 
-  const sanitizeHtmlBody = (html) => {
-    const cleaned = cleanForumHtml(html); // your existing cleaner
 
-    return cleaned
-      .replace(/<div><br><\/div>/gi, '') // remove empty line divs
-      .replace(/<p>(&nbsp;|\s)*<\/p>/gi, '') // remove empty p tags
-      .replace(/<div>(&nbsp;|\s)*<\/div>/gi, '') // remove empty divs
-      .trim(); // trim outer whitespace
-  };
 
   const handlePostSubmission = async () => {
-  
+
     setLoading(true);
 
     try {
       const trimmedTitle = postData.title?.trim();
-      const rawBodyHtml = postData.body?.trim();
+
       const currentTimestampInSeconds = Math.floor(Date.now() / 1000);
 
-      if (!trimmedTitle || !rawBodyHtml) {
+      if (!trimmedTitle || !postData.body.trim()) {
         showToast("Title and body are required", 'info');
         return;
       }
-
-      const cleanedBody = sanitizeHtmlBody(rawBodyHtml);
-
       // Initialize keys
       let fileKey = null;
       let thumbnailFileKey = null;
@@ -501,7 +483,7 @@ useEffect(() => {
         command: "postInResources",
         user_id: myId,
         title: trimmedTitle,
-        resource_body: cleanedBody,
+        resource_body: postData.body,
         posted_on: currentTimestampInSeconds,
         ...(fileKey && { fileKey }),
         ...(fileKey && thumbnailFileKey && { thumbnail_fileKey: thumbnailFileKey }),
@@ -516,13 +498,13 @@ useEffect(() => {
         const enrichedPost = {
           ...postPayload,
           resource_id: res.data.resource_details?.resource_id,
-          
+
         };
         setHasChanges(false)
         EventRegister.emit('onResourcePostCreated', { newPost: enrichedPost });
 
         await clearCacheDirectory();
-        
+
         setPostData({ title: '', body: '', fileKey: '' });
         setFile(null);
         setThumbnailUri(null);
@@ -544,7 +526,7 @@ useEffect(() => {
 
     } finally {
       setLoading(false);
-      
+
     }
   };
 
@@ -611,7 +593,8 @@ useEffect(() => {
 
   return (
 
-    <View style={styles.container}>
+    <>
+      <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
 
       <View style={styles.headerContainer}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
@@ -637,7 +620,7 @@ useEffect(() => {
       </View>
 
       <KeyboardAwareScrollView
-        contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 10, paddingBottom: '40%' }}
+        contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 10, paddingBottom: '40%', }}
         keyboardShouldPersistTaps="handled"
         extraScrollHeight={20}
         showsVerticalScrollIndicator={false}
@@ -705,11 +688,10 @@ useEffect(() => {
             borderColor: '#ccc',
             overflow: 'hidden',
           }}
-          onTouchStart={() => setActiveEditor('body')}
-          onFocus={() => handleBodyFocus('body')}
+          
           initialContentHTML={postData.body}
           placeholder="Describe your resource in detail ..."
-          editorInitializedCallback={() => { }}
+         
           onChange={handleBodyChange}
           editorStyle={{
             cssText: `
@@ -724,13 +706,11 @@ useEffect(() => {
       body {
         padding: 10 !important;
         margin: 0 !important;
-      }
-    `
+      }`
           }}
         />
 
         <RichToolbar
-          key={`toolbar-${activeEditor}`}
           editor={bodyEditorRef}
           actions={[
             actions.setBold,
@@ -787,16 +767,13 @@ useEffect(() => {
         }}
       />
 
-    </View>
+    </>
 
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: 'whitesmoke',
-  },
+
 
   closeIcon: {
     position: 'absolute',
@@ -969,12 +946,13 @@ const styles = StyleSheet.create({
     paddingRight: 10,
     borderBottomWidth: 1,
     borderBottomColor: '#ccc',
+    paddingTop: STATUS_BAR_HEIGHT
   },
 
 
   disabledButton: {
     backgroundColor: '#ccc',
-    
+
   },
 
   buttonText: {

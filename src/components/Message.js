@@ -2,27 +2,8 @@
 
 import React from 'react';
 import { Modal, Text, TouchableOpacity, View, StyleSheet } from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 const Message = ({ visible, onClose, onCancel, onOk, title, message, iconType }) => {
-
-  const getIcon = () => {
-    switch (iconType) {
-      case 'success':
-        return <Icon name="check-circle" size={60} color="green" />;
-      case 'warning':
-        return <Icon name="alert-circle" size={50} color="#3498db" />;
-      case 'info':
-        return <Icon name="information" size={60} color="#3498db" />;
-      case 'congratulations':
-        return <Icon name="trophy-award" size={60} color="#FFD700" />;
-      case 'logout':
-        return <Icon name="logout" size={60} color="#FFD700" />;
-      default:
-        return <Icon name="help-circle" size={60} color="gray" />;
-    }
-  };
-  
 
   return (
     <Modal

@@ -7,7 +7,7 @@ import axios from 'axios';
 import Toast from 'react-native-toast-message';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+
 import Message from '../../components/Message';
 import { useDispatch } from 'react-redux';
 import { showToast } from '../AppUtils/CustomToast';
@@ -19,7 +19,7 @@ import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
 import Add from '../../assets/svgIcons/add.svg';
 
 import { colors, dimensions } from '../../assets/theme.jsx';
-import { commonStyles } from '../AppUtils/AppStyles.js';
+import AppStyles, { commonStyles, STATUS_BAR_HEIGHT } from '../AppUtils/AppStyles.js';
 
 const YourComapanyPostedJob = () => {
   const navigation = useNavigation();
@@ -294,6 +294,8 @@ const YourComapanyPostedJob = () => {
   if (!loading && posts.length === 0 || (posts.length === 1 && posts[0]?.removed_by_author)) {
     return (
       <View style={styles.container}>
+              <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
+        
         <View style={styles.headerContainer}>
 
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
@@ -318,6 +320,7 @@ const YourComapanyPostedJob = () => {
 
   return (
     <View style={styles.container}>
+      <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
 
       <View style={styles.headerContainer}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
@@ -388,6 +391,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: 'whitesmoke',
+        paddingTop: STATUS_BAR_HEIGHT
   },
 
   container1: {

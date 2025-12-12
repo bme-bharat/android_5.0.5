@@ -1,12 +1,7 @@
-import React, { createContext, useContext, useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { Keyboard, Animated, Platform } from "react-native";
 
-const KeyboardInputContext = createContext({
-  keyboardHeight: 0,
-  inputTranslateY: new Animated.Value(0),
-});
-
-export const KeyboardInputProvider = ({ children }) => {
+export const useKeyboardInput = () => {
   const inputTranslateY = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -32,14 +27,7 @@ export const KeyboardInputProvider = ({ children }) => {
       showSub.remove();
       hideSub.remove();
     };
-  }, [inputTranslateY]);
+  }, []);
 
-  return (
-    <KeyboardInputContext.Provider value={{ inputTranslateY }}>
-      {children}
-    </KeyboardInputContext.Provider>
-  );
+  return { inputTranslateY };
 };
-
-// Custom hook to use in input component
-export const useKeyboardInput = () => useContext(KeyboardInputContext);

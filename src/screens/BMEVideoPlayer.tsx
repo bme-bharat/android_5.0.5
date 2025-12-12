@@ -93,24 +93,6 @@ const BMEVideoPlayer = forwardRef<BMEVideoPlayerHandle, BMEVideoPlayerProps>(
       stop: () => dispatchCommand("stop"),
     }));
 
-    // 🔹 Combined paused logic
-    const actualPaused = pausedProp || !isAppActive || !isFocused;
-
-    // 🔹 Resume automatically when screen/app becomes active again
-    useEffect(() => {
-      if (isAppActive && isFocused && !pausedProp && lastPositionRef.current > 0) {
-        if (!hasJustResumed.current) {
-          hasJustResumed.current = true;
-          setTimeout(() => {
-            dispatchCommand("seekTo", [lastPositionRef.current]);
-            dispatchCommand("play");
-          }, 200); // small delay to ensure player ready
-        }
-      } else {
-        hasJustResumed.current = false;
-      }
-    }, [isAppActive, isFocused, pausedProp, dispatchCommand]);
-
     // 🔹 Handle playback status updates
     const handlePlaybackStatus = useCallback(
       (event: NativeSyntheticEvent<PlaybackStatusEvent>) => {
@@ -137,7 +119,7 @@ const BMEVideoPlayer = forwardRef<BMEVideoPlayerHandle, BMEVideoPlayerProps>(
     return (
       <NativeBMEVideoPlayer
         {...props}
-        paused={actualPaused}
+        paused={pausedProp}
         ref={nativeRef}
         onPlaybackStatus={onPlaybackStatus ? handlePlaybackStatus : undefined}
         onSeek={onSeek ? handleSeek : undefined}

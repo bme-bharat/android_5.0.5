@@ -4,10 +4,9 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, StatusBar 
 import CustomDropdown from '../../components/CustomDropDown';
 import { useNavigation } from '@react-navigation/native';
 
-import Icon from 'react-native-vector-icons/MaterialIcons';
 import image from '../../images/homepage/logo.jpeg'
 import { Image as FastImage } from 'react-native';
-import AppStyles from '../AppUtils/AppStyles';
+import AppStyles, { STATUS_BAR_HEIGHT } from '../AppUtils/AppStyles';
 import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
 
 import { colors, dimensions } from '../../assets/theme.jsx';
@@ -196,7 +195,7 @@ const ProfileTypeScreen = () => {
 
   return (
     <View style={styles.screen}>
-      <StatusBar barStyle="light-content" backgroundColor={colors.primary} />
+      <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
 
       {/* Back Button */}
       <TouchableOpacity
@@ -289,19 +288,21 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: '#F3F6FA', // soft neutral background
+    paddingTop:STATUS_BAR_HEIGHT
+
   },
   backButton: {
     alignSelf: 'flex-start',
     backgroundColor: '#fff',
     borderRadius: 10,
     padding: 10,
-    margin:10,
+    margin: 10,
     elevation: 3,
   },
   scrollContainer: {
     flexGrow: 1,
     paddingHorizontal: 10,
-    paddingVertical:60
+    paddingVertical: 60
   },
   title: {
     fontSize: 22,

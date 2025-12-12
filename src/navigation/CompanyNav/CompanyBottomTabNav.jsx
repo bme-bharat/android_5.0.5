@@ -100,11 +100,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'white',
   },
-  topSafeArea: {
-    // flex: 0,
-    height: statusBarHeight, // Dynamically set height
-    backgroundColor: 'white',
-  },
+
   navigatorContainer: {
     flex: 1,
     backgroundColor: 'white',

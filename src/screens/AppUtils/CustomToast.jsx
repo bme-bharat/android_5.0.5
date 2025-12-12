@@ -13,11 +13,11 @@ import Animated, {
   withSpring,
   runOnJS,
 } from 'react-native-reanimated';
-import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Warning from '../../assets/svgIcons/warning.svg';
 import Success from '../../assets/svgIcons/success.svg';
 import Info from '../../assets/svgIcons/information.svg';
 import { colors, dimensions } from '../../assets/theme';
+import { STATUS_BAR_HEIGHT } from './AppStyles';
 
 const { width } = Dimensions.get('window');
 let toastRef = null;
@@ -142,6 +142,7 @@ const styles = StyleSheet.create({
     right: 0,
     left: 0,
     zIndex: 1000,
+    paddingTop: STATUS_BAR_HEIGHT
   },
   toast: {
     marginTop: 10,

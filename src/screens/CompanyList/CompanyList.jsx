@@ -1,8 +1,8 @@
 
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Image, Modal, Linking, Platform, Share, RefreshControl, Alert, Animated, FlatList, ActivityIndicator, Keyboard, TouchableWithoutFeedback } from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Image, Modal, Linking, Platform, Share, RefreshControl, Alert, FlatList, ActivityIndicator, Keyboard, TouchableWithoutFeedback, StatusBar } from 'react-native';
+
 import axios from 'axios';
 import { useNavigation, useFocusEffect, useScrollToTop } from '@react-navigation/native';
 import { COLORS } from '../../assets/Constants';
@@ -24,11 +24,18 @@ import Company from '../../assets/svgIcons/company.svg';
 import Category from '../../assets/svgIcons/category.svg';
 import Location from '../../assets/svgIcons/location.svg';
 import { colors, dimensions } from '../../assets/theme.jsx';
+import scrollAnimations from '../helperComponents/scrollAnimations.jsx';
+import Animated from "react-native-reanimated";
 
+const STATUS_BAR_HEIGHT =
+  Platform.OS === "android" ? StatusBar.currentHeight || 24 : 44;
 
+const headerHeight = STATUS_BAR_HEIGHT + 60;
 const defaultImage = Image.resolveAssetSource(default_image).uri;
 const CompanyListScreen = () => {
   const navigation = useNavigation();
+  const { onScroll, headerStyle, bottomStyle, toolbarBgStyle } = scrollAnimations();
+
   const { myId, myData } = useNetwork();
   const { isConnected } = useConnection();
 
@@ -37,6 +44,8 @@ const CompanyListScreen = () => {
   const [companyImageUrls, setCompanyImageUrls] = useState({});
   const [isRefreshing, setIsRefreshing] = useState(false);
   const scrollViewRef = useRef(null);
+  const searchInputRef = useRef(null);
+
   const [searchTriggered, setSearchTriggered] = useState(false);
 
   const [loadingMore, setLoadingMore] = useState(false);
@@ -127,7 +136,6 @@ const CompanyListScreen = () => {
   }, []);
 
 
-  const searchInputRef = useRef(null);
 
   const handleRefresh = useCallback(async () => {
     if (!isConnected) {
@@ -364,131 +372,99 @@ const CompanyListScreen = () => {
   };
 
   return (
+    <>
+      <StatusBar translucent backgroundColor="transparent" barStyle={"light-content"} />
 
-      <View style={styles.container} >
-        {/* Search and Refresh */}
-        <View style={styles.headerContainer}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-            <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
+      <Animated.View style={[AppStyles.toolbar, toolbarBgStyle]}>
+
+        <Animated.View style={[AppStyles.searchRow, headerStyle]}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton} activeOpacity={1}>
+            <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.text_secondary} />
 
           </TouchableOpacity>
-          <View style={styles.searchContainer}>
-            <View style={styles.inputContainer}>
-              <TextInput
-                style={styles.searchInput}
-                placeholder='Search'
-                ref={searchInputRef}
-                placeholderTextColor="gray"
-                value={searchQuery}
-                onChangeText={handleDebouncedTextChange}
+          <View style={AppStyles.searchBar}>
+            <Search width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.text_secondary} />
 
-              />
-              {searchTriggered ? (
-                <TouchableOpacity
-                  onPress={() => {
-                    setSearchQuery('');
-                    setSearchTriggered(false);
-                    setSearchResults([]);
-                    setSearchCount(0);
-
-                  }}
-                  style={AppStyles.iconButton}
-                >
-                  <Close width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-
-                </TouchableOpacity>
-              ) : (
-                <TouchableOpacity
-                  style={AppStyles.searchIconButton}
-                >
-                  <Search width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-
-                </TouchableOpacity>
-
-              )}
-            </View>
+            <TextInput
+              ref={searchInputRef}
+              placeholder="Search companies..."
+              style={AppStyles.searchInput}
+              placeholderTextColor={colors.text_secondary}
+              value={searchQuery}
+              onChangeText={handleDebouncedTextChange}
+            />
           </View>
-        </View>
+        </Animated.View>
 
-        <TouchableWithoutFeedback
-          onPress={() => {
+      </Animated.View>
+
+
+      {!loading ? (
+        <Animated.FlatList
+          data={!searchTriggered || searchQuery.trim() === '' ? companies : searchResults}
+          renderItem={renderCompanyItem}
+          ref={scrollViewRef}
+          onScroll={onScroll}
+          overScrollMode={'never'}
+          scrollEventThrottle={16}
+          keyExtractor={(item, index) => `${item.company_id}-${index}`}
+          onEndReached={() => {
+            if (!searchQuery && hasMoreCompanies && !loadingMore) {
+              fetchCompanies(lastEvaluatedKey);
+            }
+          }}
+          contentContainerStyle={{ paddingTop: headerHeight, backgroundColor: colors.app_background }}
+          onEndReachedThreshold={0.5}
+          showsVerticalScrollIndicator={false}
+          onViewableItemsChanged={onViewableItemsChanged}
+          viewabilityConfig={viewabilityConfig}
+          onScrollBeginDrag={() => {
             Keyboard.dismiss();
             searchInputRef.current?.blur?.();
 
           }}
-        >
-          {!loading ? (
-            <FlatList
-              data={!searchTriggered || searchQuery.trim() === '' ? companies : searchResults}
-              renderItem={renderCompanyItem}
-              ref={scrollViewRef}
-              keyExtractor={(item, index) => `${item.company_id}-${index}`}
-              onEndReached={() => {
-                if (!searchQuery && hasMoreCompanies && !loadingMore) {
-                  fetchCompanies(lastEvaluatedKey);
-                }
-              }}
-              contentContainerStyle={{ paddingBottom: '20%', backgroundColor:colors.app_background }}
-              onEndReachedThreshold={0.5}
-              showsVerticalScrollIndicator={false}
-              onViewableItemsChanged={onViewableItemsChanged}
-              viewabilityConfig={viewabilityConfig}
-              onScrollBeginDrag={() => {
-                Keyboard.dismiss();
-                searchInputRef.current?.blur?.();
-
-              }}
-              ListFooterComponent={() =>
-                loadingMore && (
-                  <View style={styles.loaderContainer}>
-                    <ActivityIndicator size="small" color="#075cab" />
-                  </View>
-                )
-              }
-              ListHeaderComponent={
-                <View>
-                  {searchTriggered && (
-                    <>
-                      <Text style={styles.companyCount}>
-                        {searchTriggered && `${searchResults.length} companies found`}
-                      </Text>
-
-                      {searchTriggered && searchResults.length > 0 && (
-                        <Text style={styles.companyCount}>
-                          Showing results for{" "}
-                          <Text style={{ fontSize: 18, fontWeight: '600', color: '#075cab' }}>
-                            "{searchQuery}"
-                          </Text>
-                        </Text>
-                      )}
-                    </>
-                  )}
-                </View>
-              }
-
-
-              refreshControl={
-                <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />
-              }
-              ListEmptyComponent={
-                (!searchTriggered && companies.length === 0) ||
-                  (searchTriggered && searchResults.length === 0) ? (
-                  <View style={{ alignItems: 'center', marginTop: 40 }}>
-                    <Text style={{ fontSize: 16, color: '#666' }}>No companies found</Text>
-                  </View>
-                ) : null
-              }
-            />
-
-
-          ) : (
-            <View style={styles.loaderContainer}>
-              <ActivityIndicator size="large" color="#075cab" />
+          ListFooterComponent={() =>
+            loadingMore && (
+              <View style={styles.loaderContainer}>
+                <ActivityIndicator size="small" color="#075cab" />
+              </View>
+            )
+          }
+          ListHeaderComponent={
+            <View>
+              {searchTriggered && (
+                <>
+                  <Text style={styles.companyCount}>
+                    {searchTriggered && `${searchResults.length} companies found`}
+                  </Text>
+                </>
+              )}
             </View>
-          )}
+          }
 
-        </TouchableWithoutFeedback>
-      </View>
+
+          refreshControl={
+            <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh}
+              progressViewOffset={headerHeight} />
+          }
+          ListEmptyComponent={
+            (!searchTriggered && companies.length === 0) ||
+              (searchTriggered && searchResults.length === 0) ? (
+              <View style={{ alignItems: 'center', marginTop: 40 }}>
+                <Text style={{ fontSize: 16, color: '#666' }}>No companies found</Text>
+              </View>
+            ) : null
+          }
+        />
+
+
+      ) : (
+        <View style={styles.loaderContainer}>
+          <ActivityIndicator size="large" color="#075cab" />
+        </View>
+      )}
+
+    </>
 
   )
 
@@ -528,9 +504,10 @@ const styles = StyleSheet.create({
 
   },
   backButton: {
-    padding: 10,
+    padding: 12,
     alignSelf: 'center',
-
+    borderRadius: 10,
+    backgroundColor: colors.background
   },
   searchContainer: {
     flex: 1,
@@ -657,7 +634,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   card: {
-    top:5,
+    top: 5,
     marginBottom: 5,
     backgroundColor: "white",
     borderRadius: 10,
@@ -665,7 +642,7 @@ const styles = StyleSheet.create({
     borderColor: '#ddd',
     marginHorizontal: 5
   },
-  
+
   cardImage: {
     width: '100%',
     height: '100%',

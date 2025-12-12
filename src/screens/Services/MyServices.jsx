@@ -12,7 +12,7 @@ import {
 } from "react-native";
 
 import axios from "axios";
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+
 import { useNavigation } from "@react-navigation/native";
 
 import Toast from 'react-native-toast-message';
@@ -25,7 +25,7 @@ import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
 import Add from '../../assets/svgIcons/add.svg';
 
 import { colors, dimensions } from '../../assets/theme.jsx';
-import { commonStyles } from "../AppUtils/AppStyles.js";
+import AppStyles, { commonStyles, STATUS_BAR_HEIGHT } from "../AppUtils/AppStyles.js";
 
 const BASE_API_URL = 'https://h7l1568kga.execute-api.ap-south-1.amazonaws.com/dev';
 const API_KEY = 'k1xuty5IpZ2oHOEOjgMz57wHfdFT8UQ16DxCFkzk';
@@ -358,6 +358,7 @@ const MyServices = () => {
     if (loading) {
         return (
             <View style={styles.container}>
+      <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
 
                 <View style={styles.headerContainer}>
 
@@ -377,6 +378,8 @@ const MyServices = () => {
     if (!products || products.length === 0 || products?.removed_by_author) {
         return (
             <View style={styles.container}>
+                      <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
+                
                 <View style={styles.headerContainer}>
 
                     <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
@@ -399,6 +402,8 @@ const MyServices = () => {
 
     return (
         <View style={styles.container}>
+                  <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
+            
             <View style={styles.headerContainer}>
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
                     <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
@@ -450,7 +455,7 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: "whitesmoke",
-
+    paddingTop: STATUS_BAR_HEIGHT
     },
     headerContainer: {
         flexDirection: 'row',
@@ -487,6 +492,11 @@ const styles = StyleSheet.create({
         borderRadius: 5,
         alignItems: 'center',
         elevation: 2,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 2,
+        justifyContent: 'center',
         backgroundColor: '#fff',
 
     },

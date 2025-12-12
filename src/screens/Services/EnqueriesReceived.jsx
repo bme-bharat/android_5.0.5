@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { View, FlatList, Image, StyleSheet, ToastAndroid, TouchableOpacity, Text, Alert, TextInput, RefreshControl, Share,  Keyboard, ActivityIndicator, Linking } from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { View, FlatList, Image, StyleSheet, ToastAndroid, TouchableOpacity, Text, Alert, TextInput, RefreshControl, Share, Keyboard, ActivityIndicator, Linking } from 'react-native';
+
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Toast from 'react-native-toast-message';
 import { useFocusEffect, useRoute } from '@react-navigation/native';
@@ -11,7 +11,7 @@ import { useNetwork } from '../AppUtils/IdProvider';
 import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
 
 import { colors, dimensions } from '../../assets/theme.jsx';
-import { commonStyles } from '../AppUtils/AppStyles.js';
+import AppStyles, { commonStyles, STATUS_BAR_HEIGHT } from '../AppUtils/AppStyles.js';
 const CompanyGetallEnquiries = ({ navigation }) => {
   const route = useRoute();
 
@@ -129,10 +129,12 @@ const CompanyGetallEnquiries = ({ navigation }) => {
   if (noEnquiries && !loading && allForumPost?.length === 0) {
     return (
       <View style={styles.container}>
+        <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
+
         <View style={styles.headerContainer}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                                  <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-          
+            <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
+
           </TouchableOpacity>
         </View>
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
@@ -155,28 +157,27 @@ const CompanyGetallEnquiries = ({ navigation }) => {
     return (
       <TouchableOpacity activeOpacity={1} onPress={() => {
         EnquiryDetails(item?.enquiry_id);
-      }}>
+      }} style={styles.postContainer}>
 
-        <View style={styles.postContainer}>
-            <View style={commonStyles.valContainer}>
-              <Text style={commonStyles.label}>Enquired by      </Text>
-              <Text style={commonStyles.colon}>:</Text>
-              <Text style={commonStyles.value}>{item?.first_name || ""}</Text>
-            </View>
+    
+          <View style={commonStyles.valContainer}>
+            <Text style={commonStyles.label}>Enquired by</Text>
+            <Text style={commonStyles.colon}>:</Text>
+            <Text style={commonStyles.value}>{item?.first_name || ""}</Text>
+          </View>
 
-            <View style={commonStyles.valContainer}>
-              <Text style={commonStyles.label}>Enquiry description              </Text>
-              <Text style={commonStyles.colon}>:</Text>
-              <Text style={commonStyles.value}>{item?.enquiry_description || ""}</Text>
-            </View>
+          <View style={commonStyles.valContainer}>
+            <Text style={commonStyles.label}>Enquiry description</Text>
+            <Text style={commonStyles.colon}>:</Text>
+            <Text style={commonStyles.value}>{item?.enquiry_description || ""}</Text>
+          </View>
 
-            <View style={commonStyles.valContainer}>
-              <Text style={commonStyles.label}>Enquired on   </Text>
-              <Text style={commonStyles.colon}>:</Text>
-              <Text style={commonStyles.value}>{formattedDate || ""}</Text>
-            </View>
+          <View style={commonStyles.valContainer}>
+            <Text style={commonStyles.label}>Enquired on   </Text>
+            <Text style={commonStyles.colon}>:</Text>
+            <Text style={commonStyles.value}>{formattedDate || ""}</Text>
+          </View>
 
-        </View>
       </TouchableOpacity>
     );
   };
@@ -187,11 +188,12 @@ const CompanyGetallEnquiries = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
+      <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
 
       <View style={styles.headerContainer}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                                 <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-         
+          <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
+
         </TouchableOpacity>
 
       </View>
@@ -257,7 +259,7 @@ const styles = StyleSheet.create({
     borderColor: '#ddd',
     shadowColor: '#000',
     top: 10,
-    padding:10
+    padding: 10
   },
   noPostsContainer: {
     flex: 1,
@@ -331,13 +333,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: 'white',
-      borderBottomWidth: 1,
+    borderBottomWidth: 1,
     borderColor: '#f0f0f0'
 
   },
   container: {
     flex: 1,
     backgroundColor: 'white',
+    paddingTop: STATUS_BAR_HEIGHT
   },
   imageContainer: {
     flex: 1,

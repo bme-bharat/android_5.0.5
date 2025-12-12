@@ -56,7 +56,7 @@ const styles = StyleSheet.create({
   },
   text: {
     flex: 1,
-    fontWeight: '500',
+    fontWeight: '400',
     fontSize: 13,
     color: colors.text_secondary,
   },

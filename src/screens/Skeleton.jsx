@@ -60,7 +60,7 @@ const ShimmerSkeleton = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { backgroundColor: '#f0f0f0', overflow: 'hidden', marginBottom: 20 },
+  container: { backgroundColor: '#f0f0f0', overflow: 'hidden', marginBottom: 5 },
   header: { flexDirection: 'row', alignItems: 'center', padding: 10 },
   avatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#e0e0e0' },
   userInfo: { marginLeft: 10, flex: 1 },

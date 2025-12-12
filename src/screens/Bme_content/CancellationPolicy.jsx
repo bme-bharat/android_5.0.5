@@ -1,16 +1,19 @@
 import React from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, StatusBar } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+
 import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
 import { colors, dimensions } from '../../assets/theme.jsx';
+import AppStyles, { STATUS_BAR_HEIGHT } from '../AppUtils/AppStyles.js';
 
 
 const CancellationPolicy = () => {
   const navigation = useNavigation();
 
   return (
-    <View style={styles.container1} >
+    < >
+      <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
+
       <View style={styles.headerContainer}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <ArrowLeftIcon
@@ -93,7 +96,7 @@ const CancellationPolicy = () => {
           By subscribing to our App, you agree to abide by the terms and conditions outlined in this policy. We are committed to providing a transparent and equitable subscription experience for our users.
         </Text>
       </ScrollView>
-    </View>
+    </>
 
   );
 };
@@ -118,7 +121,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     textAlign: 'left', // Align text to the left
     alignSelf: 'flex-start',
-    marginBottom:5,
+    marginBottom: 5,
 
   },
   subValue: {
@@ -129,7 +132,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     textAlign: 'left', // Align text to the left
     alignSelf: 'flex-start',
-    marginBottom:10,
+    marginBottom: 10,
 
   },
   headerContainer: {
@@ -138,12 +141,13 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     backgroundColor: 'white',
     borderBottomWidth: 1,
-    borderColor: '#f0f0f0'
+    borderColor: '#f0f0f0',
+    paddingTop: STATUS_BAR_HEIGHT
   },
   container1: {
     flex: 1,
-
     backgroundColor: '#fff',
+    paddingTop: STATUS_BAR_HEIGHT
   },
   container: {
     padding: 10,

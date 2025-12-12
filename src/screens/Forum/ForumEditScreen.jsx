@@ -4,7 +4,7 @@ import { View, Image, StyleSheet, TouchableOpacity, Text, ActivityIndicator, Key
 import { useNavigation, useRoute } from '@react-navigation/native';
 import Toast from 'react-native-toast-message';
 import RNFS from 'react-native-fs';
-import Ionicons from 'react-native-vector-icons/Ionicons';
+
 import Message3 from '../../components/Message3';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import apiClient from '../ApiClient';
@@ -13,7 +13,6 @@ import { showToast } from '../AppUtils/CustomToast';
 import { useNetwork } from '../AppUtils/IdProvider';
 import { EventRegister } from 'react-native-event-listeners';
 import { actions, RichEditor, RichToolbar } from 'react-native-pell-rich-editor';
-import { cleanForumHtml } from './forumBody';
 import { MediaPickerButton } from '../helperComponents/MediaPickerButton';
 import { useMediaPicker } from '../helperComponents/MediaPicker';
 import { MediaPreview } from '../helperComponents/MediaPreview';
@@ -24,6 +23,8 @@ import { useS3Uploader } from '../helperComponents/useS3Uploader';
 import ImageResizer from 'react-native-image-resizer';
 import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
 import { colors, dimensions } from '../../assets/theme.jsx';
+import AppStyles, { STATUS_BAR_HEIGHT } from '../AppUtils/AppStyles.js';
+import { sanitizeHtmlBody } from './forumBody.jsx';
 
 const { DocumentPicker } = NativeModules;
 const calculateAspectRatio = (width, height) => {
@@ -41,9 +42,9 @@ const ForumEditScreen = () => {
   const { post, imageUrl } = route.params;
 
   const isDefaultLocalImage =
-  imageUrl &&
-  !imageUrl.startsWith('http') && // means it's a local asset (not from network)
-  imageUrl.includes('image.jpg'); // optional: ensure it’s the specific placeholder
+    imageUrl &&
+    !imageUrl.startsWith('http') && // means it's a local asset (not from network)
+    imageUrl.includes('image.jpg'); // optional: ensure it’s the specific placeholder
 
   const [image, setImage] = useState(isDefaultLocalImage ? null : imageUrl);
   const [isLoading, setIsLoading] = useState(false);
@@ -77,14 +78,14 @@ const ForumEditScreen = () => {
   const handleLeave = () => {
     // ✅ Temporarily disable the guard before navigating back
     setHasChanges(false);
-  
+
     // Give React time to update before navigation triggers
     requestAnimationFrame(() => {
       setShowModal(false);
       navigation.goBack();
     });
   };
-  
+
 
   const handleStay = () => {
     setShowModal(false);
@@ -97,7 +98,7 @@ const ForumEditScreen = () => {
     });
     return unsubscribe;
   }, [navigation, hasChanges]);
-  
+
 
 
   const handleMediaPickerPress = () => {
@@ -220,32 +221,46 @@ const ForumEditScreen = () => {
     setImage(null)
   };
 
-  const sanitizeHtmlBody = (html) => {
-    const cleaned = cleanForumHtml(html); // your existing cleaner
 
-    return cleaned
-      .replace(/<div><br><\/div>/gi, '') // remove empty line divs
-      .replace(/<p>(&nbsp;|\s)*<\/p>/gi, '') // remove empty p tags
-      .replace(/<div>(&nbsp;|\s)*<\/div>/gi, '') // remove empty divs
-      .trim(); // trim outer whitespace
-  };
+  const initialHtmlRef = useRef(postData.forum_body);
 
-
+  const cleanHtmlSpaces = (html) => {
+     if (!html) return "";
+   
+     let cleaned = html;
+ 
+     const emptyBlock = /<div>\s*(?:<span>\s*)?(?:<br\s*\/?>)\s*(?:<\/span>)?\s*<\/div>/gi;
+     cleaned = cleaned.replace(new RegExp(`^(?:${emptyBlock.source})+`, "i"), "");
+     cleaned = cleaned.replace(new RegExp(`(?:${emptyBlock.source})+$`, "i"), "");
+     cleaned = cleaned.trim();
+   
+     return cleaned;
+   };
+   
+   
+   
+   
+   const handleForumBodyChange = (html) => {
+   
+     const cleanedBody = sanitizeHtmlBody(html);
+     const finalBody = cleanHtmlSpaces(cleanedBody);
+ 
+     setPostData(prev => ({
+       ...prev,
+       body: finalBody
+     }));
+   };
 
   const handlePostSubmission = async () => {
-
-    const cleanedBody = sanitizeHtmlBody(postData.forum_body);
-    const strippedBody = stripHtmlTags(cleanedBody).trim();
-
-    if (!strippedBody) {
-      console.log('⚠️ Empty description after sanitization');
-      showToast("Description is mandatory", 'info');
-      return;
-    }
 
     setIsLoading(true);
 
     try {
+  
+      if (!postData.forum_body.trim()) {
+        showToast("Description is mandatory", "info");
+        return;
+      }
       const currentTimestampInSeconds = Math.floor(Date.now() / 1000);
 
       let fileKey = '';
@@ -282,12 +297,12 @@ const ForumEditScreen = () => {
           ? (mediaMeta || post.extraData || {})
           : {};
       setHasChanges(false);
-      
+
       const postPayload = {
         command: 'updateForumPost',
         user_id: myId,
         forum_id: post.forum_id,
-        forum_body: cleanedBody,
+        forum_body: postData.forum_body,
         fileKey: fileKey, // always send, even if empty
         ...(thumbnailFileKey ? { thumbnail_fileKey: thumbnailFileKey } : {}),
         extraData: extraDataToSend
@@ -302,7 +317,7 @@ const ForumEditScreen = () => {
 
       const updatedPostData = {
         ...post,
-        forum_body: cleanedBody,
+        forum_body: postData.forum_body,
         fileKey,
         ...(thumbnailFileKey !== false ? { thumbnail_fileKey: thumbnailFileKey } : {}),
         extraData: extraDataToSend,
@@ -333,33 +348,15 @@ const ForumEditScreen = () => {
   };
 
 
-  const initialHtmlRef = useRef(postData.forum_body);
-
-  const stripHtmlTags = (html) =>
-    html?.replace(/<\/?[^>]+(>|$)/g, '').trim() || '';
 
 
-  const handleForumBodyChange = (html) => {
-    const plainText = stripHtmlTags(html);
-
-    if (plainText.startsWith(" ")) {
-      showToast("Leading spaces are not allowed", 'error');
-    }
-
-    const sanitizedHtml = cleanForumHtml(html);
-
-    setPostData((prev) => ({
-      ...prev,
-      forum_body: sanitizedHtml,
-    }));
-    setHasChanges(true); // ✅ mark form as dirty
-
-  };
 
 
 
   return (
     <View style={styles.container} >
+      <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
+
       <View style={styles.headerContainer} >
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
@@ -391,7 +388,7 @@ const ForumEditScreen = () => {
         </View>
       </View>
       <KeyboardAwareScrollView
-        contentContainerStyle={{ flexGrow: 1, paddingHorizontal:5, paddingBottom:'40%' }}
+        contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 5, paddingBottom: '40%' }}
         keyboardShouldPersistTaps="handled"
         extraScrollHeight={20}
         onScrollBeginDrag={() => Keyboard.dismiss()}
@@ -440,23 +437,23 @@ const ForumEditScreen = () => {
 
         </View>
 
-      
-          <RichEditor
-            ref={richText}
+
+        <RichEditor
+          ref={richText}
           useContainer={true}
-            style={{
-              minHeight: 250,
-              borderRadius: 8,
-              borderWidth: 1,
-              borderColor: '#ccc',
-              overflow: 'hidden',
-            }}
-            initialContentHTML={initialHtmlRef.current}
-            placeholder="Share your thoughts, questions or ideas..."
-            editorInitializedCallback={() => { }}
-            onChange={handleForumBodyChange}
-            editorStyle={{
-              cssText: `
+          style={{
+            minHeight: 250,
+            borderRadius: 8,
+            borderWidth: 1,
+            borderColor: '#ccc',
+            overflow: 'hidden',
+          }}
+          initialContentHTML={initialHtmlRef.current}
+          placeholder="Share your thoughts, questions or ideas..."
+          editorInitializedCallback={() => { }}
+          onChange={handleForumBodyChange}
+          editorStyle={{
+            cssText: `
                   * {
                     font-size: 15px !important;
                     line-height: 20px !important;
@@ -473,26 +470,26 @@ const ForumEditScreen = () => {
                     color: #000 !important;
                   }
                 `
-            }}
+          }}
 
 
-          />
+        />
 
 
-          <RichToolbar
-            editor={richText}
-            actions={[
-              actions.setBold,
-              actions.setItalic,
-              actions.insertBulletsList,
-              actions.insertOrderedList,
-              actions.insertLink,
-            ]}
-            iconTint="#000"
-            selectedIconTint="#075cab"
-            selectedButtonStyle={{ backgroundColor: "#eee" }}
+        <RichToolbar
+          editor={richText}
+          actions={[
+            actions.setBold,
+            actions.setItalic,
+            actions.insertBulletsList,
+            actions.insertOrderedList,
+            actions.insertLink,
+          ]}
+          iconTint="#000"
+          selectedIconTint="#075cab"
+          selectedButtonStyle={{ backgroundColor: "#eee" }}
 
-          />
+        />
 
 
         <PlayOverlayThumbnail
@@ -541,6 +538,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: 'whitesmoke',
+    paddingTop: STATUS_BAR_HEIGHT
   },
 
   profileContainer: {

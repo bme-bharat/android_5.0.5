@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { StackActions, useNavigation, useRoute } from "@react-navigation/native";
 import { View, Text, TextInput, Image, ScrollView, StyleSheet, TouchableOpacity, Alert, Keyboard, ActivityIndicator, NativeModules, } from "react-native";
 import axios from "axios";
-import Icon from "react-native-vector-icons/MaterialCommunityIcons";
+
 import Video from "react-native-video";
 import { launchImageLibrary } from "react-native-image-picker";
 import ImageResizer from 'react-native-image-resizer';
@@ -17,7 +17,7 @@ import Message3 from "../../components/Message3";
 import { showToast } from "../AppUtils/CustomToast";
 import { EventRegister } from "react-native-event-listeners";
 import apiClient from "../ApiClient";
-import AppStyles from "../AppUtils/AppStyles";
+import AppStyles, { STATUS_BAR_HEIGHT } from "../AppUtils/AppStyles";
 import { useMediaPicker } from "../helperComponents/MediaPicker";
 import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
 import Pdf from '../../assets/svgIcons/pdf.svg';
@@ -671,6 +671,8 @@ const EditService = () => {
     return (
 
         <View style={styles.container} >
+                  <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
+            
             <View style={styles.headerContainer}>
                 <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
                     <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
@@ -928,7 +930,7 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: "#f8f9fa",
-
+paddingTop: STATUS_BAR_HEIGHT
     },
 
     header: {

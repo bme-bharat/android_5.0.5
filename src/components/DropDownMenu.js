@@ -8,7 +8,6 @@ import {
   Modal,
   Pressable,
 } from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialIcons';
 import ArrowDown from '../assets/svgIcons/arrow-down.svg';
 import ArrowUp from '../assets/svgIcons/arrow-up.svg';
 import { colors, dimensions } from '../assets/theme';

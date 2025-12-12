@@ -3,7 +3,6 @@ import {
   View, Text, FlatList, StyleSheet, ActivityIndicator, Button,
   TouchableOpacity, ToastAndroid
 } from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useNavigation } from '@react-navigation/native';
 
 import apiClient from '../ApiClient';
@@ -11,6 +10,7 @@ import { showToast } from '../AppUtils/CustomToast';
 import { useNetwork } from '../AppUtils/IdProvider';
 import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
 import { colors, dimensions } from '../../assets/theme.jsx';
+import AppStyles, { STATUS_BAR_HEIGHT } from '../AppUtils/AppStyles.js';
 const BlockedUsers = () => {
   const { myId, myData } = useNetwork();
   const [blockedUsers, setBlockedUsers] = useState([]);
@@ -101,6 +101,7 @@ const BlockedUsers = () => {
   if (loading) {
     return (
       <View style={styles.container}>
+            <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
 
         <View style={styles.headerContainer}>
 
@@ -120,6 +121,8 @@ const BlockedUsers = () => {
   if (blockedUsers?.removed_by_author) {
     return (
       <View style={styles.container}>
+            <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
+
         <View style={styles.headerContainer}>
 
           <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
@@ -136,7 +139,9 @@ const BlockedUsers = () => {
   }
 
   return (
-    <View style={styles.container1}>
+    <View style={styles.container}>
+            <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
+      
       <View style={styles.headerContainer}>
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
           <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
@@ -181,6 +186,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: 'whitesmoke',
+        paddingTop: STATUS_BAR_HEIGHT
   },
   headerContainer: {
     flexDirection: 'row',

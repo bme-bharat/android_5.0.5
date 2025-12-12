@@ -9,7 +9,7 @@ import {
 import axios from 'axios';
 import { useRoute, useNavigation, useFocusEffect } from '@react-navigation/native';
 import Toast from 'react-native-toast-message';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+
 import Video from 'react-native-video';
 import { FlatList } from 'react-native-gesture-handler';
 import { Dimensions } from 'react-native';
@@ -19,10 +19,11 @@ import apiClient from '../ApiClient';
 import DisclaimerBox from '../Products/DisclaimerBox';
 import { useFileOpener } from '../helperComponents/fileViewer';
 import { useNetwork } from '../AppUtils/IdProvider';
-import AppStyles from '../AppUtils/AppStyles';
+import AppStyles, { STATUS_BAR_HEIGHT } from '../AppUtils/AppStyles';
 import { openMediaViewer } from '../helperComponents/mediaViewer';
 import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
 import ShareIcon from '../../assets/svgIcons/share.svg';
+import Play from '../../assets/svgIcons/play.svg';
 
 import { colors, dimensions } from '../../assets/theme';
 
@@ -435,6 +436,7 @@ const ServiceDetails = () => {
 
     return (
       <View style={styles.container}>
+        <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
 
         <View style={styles.headerContainer}>
 
@@ -454,6 +456,8 @@ const ServiceDetails = () => {
   if (product?.removed_by_author) {
     return (
       <View style={styles.container}>
+        <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
+
         <View style={styles.headerContainer}>
 
           <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
@@ -471,6 +475,8 @@ const ServiceDetails = () => {
   return (
 
     <View style={styles.container}>
+      <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
+
       <View style={styles.headerContainer}>
         <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
           <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
@@ -561,7 +567,8 @@ const ServiceDetails = () => {
                             paused
                           />
                           <TouchableOpacity style={styles.playButton}>
-                            <Icon name="play-circle-outline" size={40} color="white" />
+                            <Play width={dimensions.icon.ml} height={dimensions.icon.ml} color={colors.background} />
+
                           </TouchableOpacity>
                         </TouchableOpacity>
                       </View>
@@ -672,7 +679,7 @@ const ServiceDetails = () => {
                     ) : null}
                   </View>
                   <TouchableOpacity onPress={closeModal} style={styles.closeButton}>
-                    <Icon name="close" size={20} color="#fff" />
+
                   </TouchableOpacity>
                 </View>
               </Modal>
@@ -741,7 +748,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: 'white',
-
+    paddingTop: STATUS_BAR_HEIGHT
   },
 
   divider: {

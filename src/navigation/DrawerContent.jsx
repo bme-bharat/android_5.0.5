@@ -2,7 +2,7 @@ import { DrawerContentScrollView } from "@react-navigation/drawer";
 import { useEffect, useState } from "react";
 import { Image, Text, TouchableOpacity, View } from "react-native";
 import DeviceInfo from "react-native-device-info";
-import { Drawer } from 'react-native-paper';
+
 
 const CustomDrawerContent = (props) => {
     const [deviceInfo, setDeviceInfo] = useState({

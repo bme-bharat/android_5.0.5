@@ -16,10 +16,8 @@ import {
   NativeModules,
   Platform,
 } from 'react-native';
-import MerticalIcon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { COLORS } from '../../assets/Constants';
 import axios from 'axios';
-import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import CustomDropdown from '../../components/CustomDropDown';
 import { stateCityData } from '../../assets/Constants';
@@ -34,7 +32,7 @@ import ImageResizer from 'react-native-image-resizer';
 import { getApp } from '@react-native-firebase/app';
 import { showToast } from '../AppUtils/CustomToast';
 import apiClient from '../ApiClient';
-import AppStyles from '../AppUtils/AppStyles';
+import AppStyles, { STATUS_BAR_HEIGHT } from '../AppUtils/AppStyles';
 import DeviceInfo from 'react-native-device-info';
 
 import Camera from '../../assets/svgIcons/camera.svg';
@@ -732,14 +730,15 @@ const UserSignupScreen = () => {
 
 
   return (
-    <View style={{ backgroundColor: COLORS.white, flex: 1 }}>
+    <View style={{ backgroundColor: COLORS.white, flex: 1, paddingTop: STATUS_BAR_HEIGHT }}>
+      <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
 
       {/* Back Button */}
       <TouchableOpacity onPress={() => navigation.replace("ProfileType")} style={styles.backButton}>
         <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
 
       </TouchableOpacity>
-      <ScrollView contentContainerStyle={{ paddingBottom: '20%', paddingHorizontal: 10, }}
+      <ScrollView contentContainerStyle={{ paddingBottom: '20%', paddingHorizontal: 10,paddingTop: STATUS_BAR_HEIGHT }}
         showsVerticalScrollIndicator={false}
         onScrollBeginDrag={() => Keyboard.dismiss()}
       >
@@ -991,8 +990,15 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)', // Semi-transparent background
   },
   backButton: {
+    position: 'absolute',
+    alignSelf: 'flex-start',
+    backgroundColor: '#fff',
+    borderRadius: 10,
     padding: 10,
-    alignSelf: 'flex-start'
+    margin: 10,
+    elevation: 3,
+    marginTop: STATUS_BAR_HEIGHT + 10,
+    zIndex:1000
   },
   modalContent: {
     backgroundColor: 'white',

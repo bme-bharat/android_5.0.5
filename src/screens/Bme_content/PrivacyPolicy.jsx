@@ -1,10 +1,11 @@
 import React from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, } from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { Linking } from 'react-native';
 import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
 import { colors, dimensions } from '../../assets/theme.jsx';
+import AppStyles, { STATUS_BAR_HEIGHT } from '../AppUtils/AppStyles.js';
 
 
 const PrivacyPolicyScreen = () => {
@@ -18,11 +19,15 @@ const PrivacyPolicyScreen = () => {
 
 
   return (
-    <View style={styles.container1} >
-      <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-        <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
+    < >
+      <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
 
-      </TouchableOpacity>
+      <View style={styles.headerContainer}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
+
+        </TouchableOpacity>
+      </View>
 
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
 
@@ -126,7 +131,7 @@ const PrivacyPolicyScreen = () => {
           By using our App, you consent to the practices described in this Privacy Policy. Please review this policy regularly to stay informed about how we handle your personal information.
         </Text>
       </ScrollView>
-    </View >
+    </ >
   );
 };
 
@@ -142,11 +147,21 @@ const styles = StyleSheet.create({
     flex: 1,
 
     backgroundColor: '#fff',
+    paddingTop: STATUS_BAR_HEIGHT
   },
   container: {
     padding: 10,
     backgroundColor: "white"
 
+  },
+  headerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: 'white',
+    borderBottomWidth: 1,
+    borderColor: '#f0f0f0',
+    paddingTop: STATUS_BAR_HEIGHT,
   },
   list1: {
     color: 'gray'

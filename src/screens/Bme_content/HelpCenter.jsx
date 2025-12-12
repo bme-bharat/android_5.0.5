@@ -5,6 +5,7 @@ import {
   Linking,
   TouchableOpacity,
   ScrollView,
+  StatusBar,
 } from 'react-native';
 import React from 'react';
 import { useNavigation } from '@react-navigation/native';
@@ -21,22 +22,40 @@ import Web from '../../assets/svgIcons/web.svg';
 import X from '../../assets/svgIcons/x.svg';
 
 import { colors, dimensions } from '../../assets/theme';
+import AppStyles, { STATUS_BAR_HEIGHT } from '../AppUtils/AppStyles';
 
 const HelpCenter = () => {
   const navigation = useNavigation();
 
   const contactDetails = {
     email: 'bmebharat@gmail.com',
-    phone: '+91 8310491223',
+    phone: '+918310491223',
     website: 'https://bmebharat.com/',
+
     social: {
-      facebook: 'https://www.facebook.com/bme.bharat/',
-      instagram: 'https://www.instagram.com/b_m_e_bharat/',
+      facebook: 'https://www.facebook.com/bme.bharat',
+      instagram: 'https://www.instagram.com/b_m_e_bharat',
       youtube: 'https://www.youtube.com/channel/UCxEPxTe3RhRXlBd3Er4653Q',
-      linkedin: 'https://in.linkedin.com/in/bme-bharat-6859b6201',
-      x: 'https://x.com/bme_india',
+      linkedin: 'https://www.linkedin.com/company/bme-bharat/',
+      x: 'https://x.com/bme_india',   // Already correct
     },
+
     whatsapp: 'https://wa.me/918310491223',
+  };
+
+
+  const openWebsiteExternally = (url) => {
+    if (Platform.OS === "android") {
+      // Forces opening in Chrome browser even if app link exists
+      Linking.openURL(`googlechrome://navigate?url=${url}`)
+        .catch(() => {
+          // Fallback to normal browser
+          Linking.openURL(url);
+        });
+    } else {
+      // iOS does not auto-trigger app links for regular openURL
+      Linking.openURL(url);
+    }
   };
 
   const handlePress = url => {
@@ -45,9 +64,22 @@ const HelpCenter = () => {
     );
   };
 
+  const openWhatsapp = () => {
+    const phone = contactDetails.phone; // your phone number
+    const message = "Hello! I want to know more about BME Bharat services.";
+  
+    const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+  
+    Linking.openURL(url).catch(err => {
+      console.error("Failed to open WhatsApp:", err);
+    });
+  };
+  
   return (
-    <View style={styles.safeArea}>
-      {/* Header */}
+    <>
+
+      <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
+
       <View style={styles.headerContainer}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
@@ -91,7 +123,7 @@ const HelpCenter = () => {
             </View>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.row} onPress={() => handlePress(contactDetails.website)}>
+          <TouchableOpacity style={styles.row} onPress={() => openWebsiteExternally(contactDetails.website)} >
             <View style={[styles.iconWrapper]}>
               <Web width={dimensions.medium} height={dimensions.medium} color={'#555'} />
             </View>
@@ -112,7 +144,8 @@ const HelpCenter = () => {
               <Text style={styles.label}>WhatsApp</Text>
               <Text
                 style={styles.detailLink} // 👈 special style for clickable usernames
-                onPress={() => handlePress(contactDetails.whatsapp)}
+                onPress={() => openWhatsapp()}
+
               >
                 @BME Bharat
               </Text>
@@ -202,7 +235,7 @@ const HelpCenter = () => {
 
 
       </ScrollView>
-    </View>
+    </>
   );
 };
 
@@ -210,6 +243,7 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: '#F9F9F9',
+    
   },
   headerContainer: {
     flexDirection: 'row',
@@ -217,23 +251,24 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     backgroundColor: 'white',
     borderBottomWidth: 1,
-    borderColor: '#f0f0f0'
+    borderColor: '#f0f0f0',
+    paddingTop: STATUS_BAR_HEIGHT
   },
   backButton: {
     alignSelf: 'flex-start',
     padding: 10
   },
   container: {
-    
+
     paddingHorizontal: 12,
   },
   description: {
     fontSize: 13,
-    fontWeight:'500',
+    fontWeight: '500',
     color: colors.text_secondary,
     marginVertical: 10,
     lineHeight: 20,
-    letterSpacing:0.2
+    letterSpacing: 0.2
   },
   card: {
     backgroundColor: '#FFF',
@@ -246,7 +281,7 @@ const styles = StyleSheet.create({
   },
   cardTitle: {
     fontSize: 16,
-    fontWeight:'600',
+    fontWeight: '600',
     color: colors.text_primary,
     marginBottom: 14,
   },
@@ -269,21 +304,21 @@ const styles = StyleSheet.create({
     marginRight: 14,
   },
   textColumn: {
-  
+
   },
   label: {
     fontSize: 13,
-    fontWeight:'500',
+    fontWeight: '500',
     color: colors.text_secondary,
   },
   detail: {
     fontSize: 13,
-    fontWeight:'500',
+    fontWeight: '500',
     color: colors.primary,
   },
   detailLink: {
     fontSize: 13,
-    fontWeight:'500',
+    fontWeight: '500',
     color: colors.primary,
   }
 

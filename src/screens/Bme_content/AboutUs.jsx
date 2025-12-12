@@ -1,11 +1,10 @@
 
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import React, { useCallback, useRef } from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, StatusBar } from 'react-native';
 import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
 import { colors, dimensions } from '../../assets/theme.jsx';
-import { commonStyles } from '../AppUtils/AppStyles.js';
+import AppStyles, { commonStyles, STATUS_BAR_HEIGHT } from '../AppUtils/AppStyles.js';
 
 const AboutUs = () => {
 
@@ -13,7 +12,9 @@ const AboutUs = () => {
 
   return (
 
-    <View style={{ flex: 1, backgroundColor: 'white' }}>
+    <>
+      <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
+
       <View style={styles.headerContainer}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
@@ -85,11 +86,18 @@ const AboutUs = () => {
           <Text style={styles.subValue}>We welcome contributions from our community. If you have an article, research paper, case study, or opinion piece you'd like to share, please submit your content through our submission portal. Our editorial team will review your submission and publish it if it meets our quality standards.</Text>
         </View>
       </ScrollView>
-    </View>
+    </>
 
   );
 };
 const styles = StyleSheet.create({
+
+  container1: {
+    flex: 1,
+    backgroundColor: '#fff',
+    paddingTop: STATUS_BAR_HEIGHT
+  },
+
   scrollViewContainer: {
     paddingHorizontal: 10,
     paddingBottom: '20%',
@@ -102,7 +110,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     backgroundColor: 'white',
     borderBottomWidth: 1,
-    borderColor: '#f0f0f0'
+    borderColor: '#f0f0f0',
+    paddingTop: STATUS_BAR_HEIGHT
   },
 
   backButton: {
@@ -132,7 +141,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     textAlign: 'left', // Align text to the left
     alignSelf: 'flex-start',
-    marginBottom:10,
+    marginBottom: 10,
 
   },
   subValue: {
@@ -143,12 +152,12 @@ const styles = StyleSheet.create({
     fontSize: 13,
     textAlign: 'left', // Align text to the left
     alignSelf: 'flex-start',
-    marginBottom:10,
+    marginBottom: 10,
 
   },
   container: {
     width: '100%',
-
+    top: 10
   },
 
   listItem: {

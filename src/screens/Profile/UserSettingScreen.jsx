@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView,
-
-  Animated
+  StatusBar,
+  TextInput
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
@@ -27,6 +27,10 @@ import Grid from '../../assets/svgIcons/latest.svg';
 import Information from '../../assets/svgIcons/information.svg';
 import Restrict from '../../assets/svgIcons/user-forbid.svg';
 import Apply from '../../assets/svgIcons/apply.svg';
+import AppStyles, { STATUS_BAR_HEIGHT } from '../AppUtils/AppStyles';
+import { colors, dimensions } from '../../assets/theme';
+import Animated from 'react-native-reanimated';
+import scrollAnimations from '../helperComponents/scrollAnimations';
 
 const ProductsList = React.lazy(() => import('../Products/ProductsList'));
 const JobListScreen = React.lazy(() => import('../Job/JobListScreen'));
@@ -57,6 +61,7 @@ const UserSettingScreen = () => {
   const { isConnected } = useConnection();
 
   const profile = useSelector(state => state.CompanyProfile.profile);
+  const { onScroll, headerStyle, bottomStyle, toolbarBgStyle, barStyle } = scrollAnimations();
 
   const parentNavigation = navigation.getParent();
   const currentRouteName = parentNavigation?.getState()?.routes[parentNavigation.getState().index]?.name;
@@ -172,9 +177,11 @@ const UserSettingScreen = () => {
 
   return (
 
-    <View style={styles.container1} >
+    < >
+ 
+      <Animated.View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
 
-      <Animated.ScrollView contentContainerStyle={[styles.container, { paddingBottom: '20%', }]}
+      <Animated.ScrollView contentContainerStyle={{ paddingTop: STATUS_BAR_HEIGHT }}
         showsVerticalScrollIndicator={false}  >
 
         {isConnected ? (
@@ -213,7 +220,7 @@ const UserSettingScreen = () => {
         tabNameMap={tabNameMap}
 
       />
-    </View>
+    </>
 
   );
 

@@ -2,14 +2,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, TextInput, Button, Alert, StyleSheet, TouchableOpacity, ScrollView, NativeModules } from 'react-native';
-
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-
 import RNFS from 'react-native-fs';
 import apiClient from '../ApiClient';
 import { showToast } from '../AppUtils/CustomToast';
 import { useNetwork } from '../AppUtils/IdProvider';
-import AppStyles, { commonStyles } from '../AppUtils/AppStyles';
+import AppStyles, { commonStyles, STATUS_BAR_HEIGHT } from '../AppUtils/AppStyles';
 import { MediaPreview } from '../helperComponents/MediaPreview';
 import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
 import Upload from '../../assets/svgIcons/upload.svg';
@@ -34,11 +31,11 @@ const EnquiryForm = () => {
     const handleEnquire = async () => {
         if (isSubmittingRef.current || loading) return;
         isSubmittingRef.current = true;
-      
+
         if (!description.trim()) {
-          showToast("Description is mandatory", 'info');
-          isSubmittingRef.current = false;
-          return;
+            showToast("Description is mandatory", 'info');
+            isSubmittingRef.current = false;
+            return;
         }
 
         setLoading(true);
@@ -97,7 +94,7 @@ const EnquiryForm = () => {
         setLoading(true);
 
         if (!file) {
-       
+
             setLoading(false);
             return null;
         }
@@ -213,6 +210,8 @@ const EnquiryForm = () => {
 
     return (
         <View style={styles.container}>
+            <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
+
             <View style={styles.headerContainer}>
                 <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
                     <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
@@ -263,7 +262,7 @@ const EnquiryForm = () => {
                         AppStyles.PostbtnText,
                         (loading || !description.trim()) && styles.buttonDisabledText,
                     ]}>
-                      Submit
+                        Submit
                     </Text>
                 </TouchableOpacity>
 
@@ -275,7 +274,7 @@ const EnquiryForm = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-
+        paddingTop: STATUS_BAR_HEIGHT
     },
     container1: {
         flex: 1,
@@ -333,7 +332,7 @@ const styles = StyleSheet.create({
         minHeight: 200,
         maxHeight: 400,
         marginBottom: 20,
-        marginTop:10,
+        marginTop: 10,
         backgroundColor: '#fafafa',
     },
     mediaContainer: {

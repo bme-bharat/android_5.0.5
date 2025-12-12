@@ -16,7 +16,7 @@ import { openLink } from '../AppUtils/openLinks';
 import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
 
 import { colors, dimensions } from '../../assets/theme.jsx';
-import { commonStyles } from '../AppUtils/AppStyles.js';
+import AppStyles, { commonStyles, STATUS_BAR_HEIGHT } from '../AppUtils/AppStyles.js';
 
 const defaultImageCompany = Image.resolveAssetSource(defaultImage).uri;
 const defautImage = Image.resolveAssetSource(default_image1).uri;
@@ -29,7 +29,7 @@ const CompanyDetailsPage = () => {
   const route = useRoute()
   const [isModalVisibleImage, setModalVisibleImage] = useState(false);
   const { userId } = route.params;
-  console.log('userId', userId)
+
   const [loading, setLoading] = useState(false)
   const [forums, setProducts] = useState([]);
   const [products, setProducts1] = useState([]);
@@ -623,7 +623,7 @@ const CompanyDetailsPage = () => {
         ) : null}
         {
           profile?.brochureKey &&
-          (<TouchableOpacity onPress={handleOpenResume} disabled={loading} style={styles.pdfButton}>
+          (<TouchableOpacity onPress={handleOpenResume} disabled={loading1} style={styles.pdfButton}>
             {loading1 ? (
               <ActivityIndicator size="small" color="#075cab" style={styles.pdfButtonText} />
             ) : (
@@ -825,6 +825,8 @@ const CompanyDetailsPage = () => {
         ) : (
 
           <View style={styles.container}>
+                  <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
+            
             <View style={styles.headerContainer}>
               <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
                 <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
@@ -957,7 +959,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: 'white',
-
+paddingTop: STATUS_BAR_HEIGHT
   },
   headerContainer: {
     flexDirection: 'row',

@@ -4,7 +4,7 @@ import { StyleSheet, Text, View, ActivityIndicator, FlatList, Image, Linking, To
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import axios from 'axios';
-import Icon from 'react-native-vector-icons/MaterialIcons';
+
 import { Image as FastImage } from 'react-native';
 import defaultImage from '../../images/homepage/dummy.png';
 import femaleImage from '../../images/homepage/female.jpg';
@@ -13,7 +13,7 @@ import apiClient from '../ApiClient';
 import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
 
 import { colors, dimensions } from '../../assets/theme.jsx';
-import { commonStyles } from '../AppUtils/AppStyles.js';
+import AppStyles, { commonStyles, STATUS_BAR_HEIGHT } from '../AppUtils/AppStyles.js';
 const CompanyGetAppliedJobsScreen = () => {
   const route = useRoute();
   const { userId } = route.params;
@@ -106,175 +106,177 @@ const CompanyGetAppliedJobsScreen = () => {
   const defaultImageUrifemale = Image.resolveAssetSource(femaleImage).uri;
   const defaultImageUri = Image.resolveAssetSource(defaultImage).uri;
   return (
-    <View style={styles.container}>
-      <View style={styles.container} >
-        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
 
-        </TouchableOpacity>
+    <View style={styles.container} >
+      <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
 
-        {loading ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#075cab" />
-          </View>
-        ) : (
-          <FlatList
-            data={posts}
-            ref={scrollViewRef}
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ paddingBottom: "20%" }}
-            keyExtractor={(item) => item.user_id}
-            bounces={false}
-            renderItem={({ item }) => {
-              // Determine image URL based on fileKey or gender
-              let imageUrl = defaultImageUri;
-              if (item.fileKey && imageUrls[item.seeker_id]) {
-                imageUrl = imageUrls[item.seeker_id]; // Use the signed URL if fileKey is valid
-              } else if (item.gender === 'Male') {
-                imageUrl = defaultImageUri; // Default male image
-              } else if (item.gender === 'Female') {
-                imageUrl = defaultImageUrifemale; // Default female image
-              }
+      <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+        <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
 
-              return (
-                <TouchableOpacity activeOpacity={1}>
-                  <View style={styles.card}>
-                    {imageUrl && (
-                      <TouchableOpacity onPress={() => navigation.navigate('ImageView', { imageUrl })}>
-                        <View style={styles.imageContainer}>
-                          <Image source={{ uri: imageUrl }} style={styles.image}
-                            resizeMode='cover' />
-                        </View>
-                      </TouchableOpacity>
-                    )}
+      </TouchableOpacity>
 
-                    <Text style={styles.title}>{item.first_name} {item.last_name}</Text>
-                    <View style={styles.detailsContainer}>
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#075cab" />
+        </View>
+      ) : (
+        <FlatList
+          data={posts}
+          ref={scrollViewRef}
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: "20%" }}
+          keyExtractor={(item) => item.user_id}
+          bounces={false}
+          renderItem={({ item }) => {
+            // Determine image URL based on fileKey or gender
+            let imageUrl = defaultImageUri;
+            if (item.fileKey && imageUrls[item.seeker_id]) {
+              imageUrl = imageUrls[item.seeker_id]; // Use the signed URL if fileKey is valid
+            } else if (item.gender === 'Male') {
+              imageUrl = defaultImageUri; // Default male image
+            } else if (item.gender === 'Female') {
+              imageUrl = defaultImageUrifemale; // Default female image
+            }
 
-                      <View style={commonStyles.labValContainer}>
-                        <Text style={commonStyles.label}>Email ID       </Text>
-                        <Text style={commonStyles.colon}>:</Text>
-                        <Text style={commonStyles.value}>{(item.user_email_id || "").trimStart().trimEnd()}</Text>
+            return (
+              <TouchableOpacity activeOpacity={1}>
+                <View style={styles.card}>
+                  {imageUrl && (
+                    <TouchableOpacity onPress={() => navigation.navigate('ImageView', { imageUrl })}>
+                      <View style={styles.imageContainer}>
+                        <Image source={{ uri: imageUrl }} style={styles.image}
+                          resizeMode='cover' />
                       </View>
+                    </TouchableOpacity>
+                  )}
 
-                      <View style={commonStyles.labValContainer}>
-                        <Text style={commonStyles.label}>Phone no.     </Text>
-                        <Text style={commonStyles.colon}>:</Text>
-                        <Text style={commonStyles.value}>{(item.user_phone_number || "").trimStart().trimEnd()}</Text>
-                      </View>
-                      <View style={commonStyles.labValContainer}>
-                        <Text style={commonStyles.label}>Category          </Text>
-                        <Text style={commonStyles.colon}>:</Text>
-                        <Text style={commonStyles.value}>{(item.user_category || "").trimStart().trimEnd()}</Text>
-                      </View>
+                  <Text style={styles.title}>{item.first_name} {item.last_name}</Text>
+                  <View style={styles.detailsContainer}>
 
-
-                      <View style={commonStyles.labValContainer}>
-                        <Text style={commonStyles.label}>City          </Text>
-                        <Text style={commonStyles.colon}>:</Text>
-                        <Text style={commonStyles.value}>{(item.city || "").trimStart().trimEnd()}</Text>
-                      </View>
-
-
-                      <View style={commonStyles.labValContainer}>
-                        <Text style={commonStyles.label}>State          </Text>
-                        <Text style={commonStyles.colon}>:</Text>
-                        <Text style={commonStyles.value}>{(item.state || "").trimStart().trimEnd()}</Text>
-                      </View>
-
-                      {item.education_qualifications && item.education_qualifications.trim() !== "" && (
-                        <View style={commonStyles.labValContainer}>
-                          <Text style={commonStyles.label}>Educational qualification</Text>
-                          <Text style={commonStyles.colon}>:</Text>
-                          <Text style={commonStyles.value}>{item.education_qualifications.trim()}</Text>
-                        </View>
-                      )}
-
-                      <View style={commonStyles.labValContainer}>
-                        <Text style={commonStyles.label}>Date of birth          </Text>
-                        <Text style={commonStyles.colon}>:</Text>
-                        <Text style={commonStyles.value}>{(item.date_of_birth || "")}</Text>
-                      </View>
-
-
-                      {item.college && item.college.trim() !== "" && (
-                        <View style={commonStyles.labValContainer}>
-                          <Text style={commonStyles.label}>College</Text>
-                          <Text style={commonStyles.colon}>:</Text>
-                          <Text style={commonStyles.value}>{item.college.trim()}</Text>
-                        </View>
-                      )}
-
-                      {item.domain_strength && item.domain_strength.trim() !== "" && (
-                        <View style={commonStyles.labValContainer}>
-                          <Text style={commonStyles.label}>Domain strength</Text>
-                          <Text style={commonStyles.colon}>:</Text>
-                          <Text style={commonStyles.value}>{item.domain_strength.trim()}</Text>
-                        </View>
-                      )}
-
-                      {item.work_experience && item.work_experience.trim() !== "" && (
-                        <View style={commonStyles.labValContainer}>
-                          <Text style={commonStyles.label}>Work experience</Text>
-                          <Text style={commonStyles.colon}>:</Text>
-                          <Text style={commonStyles.value}>{item.work_experience.trim()}</Text>
-                        </View>
-                      )}
-
-
-                      {item.languages && item.languages.trim() !== "" && (
-                        <View style={commonStyles.labValContainer}>
-                          <Text style={commonStyles.label}>Languages known</Text>
-                          <Text style={commonStyles.colon}>:</Text>
-                          <Text style={commonStyles.value}>{item.languages.trim()}</Text>
-                        </View>
-                      )}
-
-                      {item.preferred_cities && item.preferred_cities.trim() !== "" && (
-                        <View style={commonStyles.labValContainer}>
-                          <Text style={commonStyles.label}>Preferred cities</Text>
-                          <Text style={commonStyles.colon}>:</Text>
-                          <Text style={commonStyles.value}>{item.preferred_cities.trim()}</Text>
-                        </View>
-                      )}
-
-                      {item.expected_salary && item.expected_salary.trim() !== "" && (
-                        <View style={commonStyles.labValContainer}>
-                          <Text style={commonStyles.label}>Expected salary</Text>
-                          <Text style={commonStyles.colon}>:</Text>
-                          <Text style={commonStyles.value}>{item.expected_salary.trim()}</Text>
-                        </View>
-                      )}
-
-
-
-                      {item.expert_in && item.expert_in.trim() !== "" && (
-                        <View style={commonStyles.labValContainer}>
-                          <Text style={commonStyles.label}>Expert In</Text>
-                          <Text style={commonStyles.colon}>:</Text>
-                          <Text style={commonStyles.value}>{item.expert_in.trim()}</Text>
-                        </View>
-                      )}
-
-
-                      <TouchableOpacity onPress={handleOpenResume} disabled={loading1} style={styles.viewResumeText}>
-                        {loading1 ? (
-                          <ActivityIndicator size="small" color="#075cab" />
-                        ) : (
-                          <Text style={styles.pdfLink}>View Resume</Text>
-                        )}
-                      </TouchableOpacity>
+                    <View style={commonStyles.labValContainer}>
+                      <Text style={commonStyles.label}>Email ID       </Text>
+                      <Text style={commonStyles.colon}>:</Text>
+                      <Text style={commonStyles.value}>{(item.user_email_id || "").trimStart().trimEnd()}</Text>
                     </View>
 
+                    <View style={commonStyles.labValContainer}>
+                      <Text style={commonStyles.label}>Phone no.     </Text>
+                      <Text style={commonStyles.colon}>:</Text>
+                      <Text style={commonStyles.value}>{(item.user_phone_number || "").trimStart().trimEnd()}</Text>
+                    </View>
+                    <View style={commonStyles.labValContainer}>
+                      <Text style={commonStyles.label}>Category          </Text>
+                      <Text style={commonStyles.colon}>:</Text>
+                      <Text style={commonStyles.value}>{(item.user_category || "").trimStart().trimEnd()}</Text>
+                    </View>
+
+
+                    <View style={commonStyles.labValContainer}>
+                      <Text style={commonStyles.label}>City          </Text>
+                      <Text style={commonStyles.colon}>:</Text>
+                      <Text style={commonStyles.value}>{(item.city || "").trimStart().trimEnd()}</Text>
+                    </View>
+
+
+                    <View style={commonStyles.labValContainer}>
+                      <Text style={commonStyles.label}>State          </Text>
+                      <Text style={commonStyles.colon}>:</Text>
+                      <Text style={commonStyles.value}>{(item.state || "").trimStart().trimEnd()}</Text>
+                    </View>
+
+                    {item.education_qualifications && item.education_qualifications.trim() !== "" && (
+                      <View style={commonStyles.labValContainer}>
+                        <Text style={commonStyles.label}>Educational qualification</Text>
+                        <Text style={commonStyles.colon}>:</Text>
+                        <Text style={commonStyles.value}>{item.education_qualifications.trim()}</Text>
+                      </View>
+                    )}
+
+                    <View style={commonStyles.labValContainer}>
+                      <Text style={commonStyles.label}>Date of birth          </Text>
+                      <Text style={commonStyles.colon}>:</Text>
+                      <Text style={commonStyles.value}>{(item.date_of_birth || "")}</Text>
+                    </View>
+
+
+                    {item.college && item.college.trim() !== "" && (
+                      <View style={commonStyles.labValContainer}>
+                        <Text style={commonStyles.label}>College</Text>
+                        <Text style={commonStyles.colon}>:</Text>
+                        <Text style={commonStyles.value}>{item.college.trim()}</Text>
+                      </View>
+                    )}
+
+                    {item.domain_strength && item.domain_strength.trim() !== "" && (
+                      <View style={commonStyles.labValContainer}>
+                        <Text style={commonStyles.label}>Domain strength</Text>
+                        <Text style={commonStyles.colon}>:</Text>
+                        <Text style={commonStyles.value}>{item.domain_strength.trim()}</Text>
+                      </View>
+                    )}
+
+                    {item.work_experience && item.work_experience.trim() !== "" && (
+                      <View style={commonStyles.labValContainer}>
+                        <Text style={commonStyles.label}>Work experience</Text>
+                        <Text style={commonStyles.colon}>:</Text>
+                        <Text style={commonStyles.value}>{item.work_experience.trim()}</Text>
+                      </View>
+                    )}
+
+
+                    {item.languages && item.languages.trim() !== "" && (
+                      <View style={commonStyles.labValContainer}>
+                        <Text style={commonStyles.label}>Languages known</Text>
+                        <Text style={commonStyles.colon}>:</Text>
+                        <Text style={commonStyles.value}>{item.languages.trim()}</Text>
+                      </View>
+                    )}
+
+                    {item.preferred_cities && item.preferred_cities.trim() !== "" && (
+                      <View style={commonStyles.labValContainer}>
+                        <Text style={commonStyles.label}>Preferred cities</Text>
+                        <Text style={commonStyles.colon}>:</Text>
+                        <Text style={commonStyles.value}>{item.preferred_cities.trim()}</Text>
+                      </View>
+                    )}
+
+                    {item.expected_salary && item.expected_salary.trim() !== "" && (
+                      <View style={commonStyles.labValContainer}>
+                        <Text style={commonStyles.label}>Expected salary</Text>
+                        <Text style={commonStyles.colon}>:</Text>
+                        <Text style={commonStyles.value}>{item.expected_salary.trim()}</Text>
+                      </View>
+                    )}
+
+
+
+                    {item.expert_in && item.expert_in.trim() !== "" && (
+                      <View style={commonStyles.labValContainer}>
+                        <Text style={commonStyles.label}>Expert In</Text>
+                        <Text style={commonStyles.colon}>:</Text>
+                        <Text style={commonStyles.value}>{item.expert_in.trim()}</Text>
+                      </View>
+                    )}
+
+
+                    <TouchableOpacity onPress={handleOpenResume} disabled={loading1} style={styles.viewResumeText}>
+                      {loading1 ? (
+                        <ActivityIndicator size="small" color="#075cab" />
+                      ) : (
+                        <Text style={styles.pdfLink}>View Resume</Text>
+                      )}
+                    </TouchableOpacity>
                   </View>
-                </TouchableOpacity>
-              );
-            }}
-            showsVerticalScrollIndicator={false} // Hide the vertical scrollbar
-          />
-        )}
-      </View>
+
+                </View>
+              </TouchableOpacity>
+            );
+          }}
+          showsVerticalScrollIndicator={false} // Hide the vertical scrollbar
+        />
+      )}
     </View>
+
   );
 };
 
@@ -283,6 +285,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'space-between',
     backgroundColor: 'white',
+    paddingTop: STATUS_BAR_HEIGHT
   },
   backButton: {
     alignSelf: 'flex-start',

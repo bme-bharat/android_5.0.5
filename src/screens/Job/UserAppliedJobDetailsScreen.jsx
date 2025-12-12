@@ -2,10 +2,10 @@ import React, { useCallback, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
 
 import { colors, dimensions } from '../../assets/theme.jsx';
+import AppStyles, { STATUS_BAR_HEIGHT } from '../AppUtils/AppStyles.js';
 const UserAppliedJobDetailsScreen = () => {
   const route = useRoute();
   const { jobDetails } = route.params; // Get the job details from params
@@ -30,10 +30,12 @@ const UserAppliedJobDetailsScreen = () => {
 
   return (
     <View style={styles.container1} >
+      <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
+
       <View style={styles.headerContainer}>
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-                 <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-         
+          <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
+
         </TouchableOpacity>
       </View>
       <ScrollView contentContainerStyle={styles.container} showsHorizontalScrollIndicator={false} showsVerticalScrollIndicator={false} ref={scrollViewRef}>
@@ -124,6 +126,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     padding: 15,
     backgroundColor: 'white',
+    paddingTop: STATUS_BAR_HEIGHT
   },
   container: {
     flexGrow: 1,

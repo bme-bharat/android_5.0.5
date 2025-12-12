@@ -14,7 +14,6 @@ import {
   Keyboard,
   NativeModules
 } from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { CityType, COLORS, StateType, } from '../../assets/Constants';
 import axios from 'axios';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -31,7 +30,7 @@ import messaging, { getMessaging, getToken } from '@react-native-firebase/messag
 import { getApp } from '@react-native-firebase/app';
 import { showToast } from '../AppUtils/CustomToast';
 import apiClient from '../ApiClient';
-import AppStyles from '../AppUtils/AppStyles';
+import AppStyles, { STATUS_BAR_HEIGHT } from '../AppUtils/AppStyles';
 import { ActionSheetIOS } from 'react-native';
 import DeviceInfo from 'react-native-device-info';
 import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
@@ -54,6 +53,7 @@ const { DocumentPicker } = NativeModules;
 
 import ImageCropPicker from 'react-native-image-crop-picker';
 import { useFcmToken } from '../AppUtils/fcmToken.jsx';
+import KeyboardAvoid from '../AppUtils/KeyboardAvoid.jsx';
 
 const CompanyUserSignupScreen = () => {
 
@@ -62,8 +62,16 @@ const CompanyUserSignupScreen = () => {
   const { selectedProfile, selectedCategory, fullPhoneNumber } = route.params;
 
   const [fileUri, setFileUri] = useState(null);
-  const [imageUri, setImageUri] = useState(null);
+  const [imageFile, setImageFile] = useState(null);    // original picked file object
+  const [imageUri, setImageUri] = useState(null);      // final URI to upload (resized)
+  const [imageFileType, setImageFileType] = useState(null); // mime for images
+  
   const [file, setFile] = useState(null);
+  const [pdfFile, setPdfFile] = useState(null);        // picked pdf file object
+  const [pdfUri, setPdfUri] = useState(null);          // pdf.uri (same as pdfFile.uri)
+  const [pdfFileType, setPdfFileType] = useState(null);// mime for pdfs
+  
+  
 
   const [fileType, setFileType] = useState('');
   const [loading, setLoading] = useState(false);
@@ -382,120 +390,110 @@ const CompanyUserSignupScreen = () => {
     return true;
   };
 
-  const [selectedPDF, setSelectedPDF] = useState(null);
-  const removeMedia = (type, index) => {
-    if (type === 'document') setSelectedPDF(null);
-  };
-
   const handleRemoveMedia = () => {
-    setFile(null);
-    setFileType('');
+    setPdfFileType('');
+    setPdfFile(null);
 
   };
+
   const handleFileChange = async () => {
     try {
-      // Open the native document picker
       const pickedFiles = await DocumentPicker.pick({
         allowMultiple: false,
-        type: ['application/pdf'], // restrict to PDF only
+        type: ['application/pdf'],
       });
-
+  
       if (!pickedFiles || pickedFiles.length === 0) return;
-
-      const file = pickedFiles[0];
-      const fileSize = file.size;
+  
+      const pickedPdf = pickedFiles[0];
+      // file size might be available as pickedPdf.size; if not, we can RNFS.stat the uri
       const MAX_SIZE = 5 * 1024 * 1024; // 5MB
-      const mimeType = file.mime || file.type || 'application/octet-stream';
-
+      const mimeType = pickedPdf.mime || pickedPdf.type || 'application/pdf';
+  
+      // If size provided by picker, use it; otherwise stat it
+      let fileSize = pickedPdf.size;
+      if (!fileSize) {
+        try {
+          const stat = await RNFS.stat(pickedPdf.uri);
+          fileSize = stat.size;
+        } catch (e) {
+          console.warn('Could not stat pdf uri to get size', e);
+        }
+      }
+  
       if (mimeType === 'application/pdf') {
-        if (fileSize <= MAX_SIZE) {
-          setFile(file);
-          console.log('file', file)
-          setFileType(mimeType);
+        if (!fileSize || fileSize <= MAX_SIZE) {
+          setPdfFile(pickedPdf);
+          setPdfUri(pickedPdf.uri);
+          setPdfFileType(mimeType);
         } else {
           showToast("File size must be less than 5MB.", "error");
-          setFile(null);
-          setFileType(null);
+          setPdfFile(null);
+          setPdfUri(null);
+          setPdfFileType(null);
         }
       } else {
         showToast("Please upload a PDF file.", "error");
-        setFile(null);
-        setFileType(null);
+        setPdfFile(null);
+        setPdfUri(null);
+        setPdfFileType(null);
       }
     } catch (err) {
       if (err?.message?.includes('cancelled')) {
-        // User cancelled, no toast needed
         return;
       }
       console.error("Native DocumentPicker error:", err);
       showToast("An unexpected error occurred while picking the file.", "error");
     }
   };
+  
 
 
   const handleUploadFile = async () => {
-    console.log('🟡 handleUploadFile started');
     setLoading(true);
-
-    if (!file) {
-      setLoading(false);
-      return null;
-    }
-
     try {
-      // Get the actual file size
-      const fileStat = await RNFS.stat(file.uri);
+      if (!pdfUri) return null;
+  
+      const fileStat = await RNFS.stat(pdfUri);
       const fileSize = fileStat.size;
-      console.log('📏 File size:', fileSize, 'bytes', 'File URI:', file.uri);
-
-      // Request upload URL from the backend
-      console.log('🌐 Requesting upload URL from backend...');
+      console.log('📏 File size:', fileSize, 'bytes', 'File URI:', pdfUri);
+  
       const res = await apiClient.post('/uploadFileToS3', {
         command: 'uploadFileToS3',
         headers: {
-          'Content-Type': fileType,
+          'Content-Type': pdfFileType,
           'Content-Length': fileSize,
         },
       });
       console.log('📨 Upload URL response:', res.data);
-
-      if (res.data.status === 'success') {
-        const uploadUrl = res.data.url;
-        const fileKey = res.data.fileKey;
-        console.log('🔗 Received upload URL:', uploadUrl);
-        console.log('🆔 File key:', fileKey);
-
-        // Convert the file to a Blob for upload
-        const fileBlob = await uriToBlob(file.uri);
-        console.log('📦 File converted to Blob:', fileBlob);
-
-        // Upload the file to S3 using PUT
-        console.log('🚀 Uploading file to S3...');
-        const uploadRes = await fetch(uploadUrl, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': fileType,
-          },
-          body: fileBlob,
-        });
-        console.log('📤 Upload response status:', uploadRes.status);
-
-        if (uploadRes.status === 200) {
-          console.log('✅ File uploaded successfully');
-
-
-          return fileKey; // Return the file key for saving in post data
-        } else {
-          throw new Error('Failed to upload file to S3');
-        }
-      } else {
+  
+      if (res.data.status !== 'success') {
         throw new Error(res.data.errorMessage || 'Failed to get upload URL');
+      }
+  
+      const uploadUrl = res.data.url;
+      const fileKey = res.data.fileKey;
+  
+      const fileBlob = await uriToBlob(pdfUri);
+      console.log('🚀 Uploading file to S3...');
+  
+      const uploadRes = await fetch(uploadUrl, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': pdfFileType,
+        },
+        body: fileBlob,
+      });
+      console.log('📤 Upload response status:', uploadRes.status);
+  
+      if (uploadRes.status === 200) {
+        return fileKey;
+      } else {
+        throw new Error('Failed to upload file to S3');
       }
     } catch (error) {
       console.error('❌ Error in handleUploadFile:', error);
-
       if (!error.response) {
-        // Network or internet error
         showToast("You don't have an internet connection", 'error');
       } else {
         showToast('Something went wrong', 'error');
@@ -506,6 +504,7 @@ const CompanyUserSignupScreen = () => {
       console.log('🔚 handleUploadFile finished');
     }
   };
+  
 
 
   const uriToBlob = async (uri) => {
@@ -592,61 +591,57 @@ const CompanyUserSignupScreen = () => {
 
   const openGallery = async () => {
     try {
-      // 1️⃣ Pick the file using native DocumentPicker (type: image)
       const pickedFiles = await DocumentPicker.pick({
         allowMultiple: false,
         type: ['image/*'],
       });
-
       if (!pickedFiles || pickedFiles.length === 0) return;
-
+  
       const file = pickedFiles[0];
-
-      // 2️⃣ Crop the image using ImageCropPicker
+  
       const croppedImage = await ImageCropPicker.openCropper({
-        path: file.uri,         // the file picked from native picker
-        width: 800,             // desired crop width
-        height: 800,            // desired crop height
+        path: file.uri,
+        width: 800,
+        height: 800,
         cropping: true,
-        compressImageQuality: 0.8, // same as old compression
+        compressImageQuality: 0.8,
         cropperCircleOverlay: true,
         includeBase64: false,
       });
-
+  
       console.log(`Cropped image size: ${(croppedImage.size / 1024 / 1024).toFixed(2)} MB`);
-
-      // 3️⃣ Optionally resize further using ImageResizer
+  
       const resizedImage = await ImageResizer.createResizedImage(
         croppedImage.path,
-        800, // maxWidth
-        600, // maxHeight
+        800,
+        600,
         'JPEG',
-        80   // quality %
+        80
       );
-
+  
       const resizedSizeMB = resizedImage.size / 1024 / 1024;
       if (resizedSizeMB > 5) {
         showToast("Image size shouldn't exceed 5MB", 'error');
         return;
       }
-
-      // 4️⃣ Save file exactly like your old pattern
-      setFile({
+  
+      // Save into image-specific state (not generic file/state)
+      setImageFile({
         ...file,
         uri: resizedImage.uri,
         size: resizedImage.size,
+        name: file.name || resizedImage.name || 'photo.jpg',
       });
       setImageUri(resizedImage.uri);
-      setFileUri(resizedImage.uri);
-      setFileType(file.mime || 'image/jpeg');
-
-
+      setImageFileType(file.mime || 'image/jpeg');
+  
     } catch (err) {
       if (err?.message?.includes('cancelled') || err?.code === 'E_PICKER_CANCELLED') return;
       console.error('Error picking/cropping image:', err);
       showToast('Failed to pick or crop image', 'error');
     }
   };
+  
 
 
   const FILE_SIZE_LIMIT_MB = 5;  // 5MB
@@ -655,65 +650,58 @@ const CompanyUserSignupScreen = () => {
 
   const handleUploadImage = async () => {
     setLoading(true);
-
-    if (!imageUri) {
-
-      setLoading(false);
-      return null;
-    }
-
     try {
-
-      const fileStat = await RNFS.stat(fileUri);
+      if (!imageUri) return null;
+  
+      // stat using the imageUri (resized)
+      const fileStat = await RNFS.stat(imageUri);
       const fileSize = fileStat.size;
-
-      if (fileSize > FILE_SIZE_LIMIT_KB * 1024) {
-
+  
+      if (fileSize > 5 * 1024 * 1024) { // 5MB
         showToast("File size shouldn't exceed 5MB", 'error');
-        setLoading(false);
         return null;
       }
-
+  
       const res = await apiClient.post('/uploadFileToS3', {
         command: 'uploadFileToS3',
         headers: {
-          'Content-Type': fileType,
+          'Content-Type': imageFileType,
           'Content-Length': fileSize,
         },
       });
-
-      if (res.data.status === 'success') {
-        const uploadUrl = res.data.url;
-        const fileKey = res.data.fileKey;
-
-        const fileBlob = await uriToBlob(fileUri);
-
-        const uploadRes = await fetch(uploadUrl, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': fileType,
-          },
-          body: fileBlob,
-        });
-
-        if (uploadRes.status === 200) {
-
-          return fileKey;
-        } else {
-          throw new Error('Failed to upload file to S3');
-        }
-      } else {
+  
+      if (res.data.status !== 'success') {
         throw new Error(res.data.errorMessage || 'Failed to get upload URL');
       }
+  
+      const uploadUrl = res.data.url;
+      const fileKey = res.data.fileKey;
+  
+      const fileBlob = await uriToBlob(imageUri);
+  
+      const uploadRes = await fetch(uploadUrl, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': imageFileType,
+        },
+        body: fileBlob,
+      });
+  
+      if (uploadRes.status === 200) {
+        return fileKey;
+      } else {
+        throw new Error('Failed to upload file to S3');
+      }
     } catch (error) {
-
+      console.error('Error uploading image:', error);
       showToast("An error occurred during file upload", 'error');
-
       return null;
     } finally {
       setLoading(false);
     }
   };
+  
+  
 
 
 
@@ -727,7 +715,7 @@ const CompanyUserSignupScreen = () => {
     if (!validation()) return;
 
     try {
-      
+
       const imageFileKey = imageUri ? await handleUploadImage(imageUri, fileType) : null;
 
       console.log('📁 Attempting to upload file...');
@@ -820,7 +808,7 @@ const CompanyUserSignupScreen = () => {
         DeviceInfo.getUserAgent(),
         DeviceInfo.getIpAddress(),
       ]);
-      
+
       const deviceInfo = {
         os: Platform.OS,
         deviceName: deviceName.status === 'fulfilled' ? deviceName.value : 'Unknown',
@@ -829,7 +817,7 @@ const CompanyUserSignupScreen = () => {
         userAgent: userAgent.status === 'fulfilled' ? userAgent.value : 'Unknown',
         ipAddress: ipAddress.status === 'fulfilled' ? ipAddress.value : '0.0.0.0',
       };
-      
+
 
       const payload = {
         command: 'createUserSession',
@@ -852,7 +840,7 @@ const CompanyUserSignupScreen = () => {
       if (response.data.status === 'success') {
         const sessionId = response.data.data.session_id;
         await AsyncStorage.setItem('userSession', JSON.stringify({ sessionId }));
-        
+
         return true;
       } else {
         showToast("Something went wrong", 'error');
@@ -873,321 +861,325 @@ const CompanyUserSignupScreen = () => {
   }, [navigation]);
 
   return (
-    <View style={{ backgroundColor: COLORS.white, flex: 1 }}>
+    <KeyboardAvoid>
+      <View style={{ backgroundColor: COLORS.white, flex: 1, paddingTop: STATUS_BAR_HEIGHT }}>
+        <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
 
-      <TouchableOpacity onPress={() => navigation.replace("ProfileType")} style={styles.backButton}>
-        <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
+        <TouchableOpacity onPress={() => navigation.replace("ProfileType")} style={styles.backButton}>
+          <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
 
-      </TouchableOpacity>
-
-      <ScrollView contentContainerStyle={{ paddingHorizontal: 10, paddingBottom: '20%' }} showsVerticalScrollIndicator={false}>
-
-        <TouchableOpacity onPress={handleImageSelection} style={styles.imageContainer} activeOpacity={0.8}>
-          {imageUri ? (
-            <Image source={{ uri: imageUri }} style={styles.image} />
-          ) : (<Image source={require('../../images/homepage/buliding.jpg')} style={styles.image} />
-          )}
-          <TouchableOpacity style={styles.cameraIconContainer} onPress={handleImageSelection}>
-            <Camera width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.gray} />
-
-          </TouchableOpacity>
         </TouchableOpacity>
 
-        <Text style={styles.heading} >Company name <Text style={{ color: 'red' }}>*</Text></Text>
-        <View style={styles.inputbox}>
-          <Company width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.gray} />
+        <ScrollView contentContainerStyle={{ paddingHorizontal: 10, paddingBottom: '20%', paddingTop: STATUS_BAR_HEIGHT }} showsVerticalScrollIndicator={false}>
 
-          <TextInput
-            style={styles.inputText}
-            placeholderTextColor="gray"
-            value={companyName} // Set the value to the company name state
-            onChangeText={handleCompanyName} // Call the updated handleCompanyName
-          />
+          <TouchableOpacity onPress={handleImageSelection} style={styles.imageContainer} activeOpacity={0.8}>
+            {imageUri ? (
+              <Image source={{ uri: imageUri }} style={styles.image} />
+            ) : (<Image source={require('../../images/homepage/buliding.jpg')} style={styles.image} />
+            )}
+            <TouchableOpacity style={styles.cameraIconContainer} onPress={handleImageSelection}>
+              <Camera width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.gray} />
 
-        </View>
-        {companyName.length > 0 && companyNameError !== '' && (
-          <Text style={{ color: 'red', fontSize: 12, marginBottom: 10 }}>
-            {companyNameError}
-          </Text>
-        )}
-
-        <Text style={styles.heading} >CIN / Business registration number <Text style={{ color: 'red' }}>*</Text></Text>
-        <View style={styles.inputbox}>
-          <Register width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.gray} />
-
-          <TextInput
-            style={styles.inputText}
-            placeholderTextColor="gray"
-            value={registrationNumber}
-            onChangeText={handleRegistrationNumber}
-          />
-        </View>
-
-
-        <Text style={styles.heading}>Email ID <Text style={{ color: 'red' }}>*</Text></Text>
-        <View style={styles.inputbox}>
-          <Email width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.gray} />
-
-          <TextInput
-            style={styles.inputText}
-            placeholderTextColor="gray"
-            value={email}
-            onChangeText={handleEmail}
-          />
-
-          {emailVerify1 ? (
-            <Sucess width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.success} />
-
-
-          ) : email.length > 0 ? (
-            <TouchableOpacity style={styles.button1} onPress={sendEmailOtp} disabled={loading}>
-              <Text style={styles.buttonText3}>
-                {loading ? 'Sending' : 'Verify'}
-              </Text>
             </TouchableOpacity>
-          ) : null}
+          </TouchableOpacity>
 
-        </View>
+          <Text style={styles.heading} >Company name <Text style={{ color: 'red' }}>*</Text></Text>
+          <View style={styles.inputbox}>
+            <Company width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.gray} />
 
-        {email.length > 0 && !emailVerify1 && emailError !== '' && (
-          <View style={{ marginBottom: 10 }}>
-            <Text style={{ color: 'red', fontSize: 12 }}>
-              {emailError}
+            <TextInput
+              style={styles.inputText}
+              placeholderTextColor="gray"
+              value={companyName} // Set the value to the company name state
+              onChangeText={handleCompanyName} // Call the updated handleCompanyName
+            />
+
+          </View>
+          {companyName.length > 0 && companyNameError !== '' && (
+            <Text style={{ color: 'red', fontSize: 12, marginBottom: 10 }}>
+              {companyNameError}
             </Text>
+          )}
+
+          <Text style={styles.heading} >CIN / Business registration number <Text style={{ color: 'red' }}>*</Text></Text>
+          <View style={styles.inputbox}>
+            <Register width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.gray} />
+
+            <TextInput
+              style={styles.inputText}
+              placeholderTextColor="gray"
+              value={registrationNumber}
+              onChangeText={handleRegistrationNumber}
+            />
           </View>
-        )}
-
-        <Modal
-          visible={modalVisibleemail}
-          animationType="slide"
-          onRequestClose={() => setModalVisibleemail(false)}
-          transparent={true}
-        >
-          <View style={styles.modalContaineremail}>
-            <View style={styles.modalContentemail}>
-              {/* Close Icon */}
-              <TouchableOpacity
-                style={styles.closeButton}
-                onPress={() => setModalVisibleemail(false)}
-              >
-                <Close width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.secondary} />
 
 
+          <Text style={styles.heading}>Email ID <Text style={{ color: 'red' }}>*</Text></Text>
+          <View style={styles.inputbox}>
+            <Email width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.gray} />
+
+            <TextInput
+              style={styles.inputText}
+              placeholderTextColor="gray"
+              value={email}
+              onChangeText={handleEmail}
+            />
+
+            {emailVerify1 ? (
+              <Sucess width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.success} />
+
+
+            ) : email.length > 0 ? (
+              <TouchableOpacity style={styles.button1} onPress={sendEmailOtp} disabled={loading}>
+                <Text style={styles.buttonText3}>
+                  {loading ? 'Sending' : 'Verify'}
+                </Text>
               </TouchableOpacity>
+            ) : null}
 
-              <Text style={styles.modalTitleemail}></Text>
-              <TextInput
-                style={styles.inputemail}
-                value={otp1}
-                onChangeText={(value) => {
-                  setOtp1(value);
-                  if (value.length === 6) {
-                    Keyboard.dismiss(); // Dismiss keyboard when 6 digits are entered
-                  }
-                }}
-                placeholder="Enter OTP"
-                keyboardType="numeric"
-                placeholderTextColor="gray"
-                maxLength={6}
-                editable={!emailVerify1}
-              />
-              <TouchableOpacity style={styles.buttonemail} onPress={verifyOtp}>
-                <Text style={styles.buttonTextemail}>Verify OTP</Text>
-              </TouchableOpacity>
+          </View>
 
-              {/* Resend OTP Button inside the Modal */}
-              {otpTimer > 0 ? (
-                <Text style={styles.buttonTextemailresend}>Resend OTP {otpTimer}s</Text>
-              ) : (
-                <TouchableOpacity onPress={handleResendOtp} disabled={loading}>
-                  <Text style={styles.buttonemailResend}>Resend OTP</Text>
-                </TouchableOpacity>
-              )}
+          {email.length > 0 && !emailVerify1 && emailError !== '' && (
+            <View style={{ marginBottom: 10 }}>
+              <Text style={{ color: 'red', fontSize: 12 }}>
+                {emailError}
+              </Text>
             </View>
+          )}
+
+          <Modal
+            visible={modalVisibleemail}
+            animationType="slide"
+            onRequestClose={() => setModalVisibleemail(false)}
+            transparent={true}
+          >
+            <View style={styles.modalContaineremail}>
+              <View style={styles.modalContentemail}>
+                {/* Close Icon */}
+                <TouchableOpacity
+                  style={styles.closeButton}
+                  onPress={() => setModalVisibleemail(false)}
+                >
+                  <Close width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.secondary} />
+
+
+                </TouchableOpacity>
+
+                <Text style={styles.modalTitleemail}></Text>
+                <TextInput
+                  style={styles.inputemail}
+                  value={otp1}
+                  onChangeText={(value) => {
+                    setOtp1(value);
+                    if (value.length === 6) {
+                      Keyboard.dismiss(); // Dismiss keyboard when 6 digits are entered
+                    }
+                  }}
+                  placeholder="Enter OTP"
+                  keyboardType="numeric"
+                  placeholderTextColor="gray"
+                  maxLength={6}
+                  editable={!emailVerify1}
+                />
+                <TouchableOpacity style={styles.buttonemail} onPress={verifyOtp}>
+                  <Text style={styles.buttonTextemail}>Verify OTP</Text>
+                </TouchableOpacity>
+
+                {/* Resend OTP Button inside the Modal */}
+                {otpTimer > 0 ? (
+                  <Text style={styles.buttonTextemailresend}>Resend OTP {otpTimer}s</Text>
+                ) : (
+                  <TouchableOpacity onPress={handleResendOtp} disabled={loading}>
+                    <Text style={styles.buttonemailResend}>Resend OTP</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            </View>
+          </Modal>
+
+
+          <Text style={styles.heading} >Business phone no. <Text style={{ color: 'red' }}>*</Text></Text>
+          <View style={styles.inputbox}>
+            <Phone width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.gray} />
+
+            <TextInput
+              style={styles.inputText}
+              value={fullPhoneNumber}
+              editable={false}
+            />
+
           </View>
-        </Modal>
 
 
-        <Text style={styles.heading} >Business phone no. <Text style={{ color: 'red' }}>*</Text></Text>
-        <View style={styles.inputbox}>
-          <Phone width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.gray} />
+          <Text style={[styles.heading,]}>State <Text style={{ color: 'red' }}>*</Text></Text>
+          <CustomDropdown
+            label="State"
+            data={states}
+            selectedItem={selectedState}
+            onSelect={(state) => {
+              setSelectedState(state);
+              setSelectedCity('');
+            }}
+            buttonStyle={styles.dropdownButton}
+            buttonTextStyle={styles.dropdownButtonText}
 
-          <TextInput
-            style={styles.inputText}
-            value={fullPhoneNumber}
-            editable={false}
           />
 
-        </View>
-
-
-        <Text style={[styles.heading,]}>State <Text style={{ color: 'red' }}>*</Text></Text>
-        <CustomDropdown
-          label="State"
-          data={states}
-          selectedItem={selectedState}
-          onSelect={(state) => {
-            setSelectedState(state);
-            setSelectedCity('');
-          }}
-          buttonStyle={styles.dropdownButton}
-          buttonTextStyle={styles.dropdownButtonText}
-
-        />
-
-        <Text style={[styles.heading,]}>City <Text style={{ color: 'red' }}>*</Text></Text>
-        <CustomDropdown
-          label="City"
-          data={cities}
-          selectedItem={selectedCity}
-          onSelect={(city) => setSelectedCity(city)}
-          disabled={!selectedState}
-          buttonStyle={styles.dropdownButton}
-          buttonTextStyle={styles.dropdownButtonText}
-        />
-
-
-
-        <Text style={styles.heading}  >Website:</Text>
-        <View style={styles.inputbox}>
-          <Web width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.gray} />
-
-          <TextInput
-            style={styles.inputText}
-            placeholderTextColor="gray"
-            value={website}
-            onChangeText={handleWebsiteText}
-            autoCapitalize="none"
+          <Text style={[styles.heading,]}>City <Text style={{ color: 'red' }}>*</Text></Text>
+          <CustomDropdown
+            label="City"
+            data={cities}
+            selectedItem={selectedCity}
+            onSelect={(city) => setSelectedCity(city)}
+            disabled={!selectedState}
+            buttonStyle={styles.dropdownButton}
+            buttonTextStyle={styles.dropdownButtonText}
           />
-        </View>
-        {website.length > 0 && websiteError !== '' && (
-          <Text style={{ color: 'red', fontSize: 12, marginTop: 4 }}>
-            {websiteError}
-          </Text>
-        )}
 
 
-        <Text style={styles.heading}>Company address:</Text>
-        <View style={[styles.inputbox]}>
-          <Location width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.gray} />
 
-          <TextInput
-            style={[styles.inputText,]}
-            placeholderTextColor="gray"
-            multiline
-            value={address}
-            onChangeText={handleAddress}
-          />
-        </View>
-        {/* {address.length > 0 && addressError !== '' && (
+          <Text style={styles.heading}  >Website:</Text>
+          <View style={styles.inputbox}>
+            <Web width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.gray} />
+
+            <TextInput
+              style={styles.inputText}
+              placeholderTextColor="gray"
+              value={website}
+              onChangeText={handleWebsiteText}
+              autoCapitalize="none"
+            />
+          </View>
+          {website.length > 0 && websiteError !== '' && (
+            <Text style={{ color: 'red', fontSize: 12, marginTop: 4 }}>
+              {websiteError}
+            </Text>
+          )}
+
+
+          <Text style={styles.heading}>Company address:</Text>
+          <View style={[styles.inputbox]}>
+            <Location width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.gray} />
+
+            <TextInput
+              style={[styles.inputText,]}
+              placeholderTextColor="gray"
+              multiline
+              value={address}
+              onChangeText={handleAddress}
+            />
+          </View>
+          {/* {address.length > 0 && addressError !== '' && (
   <Text style={{ color: 'red', fontSize: 12, marginTop: 4 }}>
     {addressError}
   </Text>
 )} */}
 
-        <Text style={styles.heading}>Company description:</Text>
-        <View style={[styles.inputbox]}>
-          <Info width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.gray} />
+          <Text style={styles.heading}>Company description:</Text>
+          <View style={[styles.inputbox]}>
+            <Info width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.gray} />
 
-          <TextInput
-            style={[
-              styles.inputText,
-              {
-                minHeight: 40,
-                maxHeight: 200,
-                textAlignVertical: 'top',
-                flex: 1
-              }
-            ]}
-            placeholderTextColor="gray"
-            multiline
-            value={companyDescription}
-            onChangeText={handleCompanyDescription}
-          />
-        </View>
+            <TextInput
+              style={[
+                styles.inputText,
+                {
+                  minHeight: 40,
+                  maxHeight: 200,
+                  textAlignVertical: 'top',
+                  flex: 1
+                }
+              ]}
+              placeholderTextColor="gray"
+              multiline
+              value={companyDescription}
+              onChangeText={handleCompanyDescription}
+            />
+          </View>
 
-        {/* {companyDescription.length > 0 && descriptionError !== '' && (
+          {/* {companyDescription.length > 0 && descriptionError !== '' && (
           <Text style={{ color: 'red', fontSize: 12, marginTop: 4 }}>
             {descriptionError}
           </Text>
         )} */}
 
-       
+          {!pdfFile && (
+            <TouchableOpacity
+              style={styles.buttoncontainer4}
+              onPress={handleFileChange}
+            >
+              <Text style={[styles.btnCatelogue1]}>
+                Upload company catalogue
+              </Text>
+            </TouchableOpacity>
+          )}
+
+
+          {!pdfFile?.mime?.startsWith('image') && (
+            <MediaPreview
+              uri={pdfFile?.uri}
+              mime={pdfFile?.mime || 'application/octet-stream'}
+              name={pdfFile?.name}
+              onRemove={handleRemoveMedia}
+            />
+          )}
+
           <TouchableOpacity
-            style={styles.buttoncontainer4}
-            onPress={handleFileChange}
+            style={[AppStyles.Postbtn, loading && { opacity: 0.6 }]}
+            onPress={UserSubmit}
+            disabled={loading}
           >
-            <Text style={[styles.btnCatelogue1]}>
-              Upload company catalogue
+            <Text style={AppStyles.PostbtnText}>
+              Next
             </Text>
           </TouchableOpacity>
-     
-
-        {!file?.mime?.startsWith('image') && (
-          <MediaPreview
-            uri={file?.uri}
-            mime={file?.mime || 'application/octet-stream'}
-            name={file?.name}
-            onRemove={handleRemoveMedia}
-          />
-        )}
-
-        <TouchableOpacity
-          style={[AppStyles.Postbtn, loading && { opacity: 0.6 }]}
-          onPress={UserSubmit}
-          disabled={loading}
-        >
-          <Text style={AppStyles.PostbtnText}>
-            Next
-          </Text>
-        </TouchableOpacity>
 
 
-        <Modal
-          visible={modalVisible === 'city'}
-          transparent={true}
-          animationType='slide'
-        >
-          <View style={styles.modalView}>
-            <FlatList
-              data={CityType}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  style={styles.modalItem}
-                  onPress={() => handleCitySelection(item.label)}
-                >
-                  <Text style={styles.modalItemText}>{item.label}</Text>
-                </TouchableOpacity>
-              )}
-              keyExtractor={(item) => item.value}
-            />
-          </View>
-        </Modal>
+          <Modal
+            visible={modalVisible === 'city'}
+            transparent={true}
+            animationType='slide'
+          >
+            <View style={styles.modalView}>
+              <FlatList
+                data={CityType}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    style={styles.modalItem}
+                    onPress={() => handleCitySelection(item.label)}
+                  >
+                    <Text style={styles.modalItemText}>{item.label}</Text>
+                  </TouchableOpacity>
+                )}
+                keyExtractor={(item) => item.value}
+              />
+            </View>
+          </Modal>
 
-        <Modal
-          visible={modalVisible === 'state'}
-          transparent={true}
-          animationType='slide'
-        >
-          <View style={styles.modalView}>
-            <FlatList
-              data={StateType}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  style={styles.modalItem}
-                  onPress={() => handleStateSelection(item.label)}
-                >
-                  <Text style={styles.modalItemText}>{item.label}</Text>
-                </TouchableOpacity>
-              )}
-              keyExtractor={(item) => item.value}
-            />
-          </View>
-        </Modal>
+          <Modal
+            visible={modalVisible === 'state'}
+            transparent={true}
+            animationType='slide'
+          >
+            <View style={styles.modalView}>
+              <FlatList
+                data={StateType}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    style={styles.modalItem}
+                    onPress={() => handleStateSelection(item.label)}
+                  >
+                    <Text style={styles.modalItemText}>{item.label}</Text>
+                  </TouchableOpacity>
+                )}
+                keyExtractor={(item) => item.value}
+              />
+            </View>
+          </Modal>
 
-      </ScrollView>
-      <Toast />
-    </View>
+        </ScrollView>
+
+      </View>
+    </KeyboardAvoid>
   );
 };
 
@@ -1328,7 +1320,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     fontSize: 13,
     fontWeight: '500',
-    color:colors.text_primary,
+    color: colors.text_primary,
     flex: 1,
     padding: 5,
     textAlignVertical: 'top',
@@ -1388,8 +1380,15 @@ const styles = StyleSheet.create({
 
   },
   backButton: {
+    position: 'absolute',
     alignSelf: 'flex-start',
+    backgroundColor: '#fff',
+    borderRadius: 10,
     padding: 10,
+    margin: 10,
+    elevation: 3,
+    marginTop: STATUS_BAR_HEIGHT + 10,
+    zIndex: 1000
   },
 
   modalItemText: {
@@ -1552,7 +1551,7 @@ const styles = StyleSheet.create({
   dropdownButtonText: {
     fontSize: 13,
     fontWeight: '500',
-    color:colors.text_primary,
+    color: colors.text_primary,
     flex: 1,
     padding: 5
   },

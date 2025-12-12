@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, Button, Alert, ScrollView, StyleSheet, Image, TouchableOpacity, Keyboard, KeyboardAvoidingView, TouchableWithoutFeedback, ActivityIndicator, NativeModules } from 'react-native';
 import Video from 'react-native-video';
 import { launchImageLibrary } from 'react-native-image-picker';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+
 import RNFS from 'react-native-fs';
 import ImageResizer from 'react-native-image-resizer';
 import * as Compressor from 'react-native-compressor';
@@ -17,7 +17,7 @@ import { useNetwork } from '../AppUtils/IdProvider';
 import apiClient from '../ApiClient';
 import { showToast } from '../AppUtils/CustomToast';
 import { EventRegister } from 'react-native-event-listeners';
-import AppStyles from '../AppUtils/AppStyles';
+import AppStyles, { STATUS_BAR_HEIGHT } from '../AppUtils/AppStyles';
 import { products } from '../../assets/Constants';
 import { useMediaPicker } from '../helperComponents/MediaPicker';
 import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
@@ -456,6 +456,8 @@ const CreateService = () => {
     <KeyboardAvoid>
 
       <View style={styles.container}>
+        <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
+
         <View style={styles.headerContainer}>
           <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
             <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
@@ -679,6 +681,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: 'whitesmoke',
+    paddingTop: STATUS_BAR_HEIGHT
   },
 
   backButton: {
@@ -719,7 +722,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     fontSize: 13,
     fontWeight: '500',
-    color:colors.text_primary,
+    color: colors.text_primary,
     elevation: 2,
     borderWidth: 1,
     borderColor: '#ddd'
@@ -745,7 +748,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
-    
+
     // borderWidth: 1,
     // borderColor: "#ccc",
     alignSelf: 'flex-start'
@@ -788,10 +791,10 @@ const styles = StyleSheet.create({
   },
   dropdownButtonText: {
     fontSize: 14,
-    fontWeight:'500',
+    fontWeight: '500',
     color: colors.text_primary,
     flex: 1,
-    padding:5
+    padding: 5
   },
   mediaContainer: {
     flexDirection: 'row',

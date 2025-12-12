@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, Button, Alert, ScrollView, StyleSheet, Image, TouchableOpacity, Keyboard, KeyboardAvoidingView, TouchableWithoutFeedback, ActivityIndicator, Platform, Linking, NativeModules } from 'react-native';
 import Video from 'react-native-video';
 import { launchImageLibrary } from 'react-native-image-picker';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+
 import RNFS from 'react-native-fs';
 import ImageResizer from 'react-native-image-resizer';
 import * as Compressor from 'react-native-compressor';
@@ -22,14 +22,14 @@ import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view
 import { showToast } from '../AppUtils/CustomToast';
 import { useNetwork } from '../AppUtils/IdProvider';
 import { EventRegister } from 'react-native-event-listeners';
-import AppStyles from '../AppUtils/AppStyles';
+import AppStyles, { STATUS_BAR_HEIGHT } from '../AppUtils/AppStyles';
 import Message1 from '../../components/Message1';
 import apiClient from '../ApiClient';
 import { useMediaPicker } from '../helperComponents/MediaPicker';
 import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
 import Pdf from '../../assets/svgIcons/pdf.svg';
 import Close from '../../assets/svgIcons/close.svg';
-import  KeyboardAvoid  from '../AppUtils/KeyboardAvoid.jsx';
+import KeyboardAvoid from '../AppUtils/KeyboardAvoid.jsx';
 
 import { colors, dimensions } from '../../assets/theme.jsx';
 const { DocumentPicker } = NativeModules;
@@ -595,419 +595,421 @@ const CreateProduct = () => {
 
   return (
     <KeyboardAvoid>
-    <View style={styles.container}>
-      <View style={styles.searchContainer}>
-        {fromSignup ? (
-          <TouchableOpacity
-            onPress={() => {
-              setHasChanges(false);
-              showTrialSuccessAlert();
-            }}
-            style={[
-              AppStyles.PostbtnSkip,
-              (loading || isCompressing || submitting) && { opacity: 0.5 }
-            ]}
-          >
-            <Text style={AppStyles.PostbtnText}>Skip</Text>
+      <View style={styles.container}>
+        <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
+
+        <View style={styles.searchContainer}>
+          {fromSignup ? (
+            <TouchableOpacity
+              onPress={() => {
+                setHasChanges(false);
+                showTrialSuccessAlert();
+              }}
+              style={[
+                AppStyles.PostbtnSkip,
+                (loading || isCompressing || submitting) && { opacity: 0.5 }
+              ]}
+            >
+              <Text style={AppStyles.PostbtnText}>Skip</Text>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              onPress={() => navigation.goBack()}
+              style={styles.backButton}
+            >
+              <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
+
+            </TouchableOpacity>
+          )}
+        </View>
+
+        <ScrollView
+          contentContainerStyle={{ paddingBottom: '10%', paddingHorizontal: 5, backgroundColor: 'whitesmoke' }}
+          keyboardShouldPersistTaps="handled"
+        >
+          <Text style={styles.title}>Add a product</Text>
+
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Product name <Text style={{ color: 'red' }}>*</Text></Text>
+            <TextInput
+              style={styles.input}
+              multiline
+              placeholderTextColor="gray"
+              value={productData.title}
+              onChangeText={(text) => handleInputChange("title", text)}
+            />
+          </View>
+
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Product description <Text style={{ color: 'red' }}>*</Text></Text>
+            <TextInput
+              style={styles.input}
+              multiline
+              placeholderTextColor="gray"
+              value={productData.description}
+              onChangeText={(text) => handleInputChange("description", text)}
+            />
+          </View>
+
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Price:</Text>
+            <TextInput
+              style={styles.input}
+              multiline
+              placeholderTextColor="gray"
+              value={productData.price}
+              onChangeText={(text) => handleInputChange("price", text)}
+              keyboardType="numeric"
+            />
+          </View>
+
+
+          <View style={[styles.inputContainer]}>
+            <Text style={styles.label}>Category <Text style={{ color: 'red' }}>*</Text></Text>
+            <CustomDropdown
+              data={Object.keys(products)}
+              onSelect={handleCategorySelect}
+              selectedItem={productData.category}
+              // placeholder="Select Category"
+              placeholderTextColor="gray"
+              buttonStyle={styles.dropdownButton}
+              buttonTextStyle={styles.dropdownButtonText}
+            />
+
+          </View>
+
+          <View style={[styles.inputContainer]}>
+            <Text style={styles.label}>Sub category <Text style={{ color: 'red' }}>*</Text></Text>
+            <CustomDropdown
+              data={subCategories}
+              onSelect={(subCategory) =>
+                setProductData((prevState) => ({
+                  ...prevState,
+                  subcategory: subCategory,
+                }))
+              }
+              selectedItem={productData.subcategory} // Set selected subcategory
+              disabled={!productData.category}
+              // placeholder="Select Subcategory"
+              placeholderTextColor="gray"
+              buttonStyle={styles.dropdownButton}
+              buttonTextStyle={styles.dropdownButtonText}
+            />
+
+          </View>
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Brand <Text style={{ color: 'red' }}>*</Text></Text>
+            <TextInput
+              style={styles.input}
+              // placeholder="Modal Name"
+              placeholderTextColor='gray'
+              multiline
+              value={productData.specifications.brand}
+              onChangeText={(text) => handleInputChange('brand', text, true)}
+            />
+          </View>
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Model name <Text style={{ color: 'red' }}>*</Text></Text>
+            <TextInput
+              style={styles.input}
+              // placeholder="Modal Name"
+              placeholderTextColor='gray'
+              multiline
+              value={productData.specifications.model_name}
+              onChangeText={(text) => handleInputChange('model_name', text, true)}
+            />
+          </View>
+
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Weight:</Text>
+            <TextInput
+              style={styles.input}
+              // placeholder="Weight"
+              placeholderTextColor='gray'
+              value={productData.specifications.weight}
+              onChangeText={(text) => handleInputChange('weight', text, true)}
+              multiline
+
+            />
+          </View>
+
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Dimensions:</Text>
+            <TextInput
+              style={styles.input}
+              multiline
+              placeholderTextColor='gray'
+              value={productData.specifications.dimensions}
+              onChangeText={(text) => handleInputChange('dimensions', text, true)}
+            />
+          </View>
+
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>
+              Operation mode{isOtherSelected.operation_mode && <Text style={{ color: 'red' }}> *</Text>}
+            </Text>
+
+            <CustomDropDownMenu
+              items={operation_mode}
+              onSelect={handleSelect('operation_mode')}
+              buttonStyle={styles.dropdownButton}
+              buttonTextStyle={styles.dropdownButtonText}
+              placeholderTextColor="gray"
+            />
+
+            {isOtherSelected.operation_mode && (
+              <TextInput
+                style={styles.input1}
+                placeholder="Enter Operation Mode"
+                value={customValues.operation_mode || ""}
+                onChangeText={(text) => handleCustomChange("operation_mode", text)}
+              />
+            )}
+          </View>
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Warranty:</Text>
+            <TextInput
+              style={styles.input}
+              placeholderTextColor='gray'
+              multiline
+
+              value={productData.specifications.warranty}
+              onChangeText={(text) => handleInputChange('warranty', text, true)}
+            />
+          </View>
+
+
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Country of origin <Text style={{ color: 'red' }}>*</Text></Text>
+            <TextInput
+              style={styles.input}
+              placeholderTextColor='gray'
+              multiline
+
+              value={productData.specifications.country_of_origin}
+              onChangeText={(text) => handleInputChange('country_of_origin', text, true)}
+            />
+          </View>
+
+
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Package contents:</Text>
+            <TextInput
+              style={styles.input}
+              placeholderTextColor='gray'
+              multiline
+
+              value={productData.specifications.package_contents}
+              onChangeText={(text) => handleInputChange('package_contents', text, true)}
+            />
+          </View>
+
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Accessories:</Text>
+            <TextInput
+              style={styles.input}
+              multiline
+              placeholderTextColor='gray'
+              value={productData.accessories}
+              onChangeText={(text) => handleInputChange('accessories', text)}
+
+            />
+          </View>
+
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Regulatory & compliance: </Text>
+            <TextInput
+              style={styles.input}
+              // placeholder="Modal Name"
+              placeholderTextColor='gray'
+              multiline
+              value={productData.specifications.regulatory_and_compliance}
+              onChangeText={(text) => handleInputChange('regulatory_and_compliance', text, true)}
+            />
+          </View>
+
+
+
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>
+              Types{isOtherSelected.types && <Text style={{ color: 'red' }}> *</Text>}
+            </Text>
+
+            <CustomDropDownMenu
+              items={types}
+              onSelect={handleSelect('types')}
+              buttonStyle={styles.dropdownButton}
+              buttonTextStyle={styles.dropdownButtonText}
+              placeholderTextColor="gray"
+            />
+
+            {isOtherSelected.types && (
+              <TextInput
+                style={styles.input1}
+                placeholder="Enter Type"
+                value={customValues.types || ""}
+                onChangeText={(text) => handleCustomChange("types", text)}
+              />
+            )}
+          </View>
+
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>
+              Power supply{isOtherSelected.power_supply && <Text style={{ color: 'red' }}> *</Text>}
+            </Text>
+
+            <CustomDropDownMenu
+              items={power_supply}
+              onSelect={handleSelect('power_supply')}
+              buttonStyle={styles.dropdownButton}
+              buttonTextStyle={styles.dropdownButtonText}
+              placeholderTextColor="gray"
+            />
+
+            {isOtherSelected.power_supply && (
+              <TextInput
+                style={styles.input1}
+                placeholder="Enter Power Supply"
+                value={customValues.power_supply || ""}
+                onChangeText={(text) => handleCustomChange("power_supply", text)}
+              />
+            )}
+          </View>
+
+
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>
+              Certification{isOtherSelected.certifications && <Text style={{ color: 'red' }}> *</Text>}
+            </Text>
+            <CustomDropDownMenu
+              items={certifications}
+              onSelect={handleSelect('certifications')}
+              buttonStyle={styles.dropdownButton}
+              buttonTextStyle={styles.dropdownButtonText}
+              placeholderTextColor="gray"
+            />
+            {isOtherSelected.certifications && (
+              <TextInput
+                style={styles.input1}
+                placeholder="Enter Certification"
+                value={customValues.certifications || ""}
+                onChangeText={(text) => handleCustomChange("certifications", text)}
+              />
+            )}
+          </View>
+
+
+
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>
+              After sale service{isOtherSelected.after_sales_service && <Text style={{ color: 'red' }}> *</Text>}
+            </Text>
+            <CustomDropDownMenu
+              items={after_sales_service}
+              onSelect={handleSelect('after_sales_service')}
+              buttonStyle={styles.dropdownButton}
+              buttonTextStyle={styles.dropdownButtonText}
+              placeholderTextColor="gray"
+            />
+            {isOtherSelected.after_sales_service && (
+              <TextInput
+                style={styles.input1}
+                placeholder="Enter Sales Support"
+                value={customValues.after_sales_service || ""}
+                onChangeText={(text) => handleCustomChange("after_sales_service", text)}
+              />
+            )}
+          </View>
+
+          <TouchableOpacity style={styles.inputContainer} activeOpacity={1}>
+            <Text style={styles.label}>Tags <Text style={{ color: 'red' }}>*</Text></Text>
+            <TextInput
+              style={styles.input}
+              multiline
+              value={productData.tags}
+              placeholderTextColor='gray'
+              onChangeText={(text) => handleInputChange('tags', text)}
+            />
+
           </TouchableOpacity>
-        ) : (
-          <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            style={styles.backButton}
-          >
-            <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
 
+          <TouchableOpacity onPress={openGallery} style={styles.addMediaButton}>
+            <Text style={styles.addMediaText}>Upload product image <Text style={{ color: 'red' }}>*</Text></Text>
           </TouchableOpacity>
-        )}
-      </View>
 
-      <ScrollView
-        contentContainerStyle={{ paddingBottom: '40%', paddingHorizontal: 5, backgroundColor: 'whitesmoke' }}
-        keyboardShouldPersistTaps="handled"
-      >
-        <Text style={styles.title}>Add a product</Text>
+          <View style={styles.mediaContainer}>
+            {/* Loop through the selected images but limit to a maximum of 4 */}
+            {selectedImages.slice(0, 4).map((img, index) => (
+              <View key={index} style={styles.mediaWrapper}>
+                <Image source={{ uri: img.uri }} style={styles.mediaPreview} />
+                <TouchableOpacity style={styles.closeIcon} onPress={() => removeMedia('image', index)}>
+                  <Close width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.secondary} />
 
-        <View style={styles.inputContainer}>
-          <Text style={styles.label}>Product name <Text style={{ color: 'red' }}>*</Text></Text>
-          <TextInput
-            style={styles.input}
-            multiline
-            placeholderTextColor="gray"
-            value={productData.title}
-            onChangeText={(text) => handleInputChange("title", text)}
-          />
-        </View>
+                </TouchableOpacity>
+              </View>
+            ))}
 
-        <View style={styles.inputContainer}>
-          <Text style={styles.label}>Product description <Text style={{ color: 'red' }}>*</Text></Text>
-          <TextInput
-            style={styles.input}
-            multiline
-            placeholderTextColor="gray"
-            value={productData.description}
-            onChangeText={(text) => handleInputChange("description", text)}
-          />
-        </View>
-
-        <View style={styles.inputContainer}>
-          <Text style={styles.label}>Price:</Text>
-          <TextInput
-            style={styles.input}
-            multiline
-            placeholderTextColor="gray"
-            value={productData.price}
-            onChangeText={(text) => handleInputChange("price", text)}
-            keyboardType="numeric"
-          />
-        </View>
-
-
-        <View style={[styles.inputContainer]}>
-          <Text style={styles.label}>Category <Text style={{ color: 'red' }}>*</Text></Text>
-          <CustomDropdown
-            data={Object.keys(products)}
-            onSelect={handleCategorySelect}
-            selectedItem={productData.category}
-            // placeholder="Select Category"
-            placeholderTextColor="gray"
-            buttonStyle={styles.dropdownButton}
-            buttonTextStyle={styles.dropdownButtonText}
-          />
-
-        </View>
-
-        <View style={[styles.inputContainer]}>
-          <Text style={styles.label}>Sub category <Text style={{ color: 'red' }}>*</Text></Text>
-          <CustomDropdown
-            data={subCategories}
-            onSelect={(subCategory) =>
-              setProductData((prevState) => ({
-                ...prevState,
-                subcategory: subCategory,
-              }))
-            }
-            selectedItem={productData.subcategory} // Set selected subcategory
-            disabled={!productData.category}
-            // placeholder="Select Subcategory"
-            placeholderTextColor="gray"
-            buttonStyle={styles.dropdownButton}
-            buttonTextStyle={styles.dropdownButtonText}
-          />
-
-        </View>
-        <View style={styles.inputContainer}>
-          <Text style={styles.label}>Brand <Text style={{ color: 'red' }}>*</Text></Text>
-          <TextInput
-            style={styles.input}
-            // placeholder="Modal Name"
-            placeholderTextColor='gray'
-            multiline
-            value={productData.specifications.brand}
-            onChangeText={(text) => handleInputChange('brand', text, true)}
-          />
-        </View>
-        <View style={styles.inputContainer}>
-          <Text style={styles.label}>Model name <Text style={{ color: 'red' }}>*</Text></Text>
-          <TextInput
-            style={styles.input}
-            // placeholder="Modal Name"
-            placeholderTextColor='gray'
-            multiline
-            value={productData.specifications.model_name}
-            onChangeText={(text) => handleInputChange('model_name', text, true)}
-          />
-        </View>
-
-        <View style={styles.inputContainer}>
-          <Text style={styles.label}>Weight:</Text>
-          <TextInput
-            style={styles.input}
-            // placeholder="Weight"
-            placeholderTextColor='gray'
-            value={productData.specifications.weight}
-            onChangeText={(text) => handleInputChange('weight', text, true)}
-            multiline
-
-          />
-        </View>
-
-        <View style={styles.inputContainer}>
-          <Text style={styles.label}>Dimensions:</Text>
-          <TextInput
-            style={styles.input}
-            multiline
-            placeholderTextColor='gray'
-            value={productData.specifications.dimensions}
-            onChangeText={(text) => handleInputChange('dimensions', text, true)}
-          />
-        </View>
-
-        <View style={styles.inputContainer}>
-          <Text style={styles.label}>
-            Operation mode{isOtherSelected.operation_mode && <Text style={{ color: 'red' }}> *</Text>}
-          </Text>
-
-          <CustomDropDownMenu
-            items={operation_mode}
-            onSelect={handleSelect('operation_mode')}
-            buttonStyle={styles.dropdownButton}
-            buttonTextStyle={styles.dropdownButtonText}
-            placeholderTextColor="gray"
-          />
-
-          {isOtherSelected.operation_mode && (
-            <TextInput
-              style={styles.input1}
-              placeholder="Enter Operation Mode"
-              value={customValues.operation_mode || ""}
-              onChangeText={(text) => handleCustomChange("operation_mode", text)}
-            />
-          )}
-        </View>
-        <View style={styles.inputContainer}>
-          <Text style={styles.label}>Warranty:</Text>
-          <TextInput
-            style={styles.input}
-            placeholderTextColor='gray'
-            multiline
-
-            value={productData.specifications.warranty}
-            onChangeText={(text) => handleInputChange('warranty', text, true)}
-          />
-        </View>
-
-
-        <View style={styles.inputContainer}>
-          <Text style={styles.label}>Country of origin <Text style={{ color: 'red' }}>*</Text></Text>
-          <TextInput
-            style={styles.input}
-            placeholderTextColor='gray'
-            multiline
-
-            value={productData.specifications.country_of_origin}
-            onChangeText={(text) => handleInputChange('country_of_origin', text, true)}
-          />
-        </View>
-
-
-        <View style={styles.inputContainer}>
-          <Text style={styles.label}>Package contents:</Text>
-          <TextInput
-            style={styles.input}
-            placeholderTextColor='gray'
-            multiline
-
-            value={productData.specifications.package_contents}
-            onChangeText={(text) => handleInputChange('package_contents', text, true)}
-          />
-        </View>
-
-        <View style={styles.inputContainer}>
-          <Text style={styles.label}>Accessories:</Text>
-          <TextInput
-            style={styles.input}
-            multiline
-            placeholderTextColor='gray'
-            value={productData.accessories}
-            onChangeText={(text) => handleInputChange('accessories', text)}
-
-          />
-        </View>
-
-        <View style={styles.inputContainer}>
-          <Text style={styles.label}>Regulatory & compliance: </Text>
-          <TextInput
-            style={styles.input}
-            // placeholder="Modal Name"
-            placeholderTextColor='gray'
-            multiline
-            value={productData.specifications.regulatory_and_compliance}
-            onChangeText={(text) => handleInputChange('regulatory_and_compliance', text, true)}
-          />
-        </View>
-
-
-
-        <View style={styles.inputContainer}>
-          <Text style={styles.label}>
-            Types{isOtherSelected.types && <Text style={{ color: 'red' }}> *</Text>}
-          </Text>
-
-          <CustomDropDownMenu
-            items={types}
-            onSelect={handleSelect('types')}
-            buttonStyle={styles.dropdownButton}
-            buttonTextStyle={styles.dropdownButtonText}
-            placeholderTextColor="gray"
-          />
-
-          {isOtherSelected.types && (
-            <TextInput
-              style={styles.input1}
-              placeholder="Enter Type"
-              value={customValues.types || ""}
-              onChangeText={(text) => handleCustomChange("types", text)}
-            />
-          )}
-        </View>
-
-        <View style={styles.inputContainer}>
-          <Text style={styles.label}>
-            Power supply{isOtherSelected.power_supply && <Text style={{ color: 'red' }}> *</Text>}
-          </Text>
-
-          <CustomDropDownMenu
-            items={power_supply}
-            onSelect={handleSelect('power_supply')}
-            buttonStyle={styles.dropdownButton}
-            buttonTextStyle={styles.dropdownButtonText}
-            placeholderTextColor="gray"
-          />
-
-          {isOtherSelected.power_supply && (
-            <TextInput
-              style={styles.input1}
-              placeholder="Enter Power Supply"
-              value={customValues.power_supply || ""}
-              onChangeText={(text) => handleCustomChange("power_supply", text)}
-            />
-          )}
-        </View>
-
-
-        <View style={styles.inputContainer}>
-          <Text style={styles.label}>
-            Certification{isOtherSelected.certifications && <Text style={{ color: 'red' }}> *</Text>}
-          </Text>
-          <CustomDropDownMenu
-            items={certifications}
-            onSelect={handleSelect('certifications')}
-            buttonStyle={styles.dropdownButton}
-            buttonTextStyle={styles.dropdownButtonText}
-            placeholderTextColor="gray"
-          />
-          {isOtherSelected.certifications && (
-            <TextInput
-              style={styles.input1}
-              placeholder="Enter Certification"
-              value={customValues.certifications || ""}
-              onChangeText={(text) => handleCustomChange("certifications", text)}
-            />
-          )}
-        </View>
-
-
-
-        <View style={styles.inputContainer}>
-          <Text style={styles.label}>
-            After sale service{isOtherSelected.after_sales_service && <Text style={{ color: 'red' }}> *</Text>}
-          </Text>
-          <CustomDropDownMenu
-            items={after_sales_service}
-            onSelect={handleSelect('after_sales_service')}
-            buttonStyle={styles.dropdownButton}
-            buttonTextStyle={styles.dropdownButtonText}
-            placeholderTextColor="gray"
-          />
-          {isOtherSelected.after_sales_service && (
-            <TextInput
-              style={styles.input1}
-              placeholder="Enter Sales Support"
-              value={customValues.after_sales_service || ""}
-              onChangeText={(text) => handleCustomChange("after_sales_service", text)}
-            />
-          )}
-        </View>
-
-        <TouchableOpacity style={styles.inputContainer} activeOpacity={1}>
-          <Text style={styles.label}>Tags <Text style={{ color: 'red' }}>*</Text></Text>
-          <TextInput
-            style={styles.input}
-            multiline
-            value={productData.tags}
-            placeholderTextColor='gray'
-            onChangeText={(text) => handleInputChange('tags', text)}
-          />
-
-        </TouchableOpacity>
-
-        <TouchableOpacity onPress={openGallery} style={styles.addMediaButton}>
-          <Text style={styles.addMediaText}>Upload product image <Text style={{ color: 'red' }}>*</Text></Text>
-        </TouchableOpacity>
-
-        <View style={styles.mediaContainer}>
-          {/* Loop through the selected images but limit to a maximum of 4 */}
-          {selectedImages.slice(0, 4).map((img, index) => (
-            <View key={index} style={styles.mediaWrapper}>
-              <Image source={{ uri: img.uri }} style={styles.mediaPreview} />
-              <TouchableOpacity style={styles.closeIcon} onPress={() => removeMedia('image', index)}>
-                <Close width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.secondary} />
-
+            {/* Show a single "Upload Image" placeholder with remaining count */}
+            {selectedImages.length < 4 && (
+              <TouchableOpacity style={styles.placeholder} onPress={openGallery}>
+                <Text style={styles.placeholderText} >
+                  Upload image ({4 - selectedImages.length} remaining)
+                </Text>
               </TouchableOpacity>
-            </View>
-          ))}
+            )}
+          </View>
 
-          {/* Show a single "Upload Image" placeholder with remaining count */}
-          {selectedImages.length < 4 && (
-            <TouchableOpacity style={styles.placeholder} onPress={openGallery}>
-              <Text style={styles.placeholderText} >
-                Upload image ({4 - selectedImages.length} remaining)
-              </Text>
-            </TouchableOpacity>
-          )}
-        </View>
+          <TouchableOpacity onPress={pickVideo} style={styles.addMediaButton}>
+            <Text style={styles.addMediaText}>Upload product video</Text>
+          </TouchableOpacity>
+          {/* <Button title="Select Video" onPress={selectVideo} /> */}
+          <View style={styles.mediaContainer}>
+            {selectedVideos.map((vid, index) => (
+              <View key={index} style={styles.mediaWrapper}>
+                <Video source={{ uri: vid.uri }} muted style={styles.mediaPreview} />
+                <TouchableOpacity style={styles.closeIcon} onPress={() => removeMedia('video', index)}>
+                  <Close width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.secondary} />
 
-        <TouchableOpacity onPress={pickVideo} style={styles.addMediaButton}>
-          <Text style={styles.addMediaText}>Upload product video</Text>
-        </TouchableOpacity>
-        {/* <Button title="Select Video" onPress={selectVideo} /> */}
-        <View style={styles.mediaContainer}>
-          {selectedVideos.map((vid, index) => (
-            <View key={index} style={styles.mediaWrapper}>
-              <Video source={{ uri: vid.uri }} muted style={styles.mediaPreview} />
-              <TouchableOpacity style={styles.closeIcon} onPress={() => removeMedia('video', index)}>
-                <Close width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.secondary} />
-
+                </TouchableOpacity>
+                {/* <Text style={styles.sizeText}>{vid.size} MB</Text> */}
+              </View>
+            ))}
+            {/* Show a single "Upload Image" placeholder with remaining count */}
+            {selectedVideos.length < 1 && (
+              <TouchableOpacity style={styles.placeholder} onPress={pickVideo}>
+                <Text style={styles.placeholderText} >
+                  Upload video
+                </Text>
               </TouchableOpacity>
-              {/* <Text style={styles.sizeText}>{vid.size} MB</Text> */}
-            </View>
-          ))}
-          {/* Show a single "Upload Image" placeholder with remaining count */}
-          {selectedVideos.length < 1 && (
-            <TouchableOpacity style={styles.placeholder} onPress={pickVideo}>
-              <Text style={styles.placeholderText} >
-                Upload video
-              </Text>
-            </TouchableOpacity>
-          )}
-        </View>
-        <TouchableOpacity onPress={selectPDF} style={styles.addMediaButton}>
-          <Text style={styles.addMediaText}>Upload product catalogue</Text>
-        </TouchableOpacity>
+            )}
+          </View>
+          <TouchableOpacity onPress={selectPDF} style={styles.addMediaButton}>
+            <Text style={styles.addMediaText}>Upload product catalogue</Text>
+          </TouchableOpacity>
 
-        <View style={styles.mediaContainer}>
-          {selectedPDF && (
-            <View style={[styles.mediaWrapper, { padding: 15, }]}>
-              <Pdf width={dimensions.icon.xl} height={dimensions.icon.xl} color={colors.danger} />
+          <View style={styles.mediaContainer}>
+            {selectedPDF && (
+              <View style={[styles.mediaWrapper, { padding: 15, }]}>
+                <Pdf width={dimensions.icon.xl} height={dimensions.icon.xl} color={colors.danger} />
 
 
-              <Text numberOfLines={1} style={[styles.documentName, { marginTop: 5, }]}>{selectedPDF.name}</Text>
+                <Text numberOfLines={1} style={[styles.documentName, { marginTop: 5, }]}>{selectedPDF.name}</Text>
 
-              <TouchableOpacity style={styles.closeIcon} onPress={() => removeMedia('document')}>
-                <Close width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.secondary} />
+                <TouchableOpacity style={styles.closeIcon} onPress={() => removeMedia('document')}>
+                  <Close width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.secondary} />
 
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {!selectedPDF && (
+              <TouchableOpacity style={styles.placeholder} onPress={selectPDF}>
+                <Text style={styles.placeholderText}>Upload PDF</Text>
               </TouchableOpacity>
-            </View>
-          )}
+            )}
+          </View>
 
-          {!selectedPDF && (
-            <TouchableOpacity style={styles.placeholder} onPress={selectPDF}>
-              <Text style={styles.placeholderText}>Upload PDF</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-
-        {/* {showSkip && (
+          {/* {showSkip && (
             <Button
               title="Skip"
               onPress={() => {
@@ -1021,57 +1023,57 @@ const CreateProduct = () => {
             />
           )} */}
 
-        <TouchableOpacity
-          activeOpacity={0.8}
-          style={[
-            AppStyles.Postbtn,
-            (loading || isCompressing || submitting) && { opacity: 0.5 }
-          ]}
-          onPress={submitProduct}
-          disabled={loading || isCompressing || submitting}
-        >
-          {(isCompressing || submitting) ? (
-            <ActivityIndicator size="small" color="#075cab" />
-          ) : (
-            <Text style={AppStyles.PostbtnText}>
-              Upload
-            </Text>
-          )}
-        </TouchableOpacity>
+          <TouchableOpacity
+            activeOpacity={0.8}
+            style={[
+              AppStyles.Postbtn,
+              (loading || isCompressing || submitting) && { opacity: 0.5 }
+            ]}
+            onPress={submitProduct}
+            disabled={loading || isCompressing || submitting}
+          >
+            {(isCompressing || submitting) ? (
+              <ActivityIndicator size="small" color="#075cab" />
+            ) : (
+              <Text style={AppStyles.PostbtnText}>
+                Upload
+              </Text>
+            )}
+          </TouchableOpacity>
 
-      </ScrollView>
+        </ScrollView>
 
-      <Message1
-        visible={showAlert}
-        title={alertTitle}
-        message={alertMessage}
-        iconType={alertIconType}
-        onOk={() => {
-          if (hasNavigated) return;
-          setHasNavigated(true);
-          setShowAlert(false);
-          setHasChanges(false);
-          // showToast('Signup successful', 'success');
-          setTimeout(() => {
-            navigation.reset({
-              index: 0,
-              routes: [{ name: 'CompanyBottom' }],
-            });
-          }, 300);
-        }}
-      />
-      <Message3
-        visible={showModal}
-        onClose={() => setShowModal(false)}  // Optional if you want to close it from outside
-        onCancel={handleStay}  // Stay button action
-        onOk={handleLeave}  // Leave button action
-        title="Are you sure ?"
-        message="Your updates will be lost if you leave this page. This action cannot be undone."
-        iconType="warning"  // You can change this to any appropriate icon type
-      />
-      <Toast />
+        <Message1
+          visible={showAlert}
+          title={alertTitle}
+          message={alertMessage}
+          iconType={alertIconType}
+          onOk={() => {
+            if (hasNavigated) return;
+            setHasNavigated(true);
+            setShowAlert(false);
+            setHasChanges(false);
+            // showToast('Signup successful', 'success');
+            setTimeout(() => {
+              navigation.reset({
+                index: 0,
+                routes: [{ name: 'CompanyBottom' }],
+              });
+            }, 300);
+          }}
+        />
+        <Message3
+          visible={showModal}
+          onClose={() => setShowModal(false)}  // Optional if you want to close it from outside
+          onCancel={handleStay}  // Stay button action
+          onOk={handleLeave}  // Leave button action
+          title="Are you sure ?"
+          message="Your updates will be lost if you leave this page. This action cannot be undone."
+          iconType="warning"  // You can change this to any appropriate icon type
+        />
+        <Toast />
 
-    </View>
+      </View>
     </KeyboardAvoid>
   );
 };
@@ -1080,6 +1082,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: 'whitesmoke',
+    paddingTop: STATUS_BAR_HEIGHT
   },
 
   searchContainer: {
@@ -1092,7 +1095,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 1 },  // shadow offset for iOS
     shadowOpacity: 0.1,  // shadow opacity for iOS
     shadowRadius: 2,  // shadow radius for iOS
- borderBottomWidth: 1,
+    borderBottomWidth: 1,
     borderColor: '#f0f0f0'
   },
   backButton: {
@@ -1125,7 +1128,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     fontSize: 14,
     fontWeight: '500',
-    color:colors.text_primary,
+    color: colors.text_primary,
     elevation: 2,
     borderWidth: 1,
     borderColor: '#ddd'
@@ -1194,10 +1197,10 @@ const styles = StyleSheet.create({
   dropdownButtonText: {
     fontSize: 14,
     fontWeight: '500',
-    color:colors.text_primary,
+    color: colors.text_primary,
     flex: 1,
-    padding:5
-    
+    padding: 5
+
   },
   mediaContainer: {
     flexDirection: 'row',

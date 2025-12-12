@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+
 import { settingStyles as styles } from '../Styles/settingStyles';
 
 import ArrowDown from '../../assets/svgIcons/arrow-down.svg';

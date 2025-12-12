@@ -15,10 +15,8 @@ import {
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { TextInput } from "react-native-gesture-handler";
-import Ionicons from 'react-native-vector-icons/Ionicons';
 
 import Toast from 'react-native-toast-message';
 import apiClient from "../ApiClient";
@@ -30,6 +28,7 @@ import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
 import Add from '../../assets/svgIcons/add.svg';
 
 import { colors, dimensions } from '../../assets/theme.jsx';
+import AppStyles, { STATUS_BAR_HEIGHT } from "../AppUtils/AppStyles.js";
 
 const BASE_API_URL = 'https://h7l1568kga.execute-api.ap-south-1.amazonaws.com/dev';
 const API_KEY = 'k1xuty5IpZ2oHOEOjgMz57wHfdFT8UQ16DxCFkzk';
@@ -327,6 +326,7 @@ const MyProducts = () => {
     if (loading) {
         return (
             <View style={styles.container}>
+      <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
 
                 <View style={styles.headerContainer}>
 
@@ -346,6 +346,8 @@ const MyProducts = () => {
     if (!products || products.length === 0 || products?.removed_by_author) {
         return (
             <View style={styles.container}>
+                      <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
+                
                 <View style={styles.headerContainer}>
 
                     <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
@@ -368,6 +370,8 @@ const MyProducts = () => {
 
     return (
         <View style={styles.container}>
+                  <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
+            
             <View style={styles.headerContainer}>
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
                     <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
@@ -417,6 +421,7 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: "whitesmoke",
+            paddingTop: STATUS_BAR_HEIGHT
 
     },
     headerContainer: {

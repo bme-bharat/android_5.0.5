@@ -5,7 +5,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Alert, View, Text, ScrollView, StyleSheet, TouchableOpacity, Animated, ActivityIndicator, Modal, TouchableWithoutFeedback, Easing } from 'react-native';
 import axios from 'axios';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+
 import RazorpayCheckout from 'react-native-razorpay';
 import RNRestart from 'react-native-restart';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -21,6 +21,7 @@ import Close from '../../assets/svgIcons/close-large.svg';
 import { colors, dimensions } from '../../assets/theme.jsx';
 
 import SubscriptionCard from './SubscriptionCard.jsx';
+import AppStyles, { STATUS_BAR_HEIGHT } from '../AppUtils/AppStyles.js';
 
 const UserSubscriptionScreen = () => {
   const { myId, myData } = useNetwork();
@@ -44,15 +45,15 @@ const UserSubscriptionScreen = () => {
     {
       name: 'Basic',
       day: '30',
-      price: '499',
-      amount: 499,
+      price: '699',
+      amount: 699,
       features: [true, true, true, true, true, true, true, true, true, true, true],
     },
     {
       name: 'Premium',
       day: '365',
-      price: '5489',
-      amount: 5489,
+      price: '7689',
+      amount: 7689,
       features: [true, true, true, true, true, true, true, true, true],
     },
     // {
@@ -299,6 +300,8 @@ const UserSubscriptionScreen = () => {
 
   return (
     <View style={styles.container}>
+            <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
+      
       <View style={styles.headerContainer}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
@@ -448,11 +451,11 @@ const UserSubscriptionScreen = () => {
                 </TouchableOpacity>
 
                 <LottieView
-                source={require('../../assets/lottie/winner.json')}
-                autoPlay
-                loop
-                style={{ width: 120, height: 120 }}
-              />
+                  source={require('../../assets/lottie/winner.json')}
+                  autoPlay
+                  loop
+                  style={{ width: 120, height: 120 }}
+                />
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center' }}>
                   <Text style={styles.recommendModalTitle}>
                     Special Offer: Get 1 Month{' '}
@@ -483,18 +486,12 @@ const UserSubscriptionScreen = () => {
 
 
                 <View style={styles.planBlock}>
-                  {/* <Text style={styles.strikePrice}>
-                    ₹59 x 12 = <Text style={styles.strikeOnly}>₹708</Text>
-                  </Text>
-                  <Text style={styles.realPrice}>
-                    ₹649 <Text style={styles.savingsText}>(Save ₹59)</Text>
-                  </Text> */}
 
                   <Text style={styles.strikePrice}>
-                    499 x 12 = <Text style={styles.strikeOnly}>₹5,988</Text>
+                    699 x 12 = <Text style={styles.strikeOnly}>₹8,388</Text>
                   </Text>
                   <Text style={styles.realPrice}>
-                    ₹5,489 <Text style={styles.savingsText}>(Save ₹499)</Text>
+                    ₹7,689 <Text style={styles.savingsText}>(Save ₹699)</Text>
                   </Text>
                 </View>
 
@@ -763,6 +760,7 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: 'white',
     flex: 1,
+    paddingTop: STATUS_BAR_HEIGHT
   },
 
   scrollViewContent: {

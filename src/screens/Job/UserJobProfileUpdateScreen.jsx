@@ -20,11 +20,11 @@ import Toast from 'react-native-toast-message';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import RNFS from 'react-native-fs';
-import Icon from 'react-native-vector-icons/MaterialIcons';
+
 import { DomainStrengthType, ExperienceType, industrySkills, industryType, SalaryType, topTierCities } from '../../assets/Constants';
 import Message3 from '../../components/Message3';
 import CustomDropDownMenu from '../../components/DropDownMenu';
-import { types } from 'react-native-document-picker';
+
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { showToast } from '../AppUtils/CustomToast';
 import apiClient from '../ApiClient';
@@ -33,6 +33,8 @@ import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
 import Pdf from '../../assets/svgIcons/pdf.svg';
 import { colors, dimensions } from '../../assets/theme.jsx';
 import { MediaPreview } from '../helperComponents/MediaPreview.jsx';
+import KeyboardAvoid from '../AppUtils/KeyboardAvoid.jsx';
+import AppStyles, { STATUS_BAR_HEIGHT } from '../AppUtils/AppStyles.js';
 const { DocumentPicker } = NativeModules;
 
 const UserJobProfileUpdateScreen = () => {
@@ -40,10 +42,10 @@ const UserJobProfileUpdateScreen = () => {
   const { myId, myData } = useNetwork();
   const route = useRoute();
   const { profile } = route.params || {};
- 
+
   const [loading, setLoading] = useState(false);
   const [file, setFile] = useState(null);
-  console.log('file',file)
+  console.log('file', file)
   const [fileType, setFileType] = useState(null);
 
   const handleRemoveMedia = () => {
@@ -63,7 +65,7 @@ const UserJobProfileUpdateScreen = () => {
     expert_in: profile?.expert_in || '',
     education_qualifications: profile?.education_qualifications || '',
   });
-console.log('profile?.resume_key',profile?.resume_key)
+  console.log('profile?.resume_key', profile?.resume_key)
   const citiesRef = useRef(null);
   const eduRef = useRef(null);
   const expertRef = useRef(null);
@@ -168,10 +170,10 @@ console.log('profile?.resume_key',profile?.resume_key)
       Object.keys(initialPostData).some(
         (key) => postData[key] !== initialPostData[key]
       ) || !!file; // ✅ mark changed if a file is selected
-  
+
     setHasChanges(hasAnyChanges);
   }, [postData, initialPostData, file]);
-  
+
 
   useEffect(() => {
     if (profile) {
@@ -322,10 +324,10 @@ console.log('profile?.resume_key',profile?.resume_key)
           setFileType(mimeType);
           setPostData(prev => ({
             ...prev,
-          
+
           }));
           setHasChanges(true);
-          
+
         } else {
           showToast("File size must be less than 5MB.", "error");
           setFile(null);
@@ -336,7 +338,7 @@ console.log('profile?.resume_key',profile?.resume_key)
         setFile(null);
         setFileType(null);
       }
-      
+
     } catch (err) {
       if (err?.message?.includes('cancelled')) {
         // User cancelled, no toast needed
@@ -500,18 +502,18 @@ console.log('profile?.resume_key',profile?.resume_key)
         // 🧹 User removed selected file (don’t send or overwrite)
         uploadedFileKey = profile?.resume_key || ''; // fallback to old
       }
-  
-      
+
+
       const postPayload = {
         command: 'updateJobProfile',
         user_id: myId,
         ...postData,
-        
+
       };
       if (uploadedFileKey && uploadedFileKey !== postData.resume_key) {
         postPayload.resume_key = uploadedFileKey;
       }
-  console.log('postPayload',postPayload)
+      console.log('postPayload', postPayload)
       const res = await apiClient.post('/updateJobProfile', postPayload);
 
       if (res?.data?.status === 'success') {
@@ -544,7 +546,9 @@ console.log('profile?.resume_key',profile?.resume_key)
 
   return (
 
-    <View style={styles.container1}>
+    <KeyboardAvoid>
+      <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
+
       <View style={styles.headerContainer}>
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
           <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
@@ -556,7 +560,7 @@ console.log('profile?.resume_key',profile?.resume_key)
       <ScrollView
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
-        extraScrollHeight={20}
+
         contentContainerStyle={styles.container}
       >
         <Text style={styles.header}>Update job profile</Text>
@@ -655,7 +659,7 @@ console.log('profile?.resume_key',profile?.resume_key)
             placeholder={postData.education_qualifications || ""}
             placeholderTextColor="gray"
           />
-      
+
 
         </TouchableOpacity>
 
@@ -671,8 +675,9 @@ console.log('profile?.resume_key',profile?.resume_key)
             onChangeText={text => handleInputChange('languages', text)}
             placeholder={postData.languages || ""}
             placeholderTextColor="gray"
+
           />
-     
+
         </TouchableOpacity>
 
 
@@ -719,22 +724,18 @@ console.log('profile?.resume_key',profile?.resume_key)
         </TouchableOpacity>
 
 
-
-        <Message3
-          visible={showModal1}
-          onClose={() => setShowModal1(false)}  // Optional if you want to close it from outside
-          onCancel={handleStay}  // Stay button action
-          onOk={handleLeave}  // Leave button action
-          title="Are you sure ?"
-          message="Your updates will be lost if you leave this page. This action cannot be undone."
-          iconType="warning"  // You can change this to any appropriate icon type
-        />
-
       </ScrollView>
 
-
-
-    </View>
+      <Message3
+        visible={showModal1}
+        onClose={() => setShowModal1(false)}  // Optional if you want to close it from outside
+        onCancel={handleStay}  // Stay button action
+        onOk={handleLeave}  // Leave button action
+        title="Are you sure ?"
+        message="Your updates will be lost if you leave this page. This action cannot be undone."
+        iconType="warning"  // You can change this to any appropriate icon type
+      />
+    </KeyboardAvoid>
 
   );
 };
@@ -755,7 +756,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     backgroundColor: '#ffffff',
     borderBottomWidth: 1,
-    borderColor: '#f0f0f0'
+    borderColor: '#f0f0f0',
+    paddingTop:STATUS_BAR_HEIGHT
   },
   header: {
     fontSize: 18,

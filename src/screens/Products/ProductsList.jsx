@@ -5,6 +5,8 @@ import {
     Keyboard,
 
     TouchableWithoutFeedback,
+    StatusBar,
+    Platform,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useNavigation, useNavigationState, useScrollToTop } from '@react-navigation/native';
@@ -28,6 +30,12 @@ import HomeBanner from '../Banners/homeBanner3.jsx';
 import Company from '../../assets/svgIcons/company.svg';
 
 import { colors, dimensions } from '../../assets/theme.jsx';
+
+
+const STATUS_BAR_HEIGHT =
+    Platform.OS === "android" ? StatusBar.currentHeight || 24 : 44;
+
+const headerHeight = STATUS_BAR_HEIGHT + 60;
 
 const JobListScreen = React.lazy(() => import('../Job/JobListScreen'));
 const AllPosts = React.lazy(() => import('../Forum/Feed'));
@@ -55,7 +63,7 @@ const ProductsList = () => {
     const searchInputRef = useRef(null);
     const navigation = useNavigation();
     const { isConnected } = useConnection();
-    const { onScroll, headerStyle, bottomStyle } = scrollAnimations();
+    const { onScroll, headerStyle, bottomStyle, toolbarBgStyle, barStyle } = scrollAnimations();
 
     const currentRouteName = useNavigationState((state) => {
         const route = state.routes[state.index];
@@ -424,39 +432,39 @@ const ProductsList = () => {
         const imageUrl = getUrlFor(item.product_id);
 
         return (
-            <TouchableOpacity activeOpacity={1} onPress={() => handleAddProduct(item)} >
-                <View style={styles.card} >
-                    <View style={styles.productImageContainer}>
+            <TouchableOpacity activeOpacity={1} onPress={() => handleAddProduct(item)} style={styles.card}>
 
-                        <FastImage
-                            source={ imageUrl ? { uri: imageUrl } : null }
+                <View style={styles.productImageContainer}>
 
-                            style={styles.productImage}
-                            onError={() => { }}
-                        />
-                    </View>
+                    <FastImage
+                        source={imageUrl ? { uri: imageUrl } : null}
 
-                    <View style={styles.cardContent}>
+                        style={styles.productImage}
+                        onError={() => { }}
+                    />
+                </View>
 
-                        {/* <Text numberOfLines={1} style={styles.title}>{item.title || ' '}</Text>
+                <View style={styles.cardContent}>
+
+                    {/* <Text numberOfLines={1} style={styles.title}>{item.title || ' '}</Text>
                         <Text numberOfLines={1} style={styles.category}>{item.specifications.model_name || ' '}</Text>
                         <Text numberOfLines={1} style={styles.description}>{item.description || ' '}</Text> */}
-                        <Text numberOfLines={1} style={styles.title}>{highlightMatch(item.title || '', searchQuery)}</Text>
-                        <Text numberOfLines={1} style={styles.category}>{highlightMatch(item.specifications.model_name || '', searchQuery)}</Text>
-                        <Text numberOfLines={2} style={styles.description}>{highlightMatch(item.description || '', searchQuery)}</Text>
-                        {/* <Text numberOfLines={1} style={styles.companyName}>{highlightMatch(job.company_name || '', searchQuery)}</Text> */}
-                        {/* <TouchableOpacity activeOpacity={0.8} style={styles.headerRow} >
+                    <Text numberOfLines={1} style={styles.title}>{highlightMatch(item.title || '', searchQuery)}</Text>
+                    <Text numberOfLines={1} style={styles.category}>{highlightMatch(item.specifications.model_name || '', searchQuery)}</Text>
+                    <Text numberOfLines={2} style={styles.description}>{highlightMatch(item.description || '', searchQuery)}</Text>
+                    {/* <Text numberOfLines={1} style={styles.companyName}>{highlightMatch(job.company_name || '', searchQuery)}</Text> */}
+                    {/* <TouchableOpacity activeOpacity={0.8} style={styles.headerRow} >
                             <Company width={dimensions.icon.small} height={dimensions.icon.small} color={colors.secondary} />
                         </TouchableOpacity> */}
-                        <Text style={styles.companyName} >{highlightMatch(item.company_name || '', searchQuery)}</Text>
+                    <Text style={styles.companyName} >{highlightMatch(item.company_name || '', searchQuery)}</Text>
 
-                        <Text numberOfLines={1} style={styles.price}>
-                            ₹ {item.price !== undefined && item.price !== null && item.price !== '' ? item.price : "N/A"}
-                        </Text>
-                        <Text numberOfLines={1} style={styles.productDetailsText}>View details</Text>
+                    <Text numberOfLines={1} style={styles.price}>
+                        ₹ {item.price !== undefined && item.price !== null && item.price !== '' ? item.price : "N/A"}
+                    </Text>
+                    <Text numberOfLines={1} style={styles.productDetailsText}>View details</Text>
 
-                    </View>
                 </View>
+
             </TouchableOpacity>
         )
     };
@@ -468,55 +476,36 @@ const ProductsList = () => {
 
     return (
 
-        <View style={styles.container} >
-            <Animated.View style={[AppStyles.headerContainer, headerStyle]}>
-                {/* <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                    <Icon name="arrow-left" size={24} color="#075cab" />
-                </TouchableOpacity> */}
-                <View style={AppStyles.searchContainer}>
-                    <View style={AppStyles.inputContainer}>
+        <>
+            <StatusBar translucent backgroundColor="transparent" barStyle={"light-content"} />
+
+            <Animated.View style={[AppStyles.toolbar, toolbarBgStyle]}>
+
+                <Animated.View style={[AppStyles.searchRow, headerStyle]}>
+                    <View style={AppStyles.searchBar}>
+                        <Search width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.text_secondary} />
+
                         <TextInput
-                            style={AppStyles.searchInput}
-                            placeholder="Search"
                             ref={searchInputRef}
-                            placeholderTextColor="gray"
+                            placeholder="Search products..."
+                            style={AppStyles.searchInput}
+                            placeholderTextColor="#666"
                             value={searchQuery}
                             onChangeText={handleDebouncedTextChange}
-                            onFocus={handleSearchInputFocus}
                         />
-                        {searchQuery.trim() !== '' ? (
-                            <TouchableOpacity
-                                onPress={() => {
-                                    setSearchQuery('');
-                                    setSearchTriggered(false);
-                                    setSearchResults([]);
-
-                                }}
-                                style={AppStyles.iconButton}
-                            >
-                                <Close width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-
-                            </TouchableOpacity>
-                        ) : (
-                            <TouchableOpacity
-
-                                style={AppStyles.searchIconButton}
-                            >
-                                <Search width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-
-                            </TouchableOpacity>
-
-                        )}
                     </View>
+                    {isConnected && (
+                        <TouchableOpacity onPress={handleFilterClick} style={AppStyles.circle}>
+                            <Filter width={dimensions.icon.minlarge} height={dimensions.icon.minlarge} color={colors.background} />
 
-                </View>
-                {isConnected && (
-                    <TouchableOpacity onPress={handleFilterClick} style={AppStyles.circle}>
-                        <Filter width={dimensions.icon.ml} height={dimensions.icon.ml} color={colors.primary} />
+                        </TouchableOpacity>
+                    )}
+                </Animated.View>
 
-                    </TouchableOpacity>
-                )}
+
+
             </Animated.View>
+
 
 
             {!loading ? (
@@ -533,7 +522,7 @@ const ProductsList = () => {
                     viewabilityConfig={viewabilityConfig}
                     keyExtractor={(item, index) => `${item.product_id}-${index}`}
                     showsVerticalScrollIndicator={false}
-                    contentContainerStyle={AppStyles.scrollView}
+                    contentContainerStyle={{ paddingTop: headerHeight, backgroundColor: colors.app_background, paddingBottom:60 }}
                     onEndReached={() => {
                         if (lastEvaluatedKey && !loadingMore && !loading) {
                             fetchProducts(lastEvaluatedKey);
@@ -541,11 +530,12 @@ const ProductsList = () => {
                     }}
                     ref={flatListRef}
                     onScroll={onScroll}
-
+                    overScrollMode={'never'}
                     scrollEventThrottle={16}
                     onEndReachedThreshold={0.5}
                     refreshControl={
-                        <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+                        <RefreshControl refreshing={refreshing} onRefresh={handleRefresh}
+                            progressViewOffset={headerHeight} />
                     }
                     ListEmptyComponent={
                         (searchTriggered && searchResults.length === 0) ? (
@@ -555,25 +545,22 @@ const ProductsList = () => {
                         ) : null
                     }
                     ListHeaderComponent={
-                        <View>
-                            <HomeBanner bannerId="productAd01" />
+                        <Animated.View >
+                            <View style={{ paddingVertical: 5, backgroundColor: colors.app_background }}>
+                                <HomeBanner bannerId="productAd01" />
+
+                            </View>
+
                             {searchTriggered && (
                                 <>
                                     <Text style={styles.companyCount}>
                                         {searchTriggered && `${searchResults.length} products found`}
                                     </Text>
-
-                                    {searchQuery && (
-                                        <Text style={styles.companyCount}>
-                                            Showing results for{" "}
-                                            <Text style={{ fontSize: 18, fontWeight: '600', color: '#075cab' }}>
-                                                "{searchQuery}"
-                                            </Text>
-                                        </Text>
-                                    )}
                                 </>
                             )}
-                        </View>
+
+                        </Animated.View>
+
                     }
 
                     ListFooterComponent={
@@ -657,22 +644,18 @@ const ProductsList = () => {
             )}
 
             {!isFilterOpen && (
-                <Animated.View style={[AppStyles.bottom, bottomStyle]}>
-
-                    <BottomNavigationBar
-                        tabs={tabConfig}
-                        currentRouteName={currentRouteName}
-                        navigation={navigation}
-                        flatListRef={flatListRef}
-                        scrollOffsetY={scrollOffsetY}
-                        handleRefresh={handleRefresh}
-                        tabNameMap={tabNameMap}
-                    />
-                </Animated.View>
+                <BottomNavigationBar
+                    tabs={tabConfig}
+                    currentRouteName={currentRouteName}
+                    navigation={navigation}
+                    flatListRef={flatListRef}
+                    scrollOffsetY={scrollOffsetY}
+                    handleRefresh={handleRefresh}
+                    tabNameMap={tabNameMap}
+                />
 
             )}
-
-        </View>
+        </>
 
     );
 };
@@ -783,8 +766,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         backgroundColor: '#fff',
         marginBottom: 5,
-        borderWidth: 1,
-        borderColor: '#ddd',
+
     },
 
     productImageContainer: {
@@ -817,7 +799,7 @@ const styles = StyleSheet.create({
         color: colors.text_primary,
         fontWeight: '600',
         fontSize: 15,
-        
+
     },
 
     description: {
@@ -830,16 +812,16 @@ const styles = StyleSheet.create({
 
     companyName: {
         color: colors.text_primary,
-        fontWeight: '500',
+        fontWeight: '400',
         fontSize: 14,
-    
+
 
     },
     headerRow: {
         flexDirection: 'row',
         alignItems: 'center',
         alignItems: 'flex-start',
-        
+
 
     },
     priceRow: {
@@ -871,7 +853,7 @@ const styles = StyleSheet.create({
     filterContainer: {
         position: 'absolute',
         right: 0,
-        top: 0,
+        top: headerHeight,
         bottom: 0,
         width: '80%',
         backgroundColor: '#fff',

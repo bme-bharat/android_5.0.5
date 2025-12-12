@@ -76,6 +76,16 @@ project.ext.react = [
         enableHermes: true,
 ]
 
+// put this near the top of app/build.gradle (just after project.ext.react or before android { ... })
+configurations.all {
+    resolutionStrategy.eachDependency { details ->
+        if (details.requested.group == 'com.caverock' && details.requested.name == 'androidsvg') {
+            details.useTarget group: 'com.caverock', name: 'androidsvg-aar', version: '1.4'
+        }
+    }
+}
+
+
 android {
     ndkVersion rootProject.ext.ndkVersion
     buildToolsVersion rootProject.ext.buildToolsVersion
@@ -86,8 +96,8 @@ android {
         applicationId "com.bmebharat.newapp"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 44
-        versionName "5.0.10"
+        versionCode 48
+        versionName "2.5.4"
     }
     signingConfigs {
 
@@ -155,6 +165,15 @@ dependencies {
     implementation 'com.google.firebase:firebase-messaging'
     // Use Hermes
     implementation("com.facebook.react:hermes-android")
+
+     implementation(project(':d11_react-native-fast-image')) {
+        exclude group: 'com.caverock', module: 'androidsvg' // exclude the JAR to avoid duplicates
+    }
+
+    // ensure only the AAR is present
+    implementation 'com.caverock:androidsvg-aar:1.4'
+
+
 }
 
 apply plugin: 'com.google.gms.google-services'

@@ -32,26 +32,34 @@ const BottomNavigationBar = ({
   flatListRef,
   scrollOffsetY,
   handleRefresh,
-  tabNameMap,
+
 }) => {
   const { myData } = useNetwork();
 
+  const tabNameMap = 
+  {
+    Home3: "Home",
+    ProductsList: "Products",
+    Feed: "Feed",
+    Jobs: "Jobs",
+    Settings: "Settings",
+  }
   // Decide which config to use based on user type
   const tabConfig = myData?.user_type === 'users'
     ? [
-        { name: "Home", component: UserHomeScreen },
-        { name: "Jobs", component: JobListScreen },
-        { name: "Feed", component: AllPosts },
-        { name: "Products", component: ProductsList },
-        { name: "Settings", component: UserSettingScreen },
-      ]
+      { name: "Home", component: UserHomeScreen },
+      { name: "Jobs", component: JobListScreen },
+      { name: "Feed", component: AllPosts },
+      { name: "Products", component: ProductsList },
+      { name: "Settings", component: UserSettingScreen },
+    ]
     : [
-        { name: "Home", component: CompanyHomeScreen },
-        { name: "Jobs", component: JobListScreen },
-        { name: "Feed", component: AllPosts },
-        { name: "Products", component: ProductsList },
-        { name: "Settings", component: CompanySettingScreen },
-      ];
+      { name: "Home", component: CompanyHomeScreen },
+      { name: "Jobs", component: JobListScreen },
+      { name: "Feed", component: AllPosts },
+      { name: "Products", component: ProductsList },
+      { name: "Settings", component: CompanySettingScreen },
+    ];
 
   // Map route names to their icons
   const iconMap = {
@@ -68,7 +76,6 @@ const BottomNavigationBar = ({
         const isFocused = tabNameMap
           ? tabNameMap[currentRouteName] === tab.name
           : currentRouteName === tab.name;
-
         const { focused, unfocused } = iconMap[tab.name] || {};
         const IconComponent = isFocused ? focused : unfocused;
 
@@ -91,7 +98,7 @@ const BottomNavigationBar = ({
               }
             }}
             style={styles.navItem}
-            activeOpacity={0.8}
+            
           >
             {IconComponent && (
               <IconComponent width={22} height={22} fill={isFocused ? '#075cab' : 'black'} />

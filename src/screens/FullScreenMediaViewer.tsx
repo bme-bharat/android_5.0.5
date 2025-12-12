@@ -12,7 +12,7 @@ import {
   TouchableWithoutFeedback,
 } from "react-native";
 import Slider from "@react-native-community/slider";
-import BMEVideoPlayer, { BMEVideoPlayerHandle } from "./BMEVideoPlayer";
+
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Close from "../assets/svgIcons/close-large.svg";
@@ -21,6 +21,7 @@ import Pause from "../assets/svgIcons/pause.svg";
 import Mute from "../assets/svgIcons/mute.svg";
 import Volume from "../assets/svgIcons/volume.svg";
 import { colors, dimensions } from "../assets/theme.jsx";
+import BMEVideoPlayer, { BMEVideoPlayerHandle } from "./BMEVideoPlayer";
 
 const SEEK_IGNORE_MS = 300;
 const CONTROL_TIMEOUT = 3000; // ms
@@ -160,12 +161,12 @@ const InlineVideo = ({ route }) => {
     if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current);
     hideTimeoutRef.current = null;
   };
-  
+
   // ------------------ UI ------------------
   return (
     <View style={styles.videoContainer}>
       <TouchableWithoutFeedback onPress={toggleControls}>
-        <View style={ styles.videoWrapper }>
+        <View style={styles.videoWrapper}>
           <BMEVideoPlayer
             ref={videoRef}
             source={source}
@@ -179,6 +180,32 @@ const InlineVideo = ({ route }) => {
             posterResizeMode="cover"
           />
 
+          {/* Center Play/Pause */}
+          <View style={styles.centralIcon}>
+            {loading ? (
+              <ActivityIndicator size="large" color="#FFF" />
+            ) : (
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={togglePlayPause}
+                style={styles.playPauseCenter}
+              >
+                {paused ? (
+                  <Play
+                    width={dimensions.icon.xl}
+                    height={dimensions.icon.xl}
+                    color={colors.background}
+                  />
+                ) : (
+                  <Pause
+                    width={dimensions.icon.xl}
+                    height={dimensions.icon.xl}
+                    color={colors.background}
+                  />
+                )}
+              </TouchableOpacity>
+            )}
+          </View>
           {/* Animated Controls */}
           <Animated.View style={[styles.overlay, { opacity: opacityAnim }]}>
             {/* Top Row */}
@@ -192,32 +219,7 @@ const InlineVideo = ({ route }) => {
               </TouchableOpacity>
             </View>
 
-            {/* Center Play/Pause */}
-            <View style={styles.centralIcon}>
-              {loading ? (
-                <ActivityIndicator size="large" color="#FFF" />
-              ) : (
-                <TouchableOpacity
-                  activeOpacity={0.8}
-                  onPress={togglePlayPause}
-                  style={styles.playPauseCenter}
-                >
-                  {paused ? (
-                    <Play
-                      width={dimensions.icon.xl}
-                      height={dimensions.icon.xl}
-                      color={colors.background}
-                    />
-                  ) : (
-                    <Pause
-                      width={dimensions.icon.xl}
-                      height={dimensions.icon.xl}
-                      color={colors.background}
-                    />
-                  )}
-                </TouchableOpacity>
-              )}
-            </View>
+
 
             {/* Bottom Row */}
             <View style={styles.bottomControls}>
