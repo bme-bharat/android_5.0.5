@@ -1,6 +1,6 @@
 // hooks/useHideOnScroll.js
 import React from "react";
-import { Dimensions, Platform, StatusBar } from "react-native";
+import { Dimensions, Platform } from "react-native";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -11,18 +11,19 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 
+
 const { width } = Dimensions.get("window");
 
 const HEADER_HEIGHT = width * 0.3;
-const COLLAPSED_HEIGHT = 60;
-const TOP_HEADER_HEIGHT = 60;
+const COLLAPSED_HEIGHT = 44 ;
+const TOP_HEADER_HEIGHT = 44 ;
 const BOTTOM_HEIGHT = 60;
 
 const SHOW_THRESHOLD = 8; // small scroll threshold to hide top header
 const DIRECTION_THRESHOLD = 0.5; // small delta to avoid jitter
 
 
-export default function scrollAnimations(headerHeight = 60, bottomHeight = 60) {
+export default function scrollAnimations() {
     
     const bottomTranslateY = useSharedValue(0);
      const scrollY = useSharedValue(0);
@@ -84,7 +85,7 @@ export default function scrollAnimations(headerHeight = 60, bottomHeight = 60) {
 
     // white background with fade
     return {
-      backgroundColor: "#075cab",
+     
       shadowOpacity: opacity * 0.1, // smooth fade-in shadow
     };
   });

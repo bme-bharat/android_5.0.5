@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, TouchableOpacity, useWindowDimensions } from 'react-native';
+import { View, Text, TouchableOpacity, useWindowDimensions, Linking } from 'react-native';
 import RenderHTML, { defaultHTMLElementModels } from 'react-native-render-html';
 import { decode } from 'html-entities';
 import truncate from 'html-truncate';
@@ -45,7 +45,7 @@ const baseStyle = { fontSize: 14, };
 const defaultTextProps = {
   selectable: false,
   style: {
-    fontSize: 14,
+    // fontSize: 14,
     // marginTop: 0,
     // marginBottom: 0,
     // fontWeight: '400',
@@ -92,7 +92,21 @@ const RenderHtmlRenderer = React.memo(({ sourceHtml, width }) => {
       source={memoSource}
       emSize={14}
       ignoredStyles={[]}
-      baseStyle={baseStyle}
+      // baseStyle={baseStyle}
+      renderersProps={{
+        a: {
+          onPress: (event, href) => {
+            // Prevent TouchableOpacity parent from firing
+            event?.preventDefault?.();
+            event?.stopPropagation?.();
+
+            if (href) {
+              Linking.openURL(href);
+            }
+          },
+        },
+      }}
+
       tagsStyles={tagStyles}
       defaultTextProps={defaultTextProps}
       ignoredDomTags={['font']}
@@ -119,6 +133,7 @@ export const ForumBody = ({ html = '' }) => {
     return decode(stripped.trim());
   }, [html]);
 
+
   const showReadMore = plainText.length > MAX_CHARS;
 
   const collapsedHtml = useMemo(() => {
@@ -131,7 +146,19 @@ export const ForumBody = ({ html = '' }) => {
     return `<p>${truncated}</p>`;
   }, [html, isExpanded, showReadMore]);
 
-
+  const autoLinkUrls = (inputHtml = '') => {
+    const urlRegex = /(https?:\/\/[^\s<]+)/g;
+    return inputHtml.replace(
+      urlRegex,
+      (url) => `<a href="${url}">${url}</a>`
+    );
+  };
+  
+  
+  const processedHtml = useMemo(() => {
+    return autoLinkUrls(collapsedHtml);
+  }, [collapsedHtml]);
+  
   const handleExpand = () => {
     if (!isExpanded) setIsExpanded(true);
   };
@@ -143,7 +170,7 @@ export const ForumBody = ({ html = '' }) => {
       style={{ marginTop: 5 }}
     >
       <View>
-        <RenderHtmlRenderer sourceHtml={collapsedHtml} width={width} />
+        <RenderHtmlRenderer sourceHtml={processedHtml} width={width} />
       </View>
     </TouchableOpacity>
   );
@@ -167,8 +194,8 @@ export const ForumPostBody = ({ html, forumId, numberOfLines }) => {
           ellipsizeMode: 'tail',
         } : {})}
         style={{
-          fontSize: 14,
-          fontWeight: '400',
+          // fontSize: 14,
+          // fontWeight: '400',
           color: colors.text_primary,
           lineHeight: 20,
         }}
@@ -197,9 +224,9 @@ export const MyPostBody = ({ html, forumId, numberOfLines }) => {
           ellipsizeMode: 'tail',
         } : {})}
         style={{
-          fontSize: 14,
+          // fontSize: 14,
           color: '#000',
-          fontWeight: '400',
+          // fontWeight: '400',
           // lineHeight: 20,
         }}
       >

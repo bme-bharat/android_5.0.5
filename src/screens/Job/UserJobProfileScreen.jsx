@@ -14,7 +14,11 @@ import Edit from '../../assets/svgIcons/edit.svg';
 import Add from '../../assets/svgIcons/add.svg';
 
 import { colors, dimensions } from '../../assets/theme.jsx';
-import AppStyles, { commonStyles, STATUS_BAR_HEIGHT } from '../AppUtils/AppStyles.js';
+import AppStyles from '../AppUtils/AppStyles.js';
+import Animated from 'react-native-reanimated';
+import { AppHeader } from '../AppUtils/AppHeader.jsx';
+import Avatar from '../helperComponents/Avatar.jsx';
+import MaterialIcons from '@react-native-vector-icons/material-icons';
 
 const UserJobProfilescreen = () => {
   const { myId, myData } = useNetwork();
@@ -62,33 +66,6 @@ const UserJobProfilescreen = () => {
       }
     }, [])
   );
-
-  const formatDate = (dateInput) => {
-    let date;
-
-    // Handle string input in dd/mm/yyyy or ISO format
-    if (typeof dateInput === 'string') {
-      if (dateInput.includes('/')) {
-        const [day, month, year] = dateInput.split('/').map(Number); // Convert to numbers
-        date = new Date(year, month - 1, day); // Month is 0-based
-      } else {
-        date = new Date(dateInput); // Assume ISO or other parsable format
-      }
-    } else if (dateInput instanceof Date) {
-      date = dateInput;
-    } else {
-      return 'Invalid Date';
-    }
-
-    if (isNaN(date.getTime())) {
-      return 'Invalid Date';
-    }
-    const day = String(date.getDate()).padStart(2, '0');
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const year = date.getFullYear();
-
-    return `${day}/${month}/${year}`;
-  };
 
 
   useEffect(() => {
@@ -183,111 +160,174 @@ const UserJobProfilescreen = () => {
   };
 
 
-  if (profile?.removed_by_author) {
-    return (
-      <View style={styles.container}>
-              <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
-        
-        <View style={styles.headerContainer}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-            <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
 
-          </TouchableOpacity>
+  const handleNavigate = () => {
+    if (hasProfile) {
+      handleUpdate();
+    } else {
+      navigation.navigate('UserJobProfileCreate');
+    }
+  };
 
-          <TouchableOpacity
-            style={styles.circle}
-            onPress={() => navigation.navigate('UserJobProfileCreate')}
-          >
-            <Edit width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-
-            <Text style={styles.shareText}>Create</Text>
-          </TouchableOpacity>
-
+  const Row = ({ icon, label, value }) => (
+    <TouchableOpacity activeOpacity={0.7} style={styles.row}>
+      <View style={styles.left}>
+        <View style={styles.iconWrap}>
+          <MaterialIcons name={icon} size={20} color="#000" />
         </View>
-
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <Text style={{ fontSize: 16, color: 'gray' }}>Create job profile</Text>
+        <View style={styles.textWrap}>
+          <Text style={styles.value}>{value}</Text>
+          <Text style={styles.label}>{label}</Text>
         </View>
       </View>
-    );
-  }
+
+      {/* <MaterialIcons name="chevron-right" size={24} color="#777" /> */}
+    </TouchableOpacity>
+  );
+
+  const isLoading = !profile
+  const isRemoved = profile?.removed_by_author
+  const hasProfile = profile?.first_name
 
   return (
-    <View style={styles.container} >
-            <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
-      
-      <View style={styles.headerContainer}>
-        {/* Back Button */}
-        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
+    < >
 
-        </TouchableOpacity>
+      <AppHeader
+        title="Job profile"
+        onEdit={handleNavigate}
+        editLabel={hasProfile ? 'Edit' : 'Create'}
+      />
 
-        {/* Profile Exists? Show Update Button; Otherwise, Show Create Profile Button */}
-        {profile !== null && (
-          <TouchableOpacity
-            style={styles.circle}
-            onPress={
-              profile
-                ? handleUpdate
-                : () => navigation.navigate('UserJobProfileCreate')
-            }
-          >
-            <Edit
-              width={dimensions.icon.medium}
-              height={dimensions.icon.medium}
-              color={colors.primary}
-            />
-            <Text style={styles.shareText}>
-              {profile ? "Update" : "Create"}
-            </Text>
-          </TouchableOpacity>
-        )}
 
-      </View>
+      {isLoading && (
+        <View style={AppStyles.center}>
+          <ActivityIndicator size="small" color="#075cab" />
+        </View>
+      )}
 
-      {profile ? (
-        <ScrollView contentContainerStyle={styles.scrollViewContainer} showsVerticalScrollIndicator={false}
-          showsHorizontalScrollIndicator={false} ref={scrollViewRef}>
+      {!isLoading && isRemoved && (
+        <View style={AppStyles.center}>
+          <Text style={AppStyles.removedText}>
+            Create job profile
+          </Text>
+        </View>
+      )}
 
-          <View style={[styles.postContainer]}>
+      {!isLoading && !isRemoved && hasProfile && (
+        <>
+          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16 }}
+            showsHorizontalScrollIndicator={false} ref={scrollViewRef}>
 
             <View style={styles.imageContainer}>
-              {typeof imageUrl === 'string' ? (
-                <FastImage
-                  source={{ uri: profileImage?.imageUrl }}
-                  style={styles.detailImage}
 
-                  onError={() => { }}
-                />
-              ) : (
-                <View
-                  style={[
-                    styles.detailImage,
-                    { backgroundColor: imageUrl?.backgroundColor || '#ccc' },
-                  ]}
-                >
-                  <Text style={[commonStyles.avatarText, { color: imageUrl?.textColor || '#000' },]}>
-                    {imageUrl?.initials}
-                  </Text>
-                </View>
-              )}
+              <Avatar
+                imageUrl={profileImage?.imageUrl}
+                name={profile?.first_name}
+                size={50}
+                radius={8}
+              />
+
+
+              <View style={styles.textContainer}>
+                <Text style={[styles.title]} numberOfLines={1} ellipsizeMode='tail'>
+                  {`${(profile?.first_name || '').trim()} ${(profile?.last_name || '').trim()}`}
+                </Text>
+                <Text style={styles.category}>{profile?.user_email_id || ""}</Text>
+              </View>
             </View>
 
             <View style={styles.Heading}>
 
-              <Text style={commonStyles.title}>
-                {(profile?.first_name || '').trimStart().trimEnd()} {(profile?.last_name || '').trimStart().trimEnd()}
-              </Text>
 
-              <View style={commonStyles.labValContainer}>
+
+              {/* <Row
+                icon="email"
+                value={(profile?.user_email_id || "").trimStart().trimEnd()}
+                label="E-mail Address"
+              /> */}
+
+              <Row
+                icon="phone"
+                value={profile?.user_phone_number}
+                label="Phone Number"
+              />
+
+              <Row
+                icon="location-on"
+                value={`${profile?.city || ''}, ${profile?.state || ''}`.trim()}
+                label="Address"
+              />
+
+
+              <Row
+                icon="transgender"
+                value={profile?.gender}
+                label="Gender"
+              />
+              <Row
+                icon="date-range"
+                value={profile?.date_of_birth}
+                label="Date of Birth"
+              />
+              {(profile?.college?.trimStart().trimEnd()) && (
+                <Row
+                  icon="work"
+                  value={profile?.college.trimStart().trimEnd()}
+                  label="Institute / Company"
+                />
+              )}
+
+              <Row
+                icon="person"
+                value={profile?.industry_type}
+                label="Profile"
+              />
+              <Row
+                icon="school"
+                value={profile?.education_qualifications}
+                label="Educational qualification"
+              />
+              <Row
+                icon="engineering"
+                value={profile.expert_in}
+                label="Expert in"
+              />
+
+              <Row
+                icon="person"
+                value={profile?.work_experience}
+                label="Experience"
+              />
+              <Row
+                icon="location-on"
+                value={profile?.preferred_cities}
+                label="Preferred cities"
+              />
+              <Row
+                icon="attach-money"
+                value={profile?.expected_salary}
+                label="Expected salary"
+              />
+              <Row
+                icon="domain"
+                value={profile?.domain_strength}
+                label="Domain strength"
+              />
+              {profile?.languages && (
+                <Row
+                  icon="person"
+                  value={profile?.languages}
+                  label="languages"
+                />
+              )}
+              {/* <View style={commonStyles.labValContainer}>
                 <Text style={commonStyles.label}>Email ID  </Text>
                 <Text style={commonStyles.colon}>:</Text>
                 <Text style={commonStyles.value}>{(profile?.user_email_id || "").trimStart().trimEnd()}
                 </Text>
-              </View>
+              </View> */}
 
-              <View style={commonStyles.labValContainer}>
+              {/* <View style={commonStyles.labValContainer}>
                 <Text style={commonStyles.label}>Phone no.     </Text>
                 <Text style={commonStyles.colon}>:</Text>
                 <Text style={commonStyles.value}>{profile?.user_phone_number || ""}
@@ -354,7 +394,7 @@ const UserJobProfilescreen = () => {
               </View>
 
               <View style={commonStyles.labValContainer}>
-                <Text style={commonStyles.label}>Experience             </Text>
+                <Text style={commonStyles.label}>Experience</Text>
                 <Text style={commonStyles.colon}>:</Text>
 
                 <Text style={commonStyles.value}>{profile?.work_experience || ""}
@@ -406,28 +446,47 @@ const UserJobProfilescreen = () => {
                     ))}
                   </View>
                 </View>
-              )}
+              )} */}
 
             </View>
 
+            <View style={styles.actionRow}>
+              <TouchableOpacity
+                onPress={handleOpenResume}
+                disabled={loading}
+                style={styles.halfButtonPrimary}
+              >
+                {loading ? (
+                  <ActivityIndicator size="small" color={colors.primary} />
+                ) : (
+                  <View style={styles.rowCenter}>
+                    <MaterialIcons
+                      name="remove-red-eye"
+                      size={20}
+                      color={colors.primary}
+                      style={styles.icon}
+                    />
+                    <Text style={styles.buttonTextPrimary}>View Resume</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+              <View style={styles.centerDivider} />
 
-            <TouchableOpacity onPress={handleOpenResume} disabled={loading} style={{ alignItems: 'center', padding: 10, }}>
-              {loading ? (
-                <ActivityIndicator size="small" color="#075cab" style={styles.viewResumeText} />
-              ) : (
-                <Text style={styles.viewResumeText}>View Resume</Text>
-              )}
-            </TouchableOpacity>
+              <TouchableOpacity style={styles.halfButtonDelete} onPress={handleDelete1}>
+                <MaterialIcons
+                  name="delete-outline"
+                  size={20}
+                  color={colors.danger}
+                  style={styles.icon}
+                />
+                <Text style={styles.buttonTextDelete} numberOfLines={1} ellipsizeMode='tail'>Delete job profile</Text>
+              </TouchableOpacity>
 
 
-            <TouchableOpacity style={styles.buttonDelete} onPress={handleDelete1}>
-              <Text style={styles.buttonTextDelte}>Delete</Text>
-            </TouchableOpacity>
-          </View>
+            </View>
+          </ScrollView>
 
-        </ScrollView>
-      ) : (
-        null
+        </>
       )}
 
       <Message
@@ -439,7 +498,7 @@ const UserJobProfilescreen = () => {
         iconType="warning"
       />
 
-    </View>
+    </>
   );
 };
 
@@ -447,7 +506,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
-    paddingTop: STATUS_BAR_HEIGHT
   },
 
   container3: {
@@ -461,26 +519,9 @@ const styles = StyleSheet.create({
   },
 
   imageContainer: {
-    marginBottom: 20,
-    width: 140,
-    height: 140,
-    alignSelf: 'center'
-  },
-  buttonDelete: {
-    alignSelf: 'center', // Centers the button
-    width: 90, // Adjusts the button width to be smaller
-    paddingVertical: 5,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderColor: '#FF0000',
-    borderWidth: 1,
-    marginVertical: 20,
-  },
-  buttonTextDelte: {
-    color: '#FF0000',
-    fontWeight: '600',
-    fontSize: 16,
+    marginVertical: 10,
+    flexDirection: 'row'
+
   },
 
   detailImage: {
@@ -491,77 +532,125 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center'
   },
-  textContainer: {
 
-    flex: 1,
-    justifyContent: 'space-between',
-    flexDirection: 'row',
-    alignItems: 'center',
-    elevation: 3,
-    backgroundColor: 'white',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
-    borderRadius: 10,
-    padding: 10,
-    marginVertical: 5,
-    marginHorizontal: 10
-
-  },
   Heading: {
     flex: 1,
     justifyContent: 'space-between',
     paddingHorizontal: 5
 
   },
+
+
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderColor: '#e2e2e2',
+  },
+
+  left: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+
+  iconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#e2e2e2',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  textWrap: {
+    flexShrink: 1
+  },
   value: {
-    flex: 2, // Take the remaining space
-    flexShrink: 1,
-    color: colors.text_secondary,
-    fontWeight: '500',
-    fontSize: 13,
-    textAlign: 'left', // Align text to the left
-    alignSelf: 'flex-start',
+    fontSize: 15,
+    fontWeight: '400',
+    color: colors.text_primary,
 
   },
 
   label: {
-    flex: 1, // Take up available space
-    color: colors.text_primary,
-    fontWeight: '500',
     fontSize: 13,
-    textAlign: 'left', // Align text to the left
-    alignSelf: 'flex-start',
-
-  },
-  colon: {
-    width: 20, // Fixed width for the colon
-    textAlign: 'center', // Center the colon
-    color: 'black',
-    fontWeight: '500',
-    fontSize: 15,
-    alignSelf: 'flex-start',
+    color: '#888',
+    marginTop: 2,
   },
   title: {
+    fontSize: 18,
+    fontWeight: '500',
     color: colors.text_primary,
-    fontWeight: '600',
-    fontSize: 16,
-    textAlign: 'center',
-    color: "black",
-    marginBottom: 10
+
+  },
+  category: {
+    fontSize: 14,
+    fontWeight: '400',
+    color: colors.text_secondary,
+  },
+  textContainer: {
+    marginLeft: 10,
+    flex: 1
+  },
+  actionRow: {
+    flexDirection: 'row',
+    // marginVertical: 20, 
+    // borderTopWidth: 1,
+    // borderColor: '#e0e0e0',
+    overflow: 'hidden',
+    // backgroundColor: 'red'
+  },
+  centerDivider: {
+    width: 1,
+    backgroundColor: '#e0e0e0',   // 👈 vertical center line
+  },
+  halfButtonDelete: {
+    flex: 1,               // 👈 takes half
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 18,
+    borderRadius: 8,
+    // borderWidth: 1,
+    // borderColor: colors.danger,
+    // backgroundColor: '#fff',
   },
 
-  viewResumeText: {
-    textAlign: 'center',
-    color: '#075cab',
-    fontSize: 16,
-    fontWeight: "500",
+  halfButtonPrimary: {
+    flex: 1,               // 👈 takes half
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 18,
+    borderRadius: 8,
+    // borderWidth: 1,
+    // borderColor: colors.primary,
+    // backgroundColor: '#fff',
   },
-  resumeButtonText: {
-    color: '#075cab',
-    fontSize: 16,
+
+  rowCenter: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
+
+  icon: {
+    marginRight: 6,
+  },
+
+  buttonTextDelete: {
+    fontSize: 15,
+    fontWeight: '400',
+    color: colors.danger,
+  },
+
+  buttonTextPrimary: {
+    fontSize: 15,
+    fontWeight: '400',
+    color: colors.primary,
+  },
+
 
   headerContainer: {
     flexDirection: 'row',
@@ -592,10 +681,9 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   shareText: {
-    color: '#075cab',
+    color: colors.text_white,
     fontSize: 16,
     fontWeight: '600',
-    marginLeft: 4,
 
   },
 

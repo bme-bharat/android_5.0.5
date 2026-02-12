@@ -18,7 +18,7 @@ import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
 import Close from '../../assets/svgIcons/close-large.svg';
 import { colors, dimensions } from '../../assets/theme.jsx';
 import SubscriptionCard from './SubscriptionCard.jsx';
-import AppStyles, { STATUS_BAR_HEIGHT } from '../AppUtils/AppStyles.js';
+import AppStyles from '../AppUtils/AppStyles.js';
 
 const LoginTimeCompanySubscrption = () => {
 
@@ -136,7 +136,7 @@ const LoginTimeCompanySubscrption = () => {
           amount: order.amount,
           currency: order.currency,
           name: 'BME BHARAT',
-          description: 'BME BHARAT Transaction',
+          description: 'Plan Subscription Payment',
           image: 'https://bmebharat.com/assets/images/logo.png',
           order_id: order.id,
           prefill: {
@@ -517,15 +517,22 @@ const LoginTimeCompanySubscrption = () => {
 
   return (
     <View style={styles.container}>
-            <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
-      
-      <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-        <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
+      <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} >
 
-      </TouchableOpacity>
+        <View style={AppStyles.searchRow}>
+          <TouchableOpacity
+            style={AppStyles.backButton}
+            onPress={() => { navigation.goBack() }} >
+            <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.background} />
+
+          </TouchableOpacity>
+
+        </View>
+
+      </View>
 
       <ScrollView
-        contentContainerStyle={styles.scrollViewContent}
+        contentContainerStyle={[AppStyles.scrollViewContainer, { paddingHorizontal: 5 }]}
         showsVerticalScrollIndicator={false}
       >
         <SubscriptionCard
@@ -973,7 +980,7 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: 'white',
     flex: 1,
-        paddingTop: STATUS_BAR_HEIGHT
+
   },
 
   scrollViewContent: {

@@ -13,7 +13,6 @@ import { showToast } from '../AppUtils/CustomToast';
 import { useNetwork } from '../AppUtils/IdProvider';
 import apiClient from '../ApiClient';
 import { EventRegister } from 'react-native-event-listeners';
-import AppStyles, { STATUS_BAR_HEIGHT } from '../AppUtils/AppStyles';
 import { actions, RichEditor, RichToolbar } from 'react-native-pell-rich-editor';
 import { sanitizeHtmlBody } from './forumBody';
 import { useSelector } from 'react-redux';
@@ -22,9 +21,12 @@ import { MediaPreview } from '../helperComponents/MediaPreview';
 import { MediaPickerButton } from '../helperComponents/MediaPickerButton';
 import { handleThumbnailUpload, saveBase64ToFile, uploadFromBase64 } from './VideoParams';
 import { useS3Uploader } from '../helperComponents/useS3Uploader';
-import ImageResizer from 'react-native-image-resizer';
+import ImageResizer from '@bam.tech/react-native-image-resizer';
+
 import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
 import { colors, dimensions } from '../../assets/theme.jsx';
+import Avatar from '../helperComponents/Avatar.jsx';
+import { AppHeader } from '../AppUtils/AppHeader.jsx';
 
 const { DocumentPicker } = NativeModules;
 
@@ -46,7 +48,6 @@ const ForumPostScreen = () => {
   const [file, setFile] = useState(null);
   const [fileType, setFileType] = useState('');
   const [mediaMeta, setMediaMeta] = useState(null);
-
   const [compressedImage, setCompressedImage] = useState(null);
   const navigation = useNavigation();
   const [postData, setPostData] = useState({
@@ -58,7 +59,6 @@ const ForumPostScreen = () => {
   const scrollViewRef = useRef(null);
   const [thumbnailUri, setThumbnailUri] = useState(mediaMeta?.previewThumbnail);
   const [overlayUri, setOverlayUri] = useState(null);       // auto-captured overlay
-
   const [loading, setLoading] = useState(false);
   const richText = useRef();
   const { uploadFile, uploading } = useS3Uploader();
@@ -68,7 +68,6 @@ const ForumPostScreen = () => {
   }, [mediaMeta])
 
   useEffect(() => {
-
     const bodyChanged = postData.body.trim() !== '';
     const filekey = postData.fileKey.trim() !== '';
 
@@ -179,7 +178,7 @@ const ForumPostScreen = () => {
         file.uri,
         resizedWidth,
         resizedHeight,
-        'JPEG',
+        'WEBP',
         80
       );
 
@@ -195,7 +194,6 @@ const ForumPostScreen = () => {
         name: file.name,
         type: file.type || 'image/jpeg',
       };
-
       setFile(file);                      // original picked file
       setFileType(file.type || 'image/jpeg');
       setMediaMeta(meta);
@@ -240,46 +238,45 @@ const ForumPostScreen = () => {
 
 
   const cleanHtmlSpaces = (html) => {
-     if (!html) return "";
-   
-     let cleaned = html;
- 
-     const emptyBlock = /<div>\s*(?:<span>\s*)?(?:<br\s*\/?>)\s*(?:<\/span>)?\s*<\/div>/gi;
-     cleaned = cleaned.replace(new RegExp(`^(?:${emptyBlock.source})+`, "i"), "");
-     cleaned = cleaned.replace(new RegExp(`(?:${emptyBlock.source})+$`, "i"), "");
-     cleaned = cleaned.trim();
-   
-     return cleaned;
-   };
-  
-   
-   const handleBodyChange = (html) => {
-   
-     const cleanedBody = sanitizeHtmlBody(html);
-     const finalBody = cleanHtmlSpaces(cleanedBody);
- 
-     setPostData(prev => ({
-       ...prev,
-       body: finalBody
-     }));
-   };
+    if (!html) return "";
+
+    let cleaned = html;
+
+    const emptyBlock = /<div>\s*(?:<span>\s*)?(?:<br\s*\/?>)\s*(?:<\/span>)?\s*<\/div>/gi;
+    cleaned = cleaned.replace(new RegExp(`^(?:${emptyBlock.source})+`, "i"), "");
+    cleaned = cleaned.replace(new RegExp(`(?:${emptyBlock.source})+$`, "i"), "");
+    cleaned = cleaned.trim();
+
+    return cleaned;
+  };
+
+
+  const handleBodyChange = (html) => {
+
+    const cleanedBody = sanitizeHtmlBody(html);
+    const finalBody = cleanHtmlSpaces(cleanedBody);
+
+    setPostData(prev => ({
+      ...prev,
+      body: finalBody
+    }));
+  };
 
 
 
 
   const handlePostSubmission = async () => {
     if (loading) return;
+    if (!postData.body.trim()) {
+      showToast("Description is mandatory", "info");
+      return;
+    }
+    Keyboard.dismiss();
 
-    setHasChanges(true);
     setLoading(true);
 
     try {
       setHasChanges(false);
-
-      if (!postData.body.trim()) {
-        showToast("Description is mandatory", "info");
-        return;
-      }
 
       // const uploadedFiles = await handleUploadFile();
       // if (!uploadedFiles) throw new Error("File upload failed.");
@@ -294,7 +291,7 @@ const ForumPostScreen = () => {
       if (uploaded) {
         fileKey = uploaded.fileKey;
         thumbnailFileKey = uploaded.thumbnailFileKey;
-      
+
       }
 
 
@@ -348,79 +345,47 @@ const ForumPostScreen = () => {
     }
   };
 
+  const isPostDisabled =
+    !postData.body?.trim() ||
+    loading ||
+    isCompressing
 
-
-
-
+    const dismissEditorAndKeyboard = () => {
+      Keyboard.dismiss();
+      richText.current?.blurContentEditor();
+    };
+    
   return (
     <View style={styles.container}>
-      <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
-
-      <View style={styles.headerContainer}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-
-        </TouchableOpacity>
-        <TouchableOpacity
-          onPress={handlePostSubmission}
-          style={[
-            AppStyles.buttonContainer,
-           !postData.body || loading || isCompressing ? styles.disabledButton : null,
-          ]}
-          disabled={!postData.body || loading || isCompressing}
-        >
-          {loading || isCompressing ? (
-            <ActivityIndicator size="small" />
-          ) : (
-            <Text style={[styles.buttonText, (!postData.body.trim()) && styles.buttonDisabledText]} >Post</Text>
-          )}
-        </TouchableOpacity>
-
-      </View>
 
 
-
+      <AppHeader
+        title="Create Post"
+        onPost={handlePostSubmission}
+        postLabel="Post"
+        postLoading={loading || isCompressing}
+        postDisabled={isPostDisabled}
+      />
       <KeyboardAwareScrollView
-        contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 10, paddingBottom: '40%' }}
+        contentContainerStyle={[{ paddingBottom: '80%', paddingHorizontal: 5 }]}
         keyboardShouldPersistTaps="handled"
-        extraScrollHeight={20}
-        onScrollBeginDrag={() => Keyboard.dismiss()}
+        keyboardDismissMode='interactive'
 
       >
 
         <View style={styles.profileContainer}>
           <View style={styles.imageContainer}>
-            {profile?.fileKey && profile?.imageUrl ? (
-              <Image
-                source={{ uri: profile?.imageUrl }}
-                style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: 20,
-                  marginRight: 10,
-                }}
-              />
-            ) : (
-              <View
-                style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: 20,
-                  marginRight: 10,
-                  backgroundColor: profile?.companyAvatar?.backgroundColor || '#ccc',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                }}
-              >
-                <Text style={{ color: profile?.companyAvatar?.textColor || '#000', fontWeight: 'bold' }}>
-                  {profile?.companyAvatar?.initials || '?'}
-                </Text>
-              </View>
-            )}
+
+            <Avatar
+              imageUrl={profile?.imageUrl}
+              name={profile?.first_name || profile?.company_name}
+              size={40}
+            />
           </View>
 
           <View style={styles.profileTextContainer}>
-            <Text style={styles.profileName}>
+            <Text style={styles.profileName} ellipsizeMode='tail' numberOfLines={1}>
+
               {profile?.company_name
                 ? profile.company_name
                 : `${profile?.first_name || ''} ${profile?.last_name || ''}`}
@@ -520,7 +485,6 @@ const ForumPostScreen = () => {
         message={`Your updates will be lost if you leave this page.\nThis action cannot be undone.`}
         iconType="warning"
       />
-      <Toast />
     </View>
   );
 };
@@ -528,7 +492,6 @@ const ForumPostScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingTop: STATUS_BAR_HEIGHT
 
   },
 
@@ -569,11 +532,13 @@ const styles = StyleSheet.create({
 
   profileTextContainer: {
     justifyContent: 'center',
+    flex: 1
+
   },
   profileName: {
     fontSize: 15,
     fontWeight: '500',
-    color: 'black'
+    width: '80%',
   },
   profileCategory: {
     fontSize: 13,

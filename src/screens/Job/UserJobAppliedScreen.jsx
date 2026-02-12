@@ -1,19 +1,20 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { StyleSheet, Text, View, FlatList, Alert, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { StyleSheet, Text, View, FlatList, Alert, TouchableOpacity, ActivityIndicator, RefreshControl } from 'react-native';
 import axios from 'axios';
 import Toast from 'react-native-toast-message';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { COLORS } from '../../assets/Constants'; // Ensure COLORS has appropriate color values
 
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import Message from '../../components/Message';
 import apiClient from '../ApiClient';
 import { showToast } from '../AppUtils/CustomToast';
 import { useNetwork } from '../AppUtils/IdProvider';
+import AppStyles from '../AppUtils/AppStyles';
+import { colors, dimensions } from '../../assets/theme';
+import Animated from 'react-native-reanimated';
 import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
-import { colors, dimensions } from '../../assets/theme.jsx';
-import AppStyles, { commonStyles, STATUS_BAR_HEIGHT } from '../AppUtils/AppStyles.js';
+import { AppHeader } from '../AppUtils/AppHeader';
 
 const UserJobAppliedScreen = () => {
   const { myId, myData } = useNetwork();
@@ -24,6 +25,7 @@ const UserJobAppliedScreen = () => {
   const [showModal, setShowModal] = useState(false);
   const [selectedJobTitle, setSelectedJobTitle] = useState('');
   const [loading, setLoading] = useState(true);
+
 
   useFocusEffect(
 
@@ -108,6 +110,18 @@ const UserJobAppliedScreen = () => {
     setShowModal(true);
   };
 
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handleRefresh = useCallback(async () => {
+    try {
+      setRefreshing(true);
+      await fetchAppliedJobs();
+    } catch (e) {
+      console.error("Refresh failed", e);
+    } finally {
+      setRefreshing(false);
+    }
+  }, []);
 
   const handleDetails = (item) => {
     navigation.navigate('UserAppliedJobDetails', { jobDetails: item });
@@ -117,108 +131,112 @@ const UserJobAppliedScreen = () => {
     navigation.navigate("JobDetail", { post_id: job.post_id, post: job });
   };
 
-  if (appliedJobs?.removed_by_author) {
-    return (
-      <>
-        <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
-
-        <View style={styles.headerContainer}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-            <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-
-          </TouchableOpacity>
-
-        </View>
-
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <Text style={{ fontSize: 16, color: 'gray' }}>No jobs applied</Text>
-        </View>
-      </ >
-    );
-  }
-
-return (
-
-  < >
-    <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
-
-    <View style={styles.headerContainer}>
-      <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-        <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-
-      </TouchableOpacity>
-    </View>
 
 
-    {appliedJobs ? (
-      <FlatList
-        data={appliedJobs}
-        contentContainerStyle={{ paddingTop: STATUS_BAR_HEIGHT, }}
-        showsVerticalScrollIndicator={false}
-        renderItem={({ item }) => (
-          <View style={styles.card}>
-            <View style={commonStyles.valContainer}>
-              <Text style={commonStyles.label}>Job Title</Text>
-              <Text style={commonStyles.colon}>:</Text>
-              <Text style={commonStyles.value}>{item?.job_title.trim()}</Text>
-            </View>
-            <View style={commonStyles.valContainer}>
-              <Text style={commonStyles.label}>Company</Text>
-              <Text style={commonStyles.colon}>:</Text>
-              <Text style={commonStyles.value}>{item?.company_name.trim()}</Text>
-            </View>
-            <View style={commonStyles.valContainer}>
-              <Text style={commonStyles.label}>Category</Text>
-              <Text style={commonStyles.colon}>:</Text>
-              <Text style={commonStyles.value}>{item?.company_category}</Text>
-            </View>
-            <View style={commonStyles.valContainer}>
-              <Text style={commonStyles.label}>City</Text>
-              <Text style={commonStyles.colon}>:</Text>
-              <Text style={commonStyles.value}>{item?.company_located_city}</Text>
-            </View>
-            <View style={commonStyles.valContainer}>
-              <Text style={commonStyles.label}>Salary package</Text>
-              <Text style={commonStyles.colon}>:</Text>
-              <Text style={commonStyles.value}>{item.Package || "N/A"}</Text>
-            </View>
+  const isLoading = !appliedJobs
+  const isRemoved = appliedJobs?.removed_by_author
+  const hasResource = appliedJobs?.job_title
 
-            <View style={styles.buttonContainer}>
-              <TouchableOpacity onPress={() => navigateToDetails(item)} style={styles.viewMoreButton}>
-                <Text style={styles.viewMoreText}>View More</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => confirmRevoke(item.post_id)} style={styles.revokeButton}>
-                <Text style={styles.revokeButtonText}>Revoke</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        )}
-        keyExtractor={(item) => item.post_id}
+  return (
+
+    < >
+
+      <AppHeader
+        title="Applied jobs"
+
       />
-    ) : null}
-    <Message
-      visible={showModal}
-      onClose={() => setShowModal(false)}
-      onCancel={() => setShowModal(false)}
-      onOk={() => handleRevoke(selectedJobTitle)}
-      title="Confirm Deletion"
-      message={`Are you sure you want to revoke the job ?`}
-      iconType="warning"
-    />
+      {isLoading && (
+        <View style={AppStyles.center}>
+          <ActivityIndicator size="small" color="#075cab" />
+        </View>
+      )}
 
-  </>
-);
+      {!isLoading && isRemoved && (
+        <View style={AppStyles.center}>
+          <Text style={AppStyles.removedText}>
+            No jobs applied
+          </Text>
+        </View>
+      )}
+
+      {!isLoading && !isRemoved && (
+        <>
+          <FlatList
+            data={appliedJobs}
+            contentContainerStyle={{ paddingHorizontal: 5, paddingBottom: '20%', }}
+            showsVerticalScrollIndicator={false}
+            renderItem={({ item }) => (
+              <TouchableOpacity style={styles.card} onPress={() => navigateToDetails(item)} activeOpacity={0.7}>
+                <View style={styles.Title}>
+                  <Text style={styles.label}>Job Title</Text>
+                  <Text style={styles.colon}>:</Text>
+                  <Text style={styles.value}>{item?.job_title.trim()}</Text>
+                </View>
+                <View style={styles.Title}>
+                  <Text style={styles.label}>Company</Text>
+                  <Text style={styles.colon}>:</Text>
+                  <Text style={styles.value}>{item?.company_name.trim()}</Text>
+                </View>
+                <View style={styles.Title}>
+                  <Text style={styles.label}>Category</Text>
+                  <Text style={styles.colon}>:</Text>
+                  <Text style={styles.value}>{item?.company_category}</Text>
+                </View>
+                <View style={styles.Title}>
+                  <Text style={styles.label}>City</Text>
+                  <Text style={styles.colon}>:</Text>
+                  <Text style={styles.value}>{item?.company_located_city}</Text>
+                </View>
+                <View style={styles.Title}>
+                  <Text style={styles.label}>Salary package</Text>
+                  <Text style={styles.colon}>:</Text>
+                  <Text style={styles.value}>{item.Package || "N/A"}</Text>
+                </View>
+
+                <View style={styles.buttonContainer}>
+                  <TouchableOpacity onPress={() => navigateToDetails(item)} style={styles.viewMoreButton}>
+                    <Text style={styles.viewMoreText}>View More</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={() => confirmRevoke(item.post_id)} style={styles.revokeButton}>
+                    <Text style={styles.revokeButtonText}>Revoke</Text>
+                  </TouchableOpacity>
+                </View>
+              </TouchableOpacity>
+            )}
+            keyExtractor={(item) => item.post_id}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={handleRefresh}
+                
+              />
+            }
+          />
+        </>
+      )}
+      <Message
+        visible={showModal}
+        onClose={() => setShowModal(false)}
+        onCancel={() => setShowModal(false)}
+        onOk={() => handleRevoke(selectedJobTitle)}
+        title="Confirm Deletion"
+        message={`Are you sure you want to revoke the job ?`}
+        iconType="warning"
+      />
+
+    </>
+  );
 
 }; const styles = StyleSheet.create({
   container: {
     flex: 1,
+    padding: 10,
     backgroundColor: 'white',
-    paddingTop: STATUS_BAR_HEIGHT
+
   },
   container1: {
     flex: 1,
     backgroundColor: 'whitesmoke',
-    paddingTop: STATUS_BAR_HEIGHT
   },
   headerContainer: {
     flexDirection: 'row',
@@ -226,23 +244,22 @@ return (
     justifyContent: 'space-between',
     backgroundColor: 'white',
     borderBottomWidth: 1,
-    borderColor: '#f0f0f0',
-    paddingTop: STATUS_BAR_HEIGHT
+    borderColor: '#f0f0f0'
   },
-  title: {
-    fontSize: 22,
-    fontWeight: '700',
-    marginBottom: 20,
-    color: COLORS.black,
-  },
+  
   card: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#FFF',
     borderRadius: 10,
     padding: 10,
     marginBottom: 5,
     borderWidth: 0.5,
     borderColor: '#ddd',
-    elevation: 5,
+    shadowColor: '#0d6efd',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 3,
+    top: 5
   },
   loaderContainer: {
     flex: 1,

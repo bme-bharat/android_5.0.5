@@ -1,7 +1,8 @@
 import React, { useState, useRef } from 'react';
 import { Alert, Platform, ActionSheetIOS, NativeModules, Linking } from 'react-native';
 import RNFS from 'react-native-fs';
-import ImageResizer from 'react-native-image-resizer';
+import ImageResizer from '@bam.tech/react-native-image-resizer';
+
 import { launchImageLibrary, launchCamera } from 'react-native-image-picker';
 
 import { addPlayIconToThumbnail, compressVideo, generateVideoThumbnail, generateVideoThumbnailAlt, moveToPersistentStorage } from '../Forum/VideoParams';
@@ -80,8 +81,8 @@ export const handleImageSelection = async (asset, onMediaSelected, maxImageSizeM
       `file://${originalFilePath}`,
       targetWidth,
       targetHeight,
-      'JPEG',
-      JPEG_QUALITY
+      'WEBP',
+      80
     );
     console.log('[handleImageSelection] Compressed image info:', compressedImage);
 
@@ -147,7 +148,6 @@ export const handleVideoSelection = async (asset, onMediaSelected, maxVideoSizeM
 
     const persistentUri = await moveToPersistentStorage(asset.uri);
     const previewThumbnail = await generateVideoThumbnailAlt(persistentUri);
-    
     const processedFile = {
       uri: compressedUri,
       type: asset.type,

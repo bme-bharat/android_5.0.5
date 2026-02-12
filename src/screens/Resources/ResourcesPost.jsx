@@ -1,16 +1,13 @@
 
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { View, Image, StyleSheet, TouchableOpacity, Text, ScrollView, TextInput, Alert, ActivityIndicator, Modal, Keyboard, ActionSheetIOS, KeyboardAvoidingView, TouchableWithoutFeedback, NativeModules, StatusBar } from 'react-native';
-import { launchImageLibrary } from 'react-native-image-picker';
+import { View, Image, StyleSheet, TouchableOpacity, Text, ScrollView, TextInput, Alert, ActivityIndicator, Modal, Keyboard, NativeModules } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import RNFS from 'react-native-fs';
 
 import Video from 'react-native-video';
 
 import Message3 from '../../components/Message3';
-import { Image as FastImage } from 'react-native';
-import ImageResizer from 'react-native-image-resizer';
 
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { useDispatch, useSelector } from 'react-redux';
@@ -19,7 +16,6 @@ import { showToast } from '../AppUtils/CustomToast';
 import { useNetwork } from '../AppUtils/IdProvider';
 import apiClient from '../ApiClient';
 import { EventRegister } from 'react-native-event-listeners';
-import AppStyles, { STATUS_BAR_HEIGHT } from '../AppUtils/AppStyles';
 import { actions, RichEditor, RichToolbar } from 'react-native-pell-rich-editor';
 import { cleanForumHtml, sanitizeHtmlBody } from '../Forum/forumBody';
 import { MediaPickerButton } from '../helperComponents/MediaPickerButton';
@@ -29,6 +25,10 @@ import { MediaPreview } from '../helperComponents/MediaPreview';
 import { useS3Uploader } from '../helperComponents/useS3Uploader';
 import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
 import { colors, dimensions } from '../../assets/theme.jsx';
+import { pick, types } from '@react-native-documents/picker';
+import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
+import Avatar from '../helperComponents/Avatar.jsx';
+import { AppHeader } from '../AppUtils/AppHeader.jsx';
 
 const { DocumentPicker } = NativeModules;
 
@@ -158,22 +158,22 @@ const ResourcesPost = () => {
 
   const cleanHtmlSpaces = (html) => {
     if (!html) return "";
-  
+
     let cleaned = html;
 
     const emptyBlock = /<div>\s*(?:<span>\s*)?(?:<br\s*\/?>)\s*(?:<\/span>)?\s*<\/div>/gi;
     cleaned = cleaned.replace(new RegExp(`^(?:${emptyBlock.source})+`, "i"), "");
     cleaned = cleaned.replace(new RegExp(`(?:${emptyBlock.source})+$`, "i"), "");
     cleaned = cleaned.trim();
-  
+
     return cleaned;
   };
-  
-  
-  
-  
+
+
+
+
   const handleBodyChange = (html) => {
-  
+
     const cleanedBody = sanitizeHtmlBody(html);
     const finalBody = cleanHtmlSpaces(cleanedBody);
 
@@ -182,10 +182,10 @@ const ResourcesPost = () => {
       body: finalBody
     }));
   };
-  
-  
-  
-  
+
+
+
+
 
 
 
@@ -210,208 +210,22 @@ const ResourcesPost = () => {
 
 
 
-
-
-
-
-
-  const [capturedThumbnailUri, setCapturedThumbnailUri] = useState(null);
-
-  const playIcon = require('../../images/homepage/PlayIcon.png');
-
-
-
-  const handleThumbnailUpload = async (thumbnailUri, fileKey) => {
-    try {
-      const thumbStat = await RNFS.stat(thumbnailUri);
-      const thumbBlob = await uriToBlob(thumbnailUri);
-
-      const thumbnailFileKey = `thumbnail-${fileKey}`;
-
-      const res = await apiClient.post('/uploadFileToS3', {
-        command: 'uploadFileToS3',
-        fileKey: thumbnailFileKey,
-        headers: {
-          'Content-Type': 'image/jpeg',
-          'Content-Length': thumbStat.size,
-        },
-      });
-
-      if (res.data.status !== 'success') {
-        throw new Error('Failed to get upload URL for thumbnail');
-      }
-
-      const uploadUrl = res.data.url;
-
-      const uploadRes = await fetch(uploadUrl, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'image/jpeg' },
-        body: thumbBlob,
-      });
-
-      if (uploadRes.status !== 200) {
-        throw new Error('Failed to upload thumbnail to S3');
-      }
-
-      return thumbnailFileKey;
-    } catch (error) {
-
-      return null;
-    }
-  };
-
-
-  const handleUploadFile = async () => {
-    if (!file) {
-      console.log('📂 No file selected for upload');
-      return { fileKey: null, thumbnailFileKey: null };
-    }
-
-    setLoading(true);
-    console.log('⏫ Upload starting for file:', file);
-
-    try {
-      const fileStat = await RNFS.stat(file.uri);
-      const fileSize = fileStat.size;
-      console.log('📏 File size:', fileSize);
-
-      const res = await apiClient.post('/uploadFileToS3', {
-        command: 'uploadFileToS3',
-        headers: {
-          'Content-Type': fileType,
-          'Content-Length': fileSize,
-        },
-      });
-
-      if (res.data.status !== 'success') {
-        console.error('❌ Failed to get S3 URL:', res.data);
-        throw new Error(res.data.errorMessage || 'Failed to get upload URL');
-      }
-
-      const { url: uploadUrl, fileKey } = res.data;
-      console.log('✅ Got S3 Upload URL and fileKey:', { uploadUrl, fileKey });
-
-      const fileBlob = await uriToBlob(file.uri);
-      const uploadRes = await fetch(uploadUrl, {
-        method: 'PUT',
-        headers: { 'Content-Type': fileType },
-        body: fileBlob,
-      });
-
-      console.log('📤 Upload to S3 response status:', uploadRes.status);
-
-      if (uploadRes.status !== 200) {
-        throw new Error('Failed to upload file to S3');
-      }
-
-      let thumbnailFileKey = null;
-
-      if (file.type.startsWith("video/")) {
-
-        thumbnailFileKey = await uploadFromBase64(overlayUri, fileKey);
-
-      }
-
-      return { fileKey, thumbnailFileKey };
-
-    } catch (error) {
-      console.error('🚨 Error in handleUploadFile:', error);
-      showToast("Something went wrong", 'error');
-      return { fileKey: null, thumbnailFileKey: null };
-
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleMediaPickerPress = () => {
-    Alert.alert(
-      'Select Media',
-      'Choose an option',
-      [
-        {
-          text: 'Open Gallery',
-          onPress: () => {
-            openGallery();
-          },
-        },
-        {
-          text: 'Select Video',
-          onPress: () => {
-            pickVideo();
-          },
-        },
-        {
-          text: 'Select PDF',
-          onPress: () => {
-            selectPDF();
-          },
-        },
-      ],
-      { cancelable: true }
-    );
-  };
-
-
-  const openGallery = async () => {
-    try {
-      // 1️⃣ Pick the file using DocumentPicker
-      const pickedFiles = await DocumentPicker.pick({
-        allowMultiple: false,
-        type: ['image/*'],
-      });
-
-      if (!pickedFiles || pickedFiles.length === 0) return;
-
-      const file = pickedFiles[0];
-
-      const maxWidth = 1080;   // max Instagram feed width
-      const maxHeight = 1350;  // max portrait height
-      const ratio = Math.min(maxWidth / file.width, maxHeight / file.height, 1);
-
-      const resizedWidth = Math.round(file.width * ratio);
-      const resizedHeight = Math.round(file.height * ratio);
-
-      const compressedImage = await ImageResizer.createResizedImage(
-        file.uri,
-        resizedWidth,
-        resizedHeight,
-        'JPEG',
-        80
-      );
-
-      const compressedSizeMB = compressedImage.size / 1024 / 1024;
-      if (compressedSizeMB > 5) {
-        showToast("Image size shouldn't exceed 5MB", 'error');
-        return;
-      }
-
-      const aspectRatio = calculateAspectRatio(file.width, file.height);
-      // 3️⃣ Save file and metadata like your old pattern
-      const meta = {
-        aspectRatio,
-        name: file.name,
-        type: file.mime
-      };
-
-      setFile(file);                      // original picked file
-      setFileType(file.type || 'image/jpeg');
-      setMediaMeta(meta);
-      setCompressedImage(compressedImage)
-    } catch (err) {
-      if (err?.message?.includes('cancelled') || err?.code === 'E_PICKER_CANCELLED') return;
-      console.error('Error picking/compressing image:', err);
-      showToast('Failed to pick or compress image', 'error');
-    }
-  };
-
   const selectPDF = async () => {
     try {
       // Open the native document picker for all files
-      const pickedFiles = await DocumentPicker.pick({
-        allowMultiple: false,
-        category: 'docs' // <-- pick all files
+      const pickedFiles = await pick({
+        type: [
+          types.pdf,
+          types.doc,
+          types.docx,
+          types.xls,
+          types.xlsx,
+          types.ppt,
+          types.pptx,
+          types.plainText,
+        ],
       });
+
 
       if (!pickedFiles || pickedFiles.length === 0) return;
 
@@ -429,7 +243,21 @@ const ResourcesPost = () => {
         setFileType(null);
         return;
       }
+      const allowedMimeTypes = [
+        'application/pdf',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/vnd.ms-excel',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'application/vnd.ms-powerpoint',
+        'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+        'text/plain',
+      ];
 
+      if (!allowedMimeTypes.includes(mimeType)) {
+        showToast('Only standard document formats are allowed.', 'error');
+        return;
+      }
       const meta = {
         name: file.name,
         size: fileSize,
@@ -446,8 +274,8 @@ const ResourcesPost = () => {
 
     } catch (err) {
       if (err?.message?.includes('cancelled') || err?.code === 'E_PICKER_CANCELLED') return;
-      console.error("Native DocumentPicker error:", err);
-      showToast("An unexpected error occurred while picking the file.", "error");
+
+      // showToast("An unexpected error occurred while picking the file.", "error");
     }
   };
 
@@ -590,37 +418,26 @@ const ResourcesPost = () => {
     setFile(null);
   };
 
+  const isPostDisabled =
+    !postData.title?.trim() ||
+    !postData.body?.trim() ||
+    loading ||
+    isCompressing
 
   return (
 
     <>
-      <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
 
-      <View style={styles.headerContainer}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-
-        </TouchableOpacity>
-        <TouchableOpacity
-          onPress={handlePostSubmission}
-          style={[
-            AppStyles.buttonContainer,
-            !isFormValid || loading || isCompressing ? styles.disabledButton : null,
-          ]}
-          disabled={!isFormValid || loading || isCompressing}
-        >
-          {loading || isCompressing ? (
-            <ActivityIndicator size="small" color="#ffffff" />
-          ) : (
-            <Text style={[styles.buttonText, (!postData.body.trim()) && styles.buttonDisabledText]} >Post</Text>
-
-          )}
-        </TouchableOpacity>
-
-      </View>
+      <AppHeader
+        title="Create Resource Post"
+        onPost={handlePostSubmission}
+        postLabel="Post"
+        postLoading={loading || isCompressing}
+        postDisabled={isPostDisabled}
+      />
 
       <KeyboardAwareScrollView
-        contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 10, paddingBottom: '40%', }}
+        contentContainerStyle={[{ paddingHorizontal: 10 }]}
         keyboardShouldPersistTaps="handled"
         extraScrollHeight={20}
         showsVerticalScrollIndicator={false}
@@ -629,33 +446,12 @@ const ResourcesPost = () => {
 
         <View style={styles.profileContainer}>
           <View style={styles.imageContainer}>
-            {profile?.fileKey ? (
-              <Image
-                source={{ uri: profile?.imageUrl }}
-                style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: 20,
-                  marginRight: 10,
-                }}
-              />
-            ) : (
-              <View
-                style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: 20,
-                  marginRight: 10,
-                  backgroundColor: profile?.companyAvatar?.backgroundColor || '#ccc',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                }}
-              >
-                <Text style={{ color: profile?.companyAvatar?.textColor || '#000', fontWeight: 'bold' }}>
-                  {profile?.companyAvatar?.initials || '?'}
-                </Text>
-              </View>
-            )}
+
+            <Avatar
+              imageUrl={profile?.imageUrl}
+              name={profile?.first_name || profile?.company_name}
+              size={40}
+            />
           </View>
 
           <View style={styles.profileTextContainer}>
@@ -686,12 +482,13 @@ const ResourcesPost = () => {
             borderRadius: 10,
             borderWidth: 1,
             borderColor: '#ccc',
+            backgroundColor: '#fff',
             overflow: 'hidden',
           }}
-          
+
           initialContentHTML={postData.body}
           placeholder="Describe your resource in detail ..."
-         
+
           onChange={handleBodyChange}
           editorStyle={{
             cssText: `
@@ -735,14 +532,17 @@ const ResourcesPost = () => {
           thumbnailBase64={file?.thumbnailBase64} // optional chaining
           onRemove={handleRemoveMedia}
         />
-
-
         {!file && (
+          <TouchableOpacity activeOpacity={1} onPress={() => selectPDF()} style={{ height: 80, borderWidth: 1, borderColor: '#ddd', borderRadius: 20, backgroundColor: '#FFF', alignItems: 'center', justifyContent: 'center' }}>
+            <Text > Upload file</Text>
+          </TouchableOpacity>
+        )}
+        {/* {!file && (
           <MediaPickerButton
             onPress={handleMediaPickerPress}
             isLoading={isCompressing}
           />
-        )}
+        )} */}
 
         <Message3
           visible={showModal}
@@ -938,17 +738,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     marginBottom: 10,
   },
-
-  headerContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingRight: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#ccc',
-    paddingTop: STATUS_BAR_HEIGHT
-  },
-
 
   disabledButton: {
     backgroundColor: '#ccc',

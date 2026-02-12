@@ -17,7 +17,8 @@ import Warning from '../../assets/svgIcons/warning.svg';
 import Success from '../../assets/svgIcons/success.svg';
 import Info from '../../assets/svgIcons/information.svg';
 import { colors, dimensions } from '../../assets/theme';
-import { STATUS_BAR_HEIGHT } from './AppStyles';
+
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const { width } = Dimensions.get('window');
 let toastRef = null;
@@ -33,25 +34,47 @@ const CustomToast = React.forwardRef((props, ref) => {
 
   const offsetX = useSharedValue(width);
   const opacity = useSharedValue(0);
-
+  const hideTimeoutRef = useRef(null);
+    const insets = useSafeAreaInsets();
+  
   const show = (msg, toastType = 'info', duration = 4000) => {
+
+    if (hideTimeoutRef.current) {
+      clearTimeout(hideTimeoutRef.current);
+      hideTimeoutRef.current = null;
+    }
+  
+    // Immediately cancel previous animations & reset state
+    offsetX.value = width;
+    opacity.value = 0;
+  
     setMessage(msg);
     setType(toastType);
     setVisible(true);
-    offsetX.value = withTiming(0, { duration: 400 });
-    opacity.value = withTiming(1, { duration: 400 });
-
-    setTimeout(() => {
+  
+    // Animate in
+    offsetX.value = withTiming(0, { duration: 300 });
+    opacity.value = withTiming(1, { duration: 300 });
+  
+    hideTimeoutRef.current = setTimeout(() => {
       hide();
     }, duration);
   };
+  
 
   const hide = () => {
-    offsetX.value = withTiming(width, { duration: 300 });
-    opacity.value = withTiming(0, { duration: 300 }, () => {
+    // Clear timer defensively
+    if (hideTimeoutRef.current) {
+      clearTimeout(hideTimeoutRef.current);
+      hideTimeoutRef.current = null;
+    }
+  
+    offsetX.value = withTiming(width, { duration: 250 });
+    opacity.value = withTiming(0, { duration: 250 }, () => {
       runOnJS(setVisible)(false);
     });
   };
+  
 
   const dragGesture = Gesture.Pan()
     .onUpdate((e) => {
@@ -103,7 +126,7 @@ const CustomToast = React.forwardRef((props, ref) => {
   const IconComponent = getIconForType(type);
 
   return (
-    <View pointerEvents="box-none" style={styles.safeArea}>
+    <View pointerEvents="box-none" style={[styles.safeArea,{paddingTop:insets?.top}]}>
       <GestureDetector gesture={dragGesture}>
         <Animated.View style={[styles.toast, animatedStyle]}>
           <IconComponent
@@ -123,9 +146,14 @@ const CustomToast = React.forwardRef((props, ref) => {
 
 export const ToastProvider = ({ children }) => {
   const localRef = useRef();
+
   useEffect(() => {
     toastRef = localRef.current;
+    return () => {
+      toastRef = null;
+    };
   }, []);
+  
 
   return (
     <>
@@ -142,11 +170,11 @@ const styles = StyleSheet.create({
     right: 0,
     left: 0,
     zIndex: 1000,
-    paddingTop: STATUS_BAR_HEIGHT
+    
   },
   toast: {
     marginTop: 10,
-    marginRight: 20,
+    marginRight: 10,
     alignSelf: 'flex-end',
     flexDirection: 'row',
     alignItems: 'center',

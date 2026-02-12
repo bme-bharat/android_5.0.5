@@ -6,8 +6,7 @@ import { StyleSheet, Text, View, TouchableOpacity, Alert, RefreshControl, FlatLi
 import axios from 'axios';
 import Toast from 'react-native-toast-message';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useFocusEffect, useNavigation } from '@react-navigation/native';
-
+import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import Message from '../../components/Message';
 import { useDispatch } from 'react-redux';
 import { showToast } from '../AppUtils/CustomToast';
@@ -19,11 +18,16 @@ import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
 import Add from '../../assets/svgIcons/add.svg';
 
 import { colors, dimensions } from '../../assets/theme.jsx';
-import AppStyles, { commonStyles, STATUS_BAR_HEIGHT } from '../AppUtils/AppStyles.js';
+import AppStyles, { commonStyles } from '../AppUtils/AppStyles.js';
+import { AppHeader } from '../AppUtils/AppHeader.jsx';
 
 const YourComapanyPostedJob = () => {
   const navigation = useNavigation();
   const { myId, myData } = useNetwork();
+  const route = useRoute();
+  const profileUserId = route.params?.userId ?? myId
+
+  const isMyProfile = profileUserId === myId
   const [posts, setPosts] = useState([]);
   const [postToDelete, setPostToDelete] = useState(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -94,7 +98,7 @@ const YourComapanyPostedJob = () => {
     try {
       const requestData = {
         command: "getCompanyAllJobPosts",
-        company_id: myId,
+        company_id: profileUserId,
         limit: 10,
       };
 
@@ -125,10 +129,11 @@ const YourComapanyPostedJob = () => {
         } else {
           setHasMoreJobs(false);
         }
+      } else {
+        setPosts({ removed_by_author: true });
       }
     } catch (error) {
-      setPosts({ removed_by_author: true });
-      setPosts([]);
+
     } finally {
       setLoading(false);
       setLoadingMore(false);
@@ -260,29 +265,29 @@ const YourComapanyPostedJob = () => {
           </View>
         </View>
 
+        {isMyProfile && (
+          <View style={styles.iconContainer}>
 
-        <View style={styles.iconContainer}>
+            <TouchableOpacity style={[styles.actionButton,]} onPress={() => handleEdit(post)} activeOpacity={1}>
+              <View style={styles.iconTextContainer}>
 
-          <TouchableOpacity style={[styles.actionButton,]} onPress={() => handleEdit(post)} activeOpacity={1}>
-            <View style={styles.iconTextContainer}>
+                <Text style={styles.buttonText}>Edit</Text>
+              </View>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.actionButton]} onPress={() => confirmDelete(post)} activeOpacity={1}>
+              <View style={styles.iconTextContainer}>
 
-              <Text style={styles.buttonText}>Edit</Text>
-            </View>
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.actionButton]} onPress={() => confirmDelete(post)} activeOpacity={1}>
-            <View style={styles.iconTextContainer}>
+                <Text style={styles.deleteButtonText}>Delete</Text>
+              </View>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => navigation.navigate("CompanyAppliedJob", { post })} style={[styles.actionButton]} activeOpacity={1}>
+              <View style={styles.iconTextContainer}>
+                <Text style={styles.buttonText}>View Applications</Text>
+              </View>
+            </TouchableOpacity>
 
-              <Text style={styles.deleteButtonText}>Delete</Text>
-            </View>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => navigation.navigate("CompanyAppliedJob", { post })} style={[styles.actionButton, { marginLeft: 10 }]} activeOpacity={1}>
-            <View style={styles.iconTextContainer}>
-              <Text style={styles.buttonText}>View Applications</Text>
-            </View>
-          </TouchableOpacity>
-
-        </View>
-
+          </View>
+        )}
 
       </View>
 
@@ -291,82 +296,66 @@ const YourComapanyPostedJob = () => {
   );
 
 
-  if (!loading && posts.length === 0 || (posts.length === 1 && posts[0]?.removed_by_author)) {
-    return (
-      <View style={styles.container}>
-              <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
-        
-        <View style={styles.headerContainer}>
 
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-            <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.circle}
-            onPress={() => navigation.navigate("CompanyJobPost")} activeOpacity={0.8}>
-            <Add width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-
-            <Text style={styles.shareText}>Post a job</Text>
-          </TouchableOpacity>
-
-        </View>
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <Text style={{ fontSize: 16, color: 'gray' }}>No jobs available</Text>
-        </View>
-      </View>
-    );
-  }
+  const isLoading = !posts
+  const isRemoved = posts?.removed_by_author
+  const hasJob = posts?.length > 0
 
   return (
     <View style={styles.container}>
-      <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
 
-      <View style={styles.headerContainer}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.circle}
-          onPress={() => navigation.navigate("CompanyJobPost")} activeOpacity={0.8}>
-          <Add width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-
-          <Text style={styles.shareText}>Post a job</Text>
-        </TouchableOpacity>
-      </View>
-
-      <FlatList
-
-        data={posts}
-        renderItem={renderJob}
-        keyExtractor={(item, index) => `${item.post_id}-${index}`}
-        showsVerticalScrollIndicator={false}
-        onEndReached={() => hasMoreJobs && fetchCompanyJobPosts(lastEvaluatedKey)}
-        onEndReachedThreshold={0.5}
-        refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />}
-        ListFooterComponent={() =>
-          loadingMore && (
-            <View style={styles.loaderContainer}>
-              <ActivityIndicator size="large" color="#075cab" />
-            </View>
-          )
-        }
-      // ListHeaderComponent={() => (
-      //   <View style={styles.headerContainer}>
-      //     <Text style={styles.headerText}>Your Jobs: {posts.length}</Text>
-      //   </View>
-      // )}
-      // ListEmptyComponent={
-      //   posts.length === 0 ? (
-      //     <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-      //       <Text style={{ fontSize: 16, color: 'gray' }}>No jobs available</Text>
-      //     </View>
-      //   ) : null
-      // }
-
+      <AppHeader
+        title={"Posted jobs"}
+        onPost={() => navigation.navigate("CompanyJobPost")}
+        postLabel="Post a job"
       />
+      {isLoading && (
+        <View style={AppStyles.center}>
+          <ActivityIndicator size="small" color="#075cab" />
+        </View>
+      )}
 
+      {!isLoading && isRemoved && (
+        <View style={AppStyles.center}>
+          <Text style={AppStyles.removedText}>
+            No jobs available
+          </Text>
+        </View>
+      )}
+      {!isLoading && !isRemoved && hasJob && (
+        <>
+          <FlatList
+
+            data={posts}
+            renderItem={renderJob}
+            keyExtractor={(item, index) => `${item.post_id}-${index}`}
+            showsVerticalScrollIndicator={false}
+            onEndReached={() => hasMoreJobs && fetchCompanyJobPosts(lastEvaluatedKey)}
+            onEndReachedThreshold={0.5}
+            refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />}
+            ListFooterComponent={() =>
+              loadingMore && (
+                <View style={styles.loaderContainer}>
+                  <ActivityIndicator size="large" color="#075cab" />
+                </View>
+              )
+            }
+          // ListHeaderComponent={() => (
+          //   <View style={styles.headerContainer}>
+          //     <Text style={styles.headerText}>Your Jobs: {posts.length}</Text>
+          //   </View>
+          // )}
+          // ListEmptyComponent={
+          //   posts.length === 0 ? (
+          //     <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          //       <Text style={{ fontSize: 16, color: 'gray' }}>No jobs available</Text>
+          //     </View>
+          //   ) : null
+          // }
+
+          />
+        </>
+      )}
       < Message
         visible={isDeleteAlertVisible}
         onClose={cancelDelete}
@@ -390,15 +379,8 @@ const YourComapanyPostedJob = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'whitesmoke',
-        paddingTop: STATUS_BAR_HEIGHT
   },
 
-  container1: {
-    flex: 1,
-    padding: 10,
-    backgroundColor: 'whitesmoke',
-  },
   backButton: {
     alignSelf: 'flex-start',
     padding: 10,
@@ -578,9 +560,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     elevation: 2,
     shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 2,
   },
   applyButton: {
     color: '#075cab',

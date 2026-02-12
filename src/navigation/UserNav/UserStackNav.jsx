@@ -59,7 +59,6 @@ import EnquiryForm from '../../screens/Services/Enquiry';
 import MyEnqueries from '../../screens/Services/MyEnqueries';
 
 import EnquiryDetails from '../../screens/Services/EnquiryDetails';
-import InPrivacyPolicy from '../../screens/Bme_content/InPrivacyPolicy';
 import UserHomeScreen from '../../screens/UserHomeScreen';
 import { createStackNavigator } from '@react-navigation/stack';
 import AllPosts from '../../screens/Forum/Feed';
@@ -71,7 +70,7 @@ import Profile from '../../screens/Profile/UserProfile'
 const Stack = createNativeStackNavigator();
 
 const screenOptionStyle = {
-  statusBarColor: '#075cab',
+
   headerStyle: {
     backgroundColor: '#075cab',
     height: 50, // Set a lower height for the header
@@ -90,6 +89,7 @@ const screenOption = {
   headerBackTitleVisible: false,
   headerShown: false,
  animation: 'none',
+
 };
 
 
@@ -100,7 +100,7 @@ const UserStackNav = () => {
   return (
     <Stack.Navigator screenOptions={screenOptionStyle}>
 
-      <Stack.Screen name="Home3" component={HomeScreen} options={screenOption} />
+      <Stack.Screen name="Home" component={HomeScreen} options={screenOption} />
       <Stack.Screen name="AboutUs" component={AboutUs} options={screenOption} />
       <Stack.Screen name="AllNotification" component={AllNotification} options={screenOption} />
       <Stack.Screen name="UserSubscription" component={UserSubscriptionScreen} options={screenOption} />
@@ -193,7 +193,6 @@ const UserForumNav = () => {
       <Stack.Screen name="Latest" component={LatestPosts} options={screenOption} />
       <Stack.Screen name="Trending" component={TrendingPosts} options={screenOption} />
 
-      <Stack.Screen name="Home3" component={HomeScreen} options={screenOption} />
       <Stack.Screen name="ForumPost" component={ForumPostScreen} options={screenOption} />
 
       <Stack.Screen name="ForumEdit" component={ForumEditScreen} options={screenOption} />
@@ -258,8 +257,6 @@ const UserProfileNav = () => (
     <Stack.Screen name="MyEnqueries" component={MyEnqueries} options={screenOption} />
     <Stack.Screen name="EnquiryDetails" component={EnquiryDetails} options={screenOption} />
 
-    <Stack.Screen name="InPrivacyPolicy" component={InPrivacyPolicy} options={screenOption} />
-
     <Stack.Screen name="UserDetailsPage" component={UserDetailsPage} options={screenOption} />
     <Stack.Screen name="CompanyDetailsPage" component={CompanyDetailsPage} options={screenOption} />
     <Stack.Screen name="ServiceDetails" component={ServiceDetails} options={screenOption} />
@@ -315,7 +312,6 @@ const UserProducts = () => {
       <Stack.Screen name="ResourceDetails" component={ResourceDetails} options={screenOption} />
       <Stack.Screen name="InlineVideo" component={InlineVideo} options={screenOption} />
       <Stack.Screen name="Comment" component={CommentScreen} options={screenOption} />
-
 
     </Stack.Navigator>
   )

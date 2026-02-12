@@ -1,17 +1,18 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, TextInput, Button, Alert, StyleSheet, TouchableOpacity, ScrollView, NativeModules } from 'react-native';
+import { View, Text, TextInput, Button, Alert, StyleSheet, TouchableOpacity, ScrollView, NativeModules, ActivityIndicator } from 'react-native';
 import RNFS from 'react-native-fs';
 import apiClient from '../ApiClient';
 import { showToast } from '../AppUtils/CustomToast';
 import { useNetwork } from '../AppUtils/IdProvider';
-import AppStyles, { commonStyles, STATUS_BAR_HEIGHT } from '../AppUtils/AppStyles';
+import AppStyles, { commonStyles } from '../AppUtils/AppStyles';
 import { MediaPreview } from '../helperComponents/MediaPreview';
 import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
 import Upload from '../../assets/svgIcons/upload.svg';
 
 import { colors, dimensions } from '../../assets/theme.jsx';
+import { AppHeader } from '../AppUtils/AppHeader.jsx';
 
 const { DocumentPicker } = NativeModules;
 
@@ -207,18 +208,17 @@ const EnquiryForm = () => {
         return await response.blob();
     };
 
+    const isDisabled = loading || !description?.trim();
+
 
     return (
         <View style={styles.container}>
-            <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
+            <AppHeader
+                title={"send enquiry"}
 
-            <View style={styles.headerContainer}>
-                <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-                    <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
+            />
 
-                </TouchableOpacity>
-            </View >
-            <ScrollView style={styles.container1}>
+            <ScrollView contentContainerStyle={[{ paddingHorizontal: 10, top: 10 }]}>
 
                 <Text style={commonStyles.label}>Enquiry Description:</Text>
                 <TextInput
@@ -230,7 +230,7 @@ const EnquiryForm = () => {
                         const cleanedText = text.replace(/^\s+/, '');
                         setDescription(cleanedText);
                     }}
-                    placeholder="Type your enquiry here"
+                    placeholder="Type your enquiry here ..."
                 />
 
                 {!file && (
@@ -250,21 +250,29 @@ const EnquiryForm = () => {
                     thumbnailBase64={file?.thumbnailBase64} // optional chaining
                     onRemove={handleRemoveMedia}
                 />
+
                 <TouchableOpacity
                     onPress={handleEnquire}
                     style={[
                         AppStyles.Postbtn,
-                        (loading || !description.trim()) && styles.disabledButton,
+                        isDisabled && styles.disabledButton,
                     ]}
-                    disabled={loading || !description.trim()}
+                    disabled={isDisabled}
                 >
-                    <Text style={[
-                        AppStyles.PostbtnText,
-                        (loading || !description.trim()) && styles.buttonDisabledText,
-                    ]}>
-                        Submit
-                    </Text>
+                    {loading ? (
+                        <ActivityIndicator size="small" color="#075cab" />
+                    ) : (
+                        <Text
+                            style={[
+                                AppStyles.PostbtnText,
+                                isDisabled && styles.buttonDisabledText,
+                            ]}
+                        >
+                            Submit
+                        </Text>
+                    )}
                 </TouchableOpacity>
+
 
             </ScrollView>
         </View>
@@ -274,7 +282,7 @@ const EnquiryForm = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        paddingTop: STATUS_BAR_HEIGHT
+
     },
     container1: {
         flex: 1,

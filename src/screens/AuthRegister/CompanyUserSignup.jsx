@@ -23,14 +23,14 @@ import { stateCityData } from '../../assets/Constants';
 import RNFS from 'react-native-fs';
 import Toast from 'react-native-toast-message';
 import ImagePicker from 'react-native-image-crop-picker';
-import ImageResizer from 'react-native-image-resizer';
+import ImageResizer from '@bam.tech/react-native-image-resizer';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import messaging, { getMessaging, getToken } from '@react-native-firebase/messaging';
 import { getApp } from '@react-native-firebase/app';
 import { showToast } from '../AppUtils/CustomToast';
 import apiClient from '../ApiClient';
-import AppStyles, { STATUS_BAR_HEIGHT } from '../AppUtils/AppStyles';
+import AppStyles from '../AppUtils/AppStyles';
 import { ActionSheetIOS } from 'react-native';
 import DeviceInfo from 'react-native-device-info';
 import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
@@ -54,6 +54,7 @@ const { DocumentPicker } = NativeModules;
 import ImageCropPicker from 'react-native-image-crop-picker';
 import { useFcmToken } from '../AppUtils/fcmToken.jsx';
 import KeyboardAvoid from '../AppUtils/KeyboardAvoid.jsx';
+import { AppHeader } from '../AppUtils/AppHeader.jsx';
 
 const CompanyUserSignupScreen = () => {
 
@@ -65,13 +66,13 @@ const CompanyUserSignupScreen = () => {
   const [imageFile, setImageFile] = useState(null);    // original picked file object
   const [imageUri, setImageUri] = useState(null);      // final URI to upload (resized)
   const [imageFileType, setImageFileType] = useState(null); // mime for images
-  
+
   const [file, setFile] = useState(null);
   const [pdfFile, setPdfFile] = useState(null);        // picked pdf file object
   const [pdfUri, setPdfUri] = useState(null);          // pdf.uri (same as pdfFile.uri)
   const [pdfFileType, setPdfFileType] = useState(null);// mime for pdfs
-  
-  
+
+
 
   const [fileType, setFileType] = useState('');
   const [loading, setLoading] = useState(false);
@@ -402,14 +403,14 @@ const CompanyUserSignupScreen = () => {
         allowMultiple: false,
         type: ['application/pdf'],
       });
-  
+
       if (!pickedFiles || pickedFiles.length === 0) return;
-  
+
       const pickedPdf = pickedFiles[0];
       // file size might be available as pickedPdf.size; if not, we can RNFS.stat the uri
       const MAX_SIZE = 5 * 1024 * 1024; // 5MB
       const mimeType = pickedPdf.mime || pickedPdf.type || 'application/pdf';
-  
+
       // If size provided by picker, use it; otherwise stat it
       let fileSize = pickedPdf.size;
       if (!fileSize) {
@@ -420,7 +421,7 @@ const CompanyUserSignupScreen = () => {
           console.warn('Could not stat pdf uri to get size', e);
         }
       }
-  
+
       if (mimeType === 'application/pdf') {
         if (!fileSize || fileSize <= MAX_SIZE) {
           setPdfFile(pickedPdf);
@@ -446,18 +447,18 @@ const CompanyUserSignupScreen = () => {
       showToast("An unexpected error occurred while picking the file.", "error");
     }
   };
-  
+
 
 
   const handleUploadFile = async () => {
     setLoading(true);
     try {
       if (!pdfUri) return null;
-  
+
       const fileStat = await RNFS.stat(pdfUri);
       const fileSize = fileStat.size;
       console.log('📏 File size:', fileSize, 'bytes', 'File URI:', pdfUri);
-  
+
       const res = await apiClient.post('/uploadFileToS3', {
         command: 'uploadFileToS3',
         headers: {
@@ -466,17 +467,17 @@ const CompanyUserSignupScreen = () => {
         },
       });
       console.log('📨 Upload URL response:', res.data);
-  
+
       if (res.data.status !== 'success') {
         throw new Error(res.data.errorMessage || 'Failed to get upload URL');
       }
-  
+
       const uploadUrl = res.data.url;
       const fileKey = res.data.fileKey;
-  
+
       const fileBlob = await uriToBlob(pdfUri);
       console.log('🚀 Uploading file to S3...');
-  
+
       const uploadRes = await fetch(uploadUrl, {
         method: 'PUT',
         headers: {
@@ -485,7 +486,7 @@ const CompanyUserSignupScreen = () => {
         body: fileBlob,
       });
       console.log('📤 Upload response status:', uploadRes.status);
-  
+
       if (uploadRes.status === 200) {
         return fileKey;
       } else {
@@ -504,7 +505,7 @@ const CompanyUserSignupScreen = () => {
       console.log('🔚 handleUploadFile finished');
     }
   };
-  
+
 
 
   const uriToBlob = async (uri) => {
@@ -596,9 +597,9 @@ const CompanyUserSignupScreen = () => {
         type: ['image/*'],
       });
       if (!pickedFiles || pickedFiles.length === 0) return;
-  
+
       const file = pickedFiles[0];
-  
+
       const croppedImage = await ImageCropPicker.openCropper({
         path: file.uri,
         width: 800,
@@ -608,23 +609,23 @@ const CompanyUserSignupScreen = () => {
         cropperCircleOverlay: true,
         includeBase64: false,
       });
-  
+
       console.log(`Cropped image size: ${(croppedImage.size / 1024 / 1024).toFixed(2)} MB`);
-  
+
       const resizedImage = await ImageResizer.createResizedImage(
         croppedImage.path,
         800,
-        600,
-        'JPEG',
+        800,
+        'WEBP',
         80
       );
-  
+
       const resizedSizeMB = resizedImage.size / 1024 / 1024;
       if (resizedSizeMB > 5) {
         showToast("Image size shouldn't exceed 5MB", 'error');
         return;
       }
-  
+
       // Save into image-specific state (not generic file/state)
       setImageFile({
         ...file,
@@ -634,14 +635,14 @@ const CompanyUserSignupScreen = () => {
       });
       setImageUri(resizedImage.uri);
       setImageFileType(file.mime || 'image/jpeg');
-  
+
     } catch (err) {
       if (err?.message?.includes('cancelled') || err?.code === 'E_PICKER_CANCELLED') return;
       console.error('Error picking/cropping image:', err);
       showToast('Failed to pick or crop image', 'error');
     }
   };
-  
+
 
 
   const FILE_SIZE_LIMIT_MB = 5;  // 5MB
@@ -652,41 +653,41 @@ const CompanyUserSignupScreen = () => {
     setLoading(true);
     try {
       if (!imageUri) return null;
-  
+
       // stat using the imageUri (resized)
       const fileStat = await RNFS.stat(imageUri);
       const fileSize = fileStat.size;
-  
+
       if (fileSize > 5 * 1024 * 1024) { // 5MB
         showToast("File size shouldn't exceed 5MB", 'error');
         return null;
       }
-  
+
       const res = await apiClient.post('/uploadFileToS3', {
         command: 'uploadFileToS3',
         headers: {
-          'Content-Type': imageFileType,
+          'Content-Type': 'image/webp',
           'Content-Length': fileSize,
         },
       });
-  
+
       if (res.data.status !== 'success') {
         throw new Error(res.data.errorMessage || 'Failed to get upload URL');
       }
-  
+
       const uploadUrl = res.data.url;
       const fileKey = res.data.fileKey;
-  
+
       const fileBlob = await uriToBlob(imageUri);
-  
+
       const uploadRes = await fetch(uploadUrl, {
         method: 'PUT',
         headers: {
-          'Content-Type': imageFileType,
+          'Content-Type': 'image/webp',
         },
         body: fileBlob,
       });
-  
+
       if (uploadRes.status === 200) {
         return fileKey;
       } else {
@@ -700,8 +701,8 @@ const CompanyUserSignupScreen = () => {
       setLoading(false);
     }
   };
-  
-  
+
+
 
 
 
@@ -754,7 +755,7 @@ const CompanyUserSignupScreen = () => {
       if (response.data.status === 'success') {
 
         const companyId = response.data.company_details.user_id;
-        await AsyncStorage.setItem('company_id', companyId);
+
         const companyDetailsResponse = await apiClient.post('/getCompanyDetails', {
           command: "getCompanyDetails",
           company_id: companyId,
@@ -763,6 +764,7 @@ const CompanyUserSignupScreen = () => {
         if (companyDetailsResponse.data.status === 'success') {
 
           const companyDetails = companyDetailsResponse.data.status_message;
+          console.log('companyDetailsResponse.data.status_message', companyDetails);
           if (companyDetails) {
             await AsyncStorage.setItem('CompanyUserData', JSON.stringify(companyDetails));
 
@@ -862,15 +864,13 @@ const CompanyUserSignupScreen = () => {
 
   return (
     <KeyboardAvoid>
-      <View style={{ backgroundColor: COLORS.white, flex: 1, paddingTop: STATUS_BAR_HEIGHT }}>
-        <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
+      <View style={{ flex: 1 }}>
+        <AppHeader
+          title="Complete profile"
 
-        <TouchableOpacity onPress={() => navigation.replace("ProfileType")} style={styles.backButton}>
-          <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
+        />
 
-        </TouchableOpacity>
-
-        <ScrollView contentContainerStyle={{ paddingHorizontal: 10, paddingBottom: '20%', paddingTop: STATUS_BAR_HEIGHT }} showsVerticalScrollIndicator={false}>
+        <ScrollView contentContainerStyle={[{ paddingHorizontal: 10 }]} showsVerticalScrollIndicator={false}>
 
           <TouchableOpacity onPress={handleImageSelection} style={styles.imageContainer} activeOpacity={0.8}>
             {imageUri ? (
@@ -1195,9 +1195,9 @@ const styles = StyleSheet.create({
   },
   imageContainer: {
     borderRadius: 75,
-    height: 140,
-    width: 140,
-    marginBottom: 20,
+    height: 100,
+    width: 100,
+    marginVertical: 20,
     alignSelf: 'center'
   },
   image: {
@@ -1318,12 +1318,11 @@ const styles = StyleSheet.create({
   inputText: {
     flex: 1,
     paddingHorizontal: 10,
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '500',
-    color: colors.text_primary,
+    color: colors.text_secondary,
     flex: 1,
     padding: 5,
-    textAlignVertical: 'top',
     minHeight: 40,
     maxHeight: 200,
   },
@@ -1379,17 +1378,7 @@ const styles = StyleSheet.create({
     borderColor: '#ddd',
 
   },
-  backButton: {
-    position: 'absolute',
-    alignSelf: 'flex-start',
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    padding: 10,
-    margin: 10,
-    elevation: 3,
-    marginTop: STATUS_BAR_HEIGHT + 10,
-    zIndex: 1000
-  },
+
 
   modalItemText: {
     fontSize: 18,

@@ -1,15 +1,15 @@
 
 import React, { useEffect, useLayoutEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, StatusBar } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
 import CustomDropdown from '../../components/CustomDropDown';
 import { useNavigation } from '@react-navigation/native';
 
 import image from '../../images/homepage/logo.jpeg'
 import { Image as FastImage } from 'react-native';
-import AppStyles, { STATUS_BAR_HEIGHT } from '../AppUtils/AppStyles';
 import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
 
 import { colors, dimensions } from '../../assets/theme.jsx';
+import { AppHeader } from '../AppUtils/AppHeader.jsx';
 const ProfileSelect = {
   "Biomedical Engineering Company Manufacturer": [
     "Diagnostic Equipment",
@@ -144,7 +144,6 @@ const ProfileTypeScreen = () => {
   const [userType, setUserType] = useState(''); // 'normal' or 'company'
   const [selectedProfile, setSelectedProfile] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
-
   // Profiles for company users
   const companyProfiles = Object.keys(ProfileSelect).filter(profile =>
     profile.includes("Company") ||
@@ -195,22 +194,15 @@ const ProfileTypeScreen = () => {
 
   return (
     <View style={styles.screen}>
-      <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
+      <AppHeader
+        title="Choose account type"
 
-      {/* Back Button */}
-      <TouchableOpacity
-        style={styles.backButton}
-        onPress={() => navigation.navigate('LoginPhone')}
-      >
-        <ArrowLeftIcon
-          width={dimensions.icon.medium}
-          height={dimensions.icon.medium}
-          color={colors.primary}
-        />
-      </TouchableOpacity>
-
+      />
       <ScrollView
-        contentContainerStyle={styles.scrollContainer}
+        contentContainerStyle={[{
+          paddingHorizontal: 10,
+        }]}
+        keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
         {/* Header Section */}
@@ -240,9 +232,11 @@ const ProfileTypeScreen = () => {
             label="Profile"
             data={profiles}
             onSelect={(profile) => {
+              if (!userType) return;   // HARD GUARD
               setSelectedProfile(profile);
               setSelectedCategory('');
             }}
+        
             disabled={!userType}
             selectedItem={selectedProfile}
             placeholder="Select Profile"
@@ -255,7 +249,11 @@ const ProfileTypeScreen = () => {
             label="Category"
             data={categories}
             selectedItem={selectedCategory}
-            onSelect={(category) => setSelectedCategory(category)}
+            onSelect={(category) => {
+              if (!selectedProfile) return;  // HARD GUARD
+              setSelectedCategory(category);
+            }}
+        
             disabled={!selectedProfile}
             placeholder="Select Category"
             style={styles.dropdown}
@@ -287,8 +285,6 @@ const ProfileTypeScreen = () => {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: '#F3F6FA', // soft neutral background
-    paddingTop:STATUS_BAR_HEIGHT
 
   },
   backButton: {
@@ -309,7 +305,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.primary,
     // textAlign: 'center',
-    marginBottom: 6,
+    marginVertical:16,
   },
   subtitle: {
     fontSize: 15,
@@ -327,7 +323,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowOffset: { width: 0, height: 4 },
     shadowRadius: 8,
-    // elevation: 3,
+    elevation: 3,
   },
   sectionTitle: {
     fontSize: 18,
@@ -357,7 +353,7 @@ const styles = StyleSheet.create({
     color: colors.text_secondary,
   },
   submitButton: {
-    marginTop: 35,
+    marginVertical: 28,
     backgroundColor: colors.primary,
     paddingVertical: 12,
     borderRadius: 14,
@@ -367,6 +363,8 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     shadowRadius: 6,
     elevation: 4,
+    alignSelf:'flex-end',
+    paddingHorizontal:16
   },
   submitText: {
     color: '#fff',

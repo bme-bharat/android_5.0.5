@@ -9,7 +9,8 @@ import { useNetwork } from '../AppUtils/IdProvider';
 import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
 
 import { colors, dimensions } from '../../assets/theme.jsx';
-import AppStyles, { commonStyles, STATUS_BAR_HEIGHT } from '../AppUtils/AppStyles.js';
+import AppStyles, { commonStyles } from '../AppUtils/AppStyles.js';
+import { AppHeader } from '../AppUtils/AppHeader.jsx';
 
 const CompanyAppliedJobScreen = () => {
   const { myId, myData } = useNetwork();
@@ -84,8 +85,12 @@ const CompanyAppliedJobScreen = () => {
       <View style={commonStyles.valContainer}>
         <Text style={commonStyles.label}>First name        </Text>
         <Text style={commonStyles.colon}>:</Text>
+        <Text style={commonStyles.value} numberOfLines={1}>
+          {(
+            `${item?.first_name ?? ''} ${item?.last_name ?? ''}`.trim()
+          )}
+        </Text>
 
-        <Text style={commonStyles.value} numberOfLines={1}>{(getSlicedTitle(item.first_name || "").trimStart().trimEnd())}</Text>
       </View>
       <View style={commonStyles.valContainer}>
         <Text style={commonStyles.label}>Last name         </Text>
@@ -124,16 +129,10 @@ const CompanyAppliedJobScreen = () => {
   if (appliedJobs.length === 0) {
     return (
       <View style={styles.container}>
-        <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
+        <AppHeader
+          title={"Applications"}
 
-        <View style={styles.headerContainer}>
-
-          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-            <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-
-          </TouchableOpacity>
-
-        </View>
+        />
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
           <Text style={{ fontSize: 16, color: 'gray' }}>No jobs applications available</Text>
         </View>
@@ -142,14 +141,11 @@ const CompanyAppliedJobScreen = () => {
   }
   return (
     <View style={styles.container}>
-      <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
+      <AppHeader
+        title={"Applications"}
 
-      <View style={styles.headerContainer}>
-        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
+      />
 
-        </TouchableOpacity>
-      </View>
       {loading ? (
         <View style={styles.centeredContainer}>
           <ActivityIndicator size="large" color="#075cab" />
@@ -181,8 +177,7 @@ const CompanyAppliedJobScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'whitesmoke',
-    paddingTop: STATUS_BAR_HEIGHT
+
   },
 
 
@@ -212,6 +207,7 @@ const styles = StyleSheet.create({
     borderColor: '#ddd',
     borderRadius: 10,
     backgroundColor: '#fff',
+    marginBottom:5
   },
 
   detailRow: {

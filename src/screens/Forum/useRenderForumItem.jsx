@@ -24,7 +24,9 @@ import Reload from '../../assets/svgIcons/reload.svg';
 import { colors, dimensions } from '../../assets/theme.jsx';
 
 import BMEVideoPlayer from '../BMEVideoPlayer';
-
+import Avatar from '../helperComponents/Avatar.jsx';
+import { Divider, Avatar as PaperAvatar } from 'react-native-paper';
+import { useReactionPickerModal } from './ReactionPicker.jsx'
 const { width: deviceWidth, height: deviceHeight } = Dimensions.get('window');
 const maxAllowedHeight = Math.round(deviceHeight * 0.6);
 
@@ -38,6 +40,7 @@ export default function useRenderForumItem({
   videoEndStates,
   setVideoEndStates,
   isFocused,
+  openReactionPicker,
   videoRefs,
   activeReactionForumId,
   setActiveReactionForumId,
@@ -48,7 +51,6 @@ export default function useRenderForumItem({
   context = "latest"
 }) {
   const [interactions, setInteractions] = useState({});
-
   useEffect(() => {
     if (forumIds.length > 0) {
       enrichForumPost(localPosts, myId).then(enriched => {
@@ -99,13 +101,13 @@ export default function useRenderForumItem({
   // }, [forumIds, myId]);
 
   const handleNavigate = (item) => {
-    setTimeout(() => {
-      if (item.user_type === "company") {
-        navigation.navigate('CompanyDetailsPage', { userId: item.user_id });
-      } else if (item.user_type === "users") {
-        navigation.navigate('UserDetailsPage', { userId: item.user_id });
-      }
-    }, 100);
+
+    if (item.user_type === "company") {
+      navigation.navigate('CompanyDetails', { userId: item.user_id });
+    } else if (item.user_type === "users") {
+      navigation.navigate('UserDetails', { userId: item.user_id });
+    }
+
   };
 
   const toggleFullText = (id) => {
@@ -194,6 +196,11 @@ export default function useRenderForumItem({
     }
   };
 
+  const getActiveReactions = (reactionsCount = {}) => {
+    return reactionConfig.filter(
+      cfg => reactionsCount?.[cfg.type] > 0
+    );
+  };
 
   const renderItem = useCallback(({ item }) => {
 
@@ -203,6 +210,7 @@ export default function useRenderForumItem({
       totalReactions: 0,
       userReaction: 'None',
     };
+
 
     let height;
     if (item.extraData?.aspectRatio) {
@@ -217,45 +225,28 @@ export default function useRenderForumItem({
     return (
       <View style={styles.comments}>
         {/* Author section */}
-        <View style={styles.dpContainer}>
-          <TouchableOpacity
-            style={styles.dpContainer1}
-            onPress={() => handleNavigate(item)}
-            activeOpacity={0.8}
-          >
-            {item?.authorSignedUrl ? (
-              <FastImage
-                source={{ uri: item?.authorSignedUrl }}
-                style={styles.image1}
-              />
-            ) : (
-              <View style={[styles.dpContainer1, { backgroundColor: item?.authorImageUri?.backgroundColor }]}>
-                <Text style={{ color: item?.authorImageUri?.textColor, fontWeight: 'bold' }}>
-                  {item?.authorImageUri?.initials}
-                </Text>
-              </View>
-            )}
-          </TouchableOpacity>
+        <TouchableOpacity style={styles.dpContainer} onPress={() => handleNavigate(item)} activeOpacity={0.7}>
+
+          <Avatar
+            imageUrl={item?.authorSignedUrl}
+            name={item.author}
+            size={40}
+          />
+
 
           <View style={styles.textContainer}>
             <View style={styles.title3}>
-              <TouchableOpacity onPress={() => handleNavigate(item)} style={{ flexDirection: 'row', alignItems: 'center' }} activeOpacity={1}>
+              <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center' }} activeOpacity={0.7} onPress={() => handleNavigate(item)}>
                 <Text style={{ flex: 1, alignSelf: 'flex-start', color: 'black', fontSize: 15, fontWeight: '600', color: colors.text_primary }}>
                   {(item.author || '').trim()}
                 </Text>
 
                 {item.isTrending === 'yes' && context !== "trending" && (
-                  <LinearGradient
-                    colors={['#ff9966', '#ff5e62']} // smooth orange-red gradient
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                    style={styles.trendingBadge}
-                  >
-
-                    <Fire width={dimensions.icon.small} height={dimensions.icon.small} color={colors.background} />
-
-                  </LinearGradient>
+                  <Text style={styles.trendingBadge}>
+                    🔥 Trending
+                  </Text>
                 )}
+
 
               </TouchableOpacity>
             </View>
@@ -265,7 +256,7 @@ export default function useRenderForumItem({
               <Text style={styles.date1}>{getTimeDisplayForum(item.posted_on)}</Text>
             </View>
           </View>
-        </View>
+        </TouchableOpacity>
 
         {/* Post content */}
 
@@ -282,7 +273,7 @@ export default function useRenderForumItem({
               width: "100%",
               height: height,          // <-- LIMITED HEIGHT
               overflow: "hidden",      // <-- IMP: enables cropping
-              justifyContent:'center',
+              justifyContent: 'center',
             }}
             activeOpacity={1}
           >
@@ -299,11 +290,12 @@ export default function useRenderForumItem({
                 <BMEVideoPlayer
                   ref={(ref) => {
                     if (ref) {
-                      videoRefs[item.forum_id] = ref;
+                      videoRefs.current[item.forum_id] = ref;
                     } else {
-                      delete videoRefs[item.forum_id];
+                      delete videoRefs.current[item.forum_id];
                     }
                   }}
+
                   showProgressBar={true}
                   source={item?.fileKeySignedUrl}
                   style={{
@@ -338,118 +330,122 @@ export default function useRenderForumItem({
           </TouchableOpacity>
         )}
 
-
-
-        <View style={styles.iconContainer}>
-          <View>
-            <TouchableOpacity
-              onLongPress={() => setActiveReactionForumId(prev => prev === item.forum_id ? null : item.forum_id)}
-              activeOpacity={0.7}
-              style={{ flexDirection: 'row', alignItems: 'center' }}
-              onPress={async () => {
-                const currentReaction = interactionData.userReaction || 'None';
-                const selectedType = currentReaction !== 'None' ? 'None' : 'Like';
-
-                updatePostReaction(item.forum_id, selectedType, currentReaction);
-
-                await handleReactionUpdate(item.forum_id, selectedType, item);
-              }}
-            >
-              {interactionData.userReaction && interactionData.userReaction !== 'None' ? (
-                <>
-                  <Text style={{ fontSize: 15 }}>
-                    {reactionConfig.find(r => r.type === interactionData.userReaction)?.emoji || '👍'}
-                  </Text>
-                  {/* <Text style={{ fontSize: 12, color: '#777', marginLeft: 4 }}>
-                    {reactionConfig.find(r => r.type === interactionData.userReaction)?.label || 'Like'}
-                  </Text> */}
-                </>
-              ) : (
-                <View style={{ alignItems: 'center', flexDirection: 'row' }}>
-                  <Thumb width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-
-                </View>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+          {getActiveReactions(interactionData.reactionsCount).length > 0 && (
+            <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 6, paddingHorizontal: 12, }}
+              onPress={() => reactionSheetRef.current?.present(item.forum_id, 'All')} >
+              {getActiveReactions(interactionData.reactionsCount).map((cfg, index) => (
+                <PaperAvatar.Icon
+                  key={cfg.type}
+                  size={20}
+                  icon={cfg.outlineIcon}
+                  style={[
+                    styles.avatar,
+                    { marginLeft: index === 0 ? 0 : -6 },
+                  ]}
+                />
+              ))}
+              {interactionData.totalReactions > 0 && (
+                <Text style={{ color: colors.text_secondary, fontSize: 12 }}>({interactionData.totalReactions})</Text>
               )}
-
-              <TouchableOpacity
-                onPress={() => reactionSheetRef.current?.open(item.forum_id, 'All')}
-                style={{ padding: 5, paddingHorizontal: 10 }}
-              >
-                {interactionData.totalReactions > 0 && (
-                  <Text style={{ color: "#666" }}>({interactionData.totalReactions})</Text>
-                )}
-              </TouchableOpacity>
             </TouchableOpacity>
+          )}
 
-            {activeReactionForumId === item.forum_id && (
-              <>
-                <TouchableWithoutFeedback onPress={() => setActiveReactionForumId(null)}>
-                  <View style={styles.reactionOverlay} />
-                </TouchableWithoutFeedback>
-                <View style={styles.reactionContainer}>
-                  {reactionConfig.map(({ type, emoji }) => {
-                    const isSelected = interactionData.userReaction === type;
-                    return (
-                      <TouchableOpacity
-                        key={type}
-                        onPress={async () => {
-                          const selectedType = isSelected ? 'None' : type;
-                          const currentReaction = interactionData.userReaction || 'None';
-
-                          updatePostReaction(item.forum_id, selectedType, currentReaction);
-                          await handleReactionUpdate(item.forum_id, selectedType, item);
-
-                          setActiveReactionForumId(null);
-                        }}
-                        style={[
-                          styles.reactionButton,
-                          isSelected && styles.selectedReaction
-                        ]}
-                      >
-                        <Text style={{ fontSize: 20 }}>{emoji}</Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-              </>
-            )}
-          </View>
-        </View>
-
-        {/* Action buttons */}
-        <View style={styles.iconContainer}>
-          <View>
+          {(interactionData.commentCount > 0 || item.viewsCount > 0) && (
             <TouchableOpacity
-              style={styles.iconButton}
+              style={{ paddingVertical: 6, paddingHorizontal: 12, marginLeft: 'auto', }}
               onPress={() => openCommentSheet(item.forum_id, item.user_id, myId, item)}
             >
-              <Comment width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-
-              <Text style={styles.iconTextUnderlined}>
-                Comments{interactionData.commentCount > 0 ? ` ${interactionData.commentCount}` : ''}
+              <Text style={{ marginLeft: 'auto', fontSize: 12 }}>
+                {`${item.viewsCount > 0 ? `${item.viewsCount} Views` : ''}${item.viewsCount > 0 && interactionData.commentCount > 0 ? ' · ' : ''
+                  }${interactionData.commentCount > 0
+                    ? `${interactionData.commentCount} Comments`
+                    : ''
+                  }`}
               </Text>
             </TouchableOpacity>
-          </View>
-          <View>
-            <TouchableOpacity style={styles.iconButton}>
-              <Eye width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-
-              <Text style={styles.iconTextUnderlined}>Views {item.viewsCount || '0'}</Text>
-            </TouchableOpacity>
-          </View>
-          <View>
-            <TouchableOpacity style={styles.iconButton} onPress={() => sharePost(item)}>
-              <ShareIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} styles={{ padding: 10 }} />
-
-              <Text style={styles.iconTextUnderlined}> Share</Text>
-            </TouchableOpacity>
-          </View>
+          )}
         </View>
+        <Divider style={{
+          height: 1, backgroundColor: '#ddd',
+        }} />
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', }}>
+
+          <TouchableOpacity
+            onLongPress={(e) => {
+              openReactionPicker(
+                item.forum_id,
+                interactionData.userReaction || 'None',
+                e,
+                (selectedType) => {
+                  // ✅ OPTIMISTIC UPDATE YOUR LIST STATE
+                  updatePostReaction(
+                    item.forum_id,
+                    selectedType,
+                    interactionData.userReaction || 'None'
+                  );
+                }
+              );
+            }}
+
+            delayLongPress={300}
+            style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, }}
+            onPress={async () => {
+              const currentReaction = interactionData.userReaction || 'None';
+              const selectedType = currentReaction !== 'None' ? 'None' : 'Like';
+
+              updatePostReaction(item.forum_id, selectedType, currentReaction);
+
+              await handleReactionUpdate(item.forum_id, selectedType, item);
+            }}
+          >
+            {interactionData.userReaction && interactionData.userReaction !== 'None' ? (
+              <>
+                <Text style={{ fontSize: 15 }}>
+                  {reactionConfig.find(r => r.type === interactionData.userReaction)?.emoji || '👍'}
+                </Text>
+                {/* <Text style={{ fontSize: 12, color: '#777', marginLeft: 4 }}>
+                    {reactionConfig.find(r => r.type === interactionData.userReaction)?.label || 'Like'}
+                  </Text> */}
+              </>
+            ) : (
+              <View style={{ alignItems: 'center', flexDirection: 'row' }}>
+                <Thumb width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.text_primary} />
+              </View>
+            )}
+            <Text style={{ color: colors.text_primary, }}> Like</Text>
+
+
+          </TouchableOpacity>
+
+
+          <TouchableOpacity
+            onPress={() => openCommentSheet(item.forum_id, item.user_id, myId, item)}
+            style={{ paddingVertical: 6, paddingHorizontal: 12, flexDirection: 'row' }}>
+            <Comment width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.text_primary} styles={{ padding: 10 }} />
+
+            <Text style={{ color: colors.text_primary, }}> Comment</Text>
+
+          </TouchableOpacity>
+
+
+          <TouchableOpacity
+            onPress={() => sharePost(item)} style={{ paddingVertical: 6, paddingHorizontal: 12, flexDirection: 'row' }}>
+            <ShareIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.text_primary} styles={{ padding: 10 }} />
+
+            <Text style={{ color: colors.text_primary, }}> Share</Text>
+
+          </TouchableOpacity>
+
+
+        </View>
+
       </View>
     );
   }, [
     localPosts, activeVideo, isFocused, expandedTexts, activeReactionForumId, handleNavigate, openMediaViewer, reactionSheetRef, deviceWidth
   ]);
+
 
   return renderItem;
 }
@@ -461,12 +457,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'whitesmoke',
   },
 
-
   comments: {
     paddingHorizontal: 5,
-    borderTopWidth: 0.5,
-    borderBottomWidth: 0.5,
-    borderColor: '#ccc',
     paddingVertical: 10,
     backgroundColor: 'white',
     minHeight: 120,
@@ -489,9 +481,14 @@ const styles = StyleSheet.create({
   },
   trendingBadge: {
     flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: 5,
-    padding: 5
+    backgroundColor: '#fee2e2', // bg-red-100
+    color: '#dc2626',           // text-red-600
+    fontSize: 12,               // text-xs
+    fontWeight: '600',         // font-semibold
+    paddingHorizontal: 8,      // px-2
+    paddingVertical: 2,        // py-0.5
+    borderRadius: 9999,        // rounded-full
+    alignSelf: 'flex-start',
   },
   trendingBadgeText: {
     fontSize: 11,
@@ -545,7 +542,6 @@ const styles = StyleSheet.create({
   dpContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-
   },
   dpContainer1: {
     width: 40,
@@ -570,6 +566,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     height: 30
   },
+  avatar: {
+    backgroundColor: '#E7F0FA',
+    borderWidth: 1,
+    borderColor: '#eee',
+  },
+
   iconButton: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -29,7 +29,7 @@ import RNFS from 'react-native-fs';
 
 
 import ImagePicker from 'react-native-image-crop-picker';
-import ImageResizer from 'react-native-image-resizer';
+import ImageResizer from '@bam.tech/react-native-image-resizer';
 
 import PhoneDropDown from '../../components/PhoneDropDown';
 import Message3 from '../../components/Message3';
@@ -38,7 +38,7 @@ import { updateCompanyProfile } from '../Redux/MyProfile/CompanyProfile_Actions'
 import { useDispatch, useSelector } from 'react-redux';
 import default_image from '../../images/homepage/buliding.jpg';
 import { showToast } from '../AppUtils/CustomToast';
-import AppStyles, { STATUS_BAR_HEIGHT } from '../AppUtils/AppStyles';
+import AppStyles from '../AppUtils/AppStyles';
 import apiClient from '../ApiClient';
 import { Image as FastImage } from 'react-native';
 
@@ -53,6 +53,7 @@ import Pdf from '../../assets/svgIcons/pdf.svg';
 import { colors, dimensions } from '../../assets/theme.jsx';
 import { MediaPreview } from '../helperComponents/MediaPreview.jsx';
 import KeyboardAvoid from '../AppUtils/KeyboardAvoid.jsx';
+import { AppHeader } from '../AppUtils/AppHeader.jsx';
 const { DocumentPicker } = NativeModules;
 
 const CompanyUserSignupScreen = () => {
@@ -96,18 +97,29 @@ const CompanyUserSignupScreen = () => {
   const [isVerifyClicked, setIsVerifyClicked] = useState(false);
   const intervalRef = useRef(null);
   const [loading, setLoading] = useState(false);
-  const [isImageChanged, setIsImageChanged] = useState(false);
-  const [selectedProfile, setSelectedProfile] = useState(profile?.select_your_profile || "");
-  const [selectedCategory, setSelectedCategory] = useState(profile?.category || "");
-
+  const [isImageChanged, setIsImageChanged] = useState(false)
 
   const [hasChanges, setHasChanges] = useState(false);
   const [showModal, setShowModal] = useState(false);
 
   const [pendingAction, setPendingAction] = React.useState(null);
-  const [verifiedEmail, setVerifiedEmail] = useState(() => {
-    return profile?.is_email_verified && postData?.company_email_id ? postData.company_email_id : '';
-  });
+  const [emailInput, setEmailInput] = useState(profile.company_email_id || '');
+  const [newVerify, SetNewVerify] = useState(false)
+
+
+  const handleEmailChange = (value) => {
+    setEmailInput(value);
+
+    setPostData(prev => ({
+      ...prev,
+      company_email_id: value,
+    }));
+
+    // reset OTP verification if email changes
+    if (value !== profile.company_email_id) {
+      SetNewVerify(false);
+    }
+  };
 
 
 
@@ -151,7 +163,12 @@ const CompanyUserSignupScreen = () => {
       (key) => postData[key] !== initialPostData[key]
     );
     setHasChanges(hasAnyChanges);
-  }, [postData, profile, selectedCategory, verifiedEmail]);
+  }, [postData, profile]);
+
+  
+  const [selectedProfile, setSelectedProfile] = useState(profile?.select_your_profile || "");
+  const selectedCategory = postData?.category;
+
 
   // 🚪 Prevent navigation if unsaved changes exist
   useEffect(() => {
@@ -189,36 +206,57 @@ const CompanyUserSignupScreen = () => {
   };
 
   const [availableCategories, setAvailableCategories] = useState([]);
+  const prevProfileRef = useRef(null);
 
   useEffect(() => {
-    if (selectedProfile) {
-      const categories =
-        ProfileSelect.normalProfiles[selectedProfile] ||
-        ProfileSelect.companyProfiles[selectedProfile] ||
-        [];
-      setAvailableCategories(categories);
-
-      // Reset category if it's not valid for the new profile
-      if (!categories.includes(selectedCategory)) {
-
-        setSelectedCategory("");
-      } else {
-
+    if (!selectedProfile) return;
+  
+    const categories =
+      ProfileSelect.normalProfiles[selectedProfile] ||
+      ProfileSelect.companyProfiles[selectedProfile] ||
+      [];
+  
+    setAvailableCategories(categories);
+  
+    const prevProfile = prevProfileRef.current;
+  
+    // ✅ Only reset category if profile ACTUALLY changed by user
+    if (prevProfile && prevProfile !== selectedProfile) {
+      if (!categories.includes(postData.category)) {
+        setPostData(prev => ({
+          ...prev,
+          category: "",
+        }));
       }
+      
     }
+  
+    prevProfileRef.current = selectedProfile;
   }, [selectedProfile]);
+  
 
   const handleProfileSelect = (item) => {
-
-    setSelectedProfile(item.label); // store only the label string
+    setSelectedProfile(item.label);
+  
+    setPostData(prev => ({
+      ...prev,
+      select_your_profile: item.label,
+    }));
+  
     setHasChanges(true);
   };
+  
 
   const handleCategorySelect = (item) => {
-
-    setSelectedCategory(item.label); // store only the label string
+  
+    setPostData(prev => ({
+      ...prev,
+      category: item.label,
+    }));
+  
     setHasChanges(true);
   };
+  
 
 
   const states = Object.keys(stateCityData).map((state) => ({
@@ -521,52 +559,44 @@ const CompanyUserSignupScreen = () => {
 
 
   const handleOtpVerification1 = async () => {
-    if (!String(postData.company_email_id || '').trim()) {
-
+    if (!emailInput.trim()) {
       showToast('Please provide a valid email Id', 'error');
       return;
     }
 
-    if (!String(otp1 || '').trim()) {
-
-      showToast('Please enter the OTP sent', 'success');
+    if (!otp1.trim()) {
+      showToast('Please enter the OTP sent', 'info');
       return;
     }
 
     try {
-      const response = await apiClient.post(
-        '/verifyEmailOtp',
-        {
-          command: "verifyEmailOtp",
-          email: postData.company_email_id,
-          otp: otp1,
-        },
-        {
-          headers: {
-            'x-api-key': 'k1xuty5IpZ2oHOEOjgMz57wHfdFT8UQ16DxCFkzk',
-          },
-        }
-      );
+      const response = await apiClient.post('/verifyEmailOtp', {
+        command: "verifyEmailOtp",
+        email: emailInput,
+        otp: otp1,
+      });
 
       if (response.data.status === "success") {
-        setVerifiedEmail(true);
-        setPostData((prevState) => ({
-          ...prevState,
+        SetNewVerify(true);
+        // ✅ update postData only
+        setPostData((prev) => ({
+          ...prev,
           is_email_verified: true,
         }));
-        Keyboard.dismiss();
 
         showToast('Email verified', 'success');
         setModalVisibleemail(false);
+        Keyboard.dismiss();
       } else {
-
         showToast(response.data.errorMessage, 'error');
       }
-    } catch (error) {
-
+    } catch {
       showToast("Error verifying OTP\nPlease try again", 'error');
     }
   };
+
+
+
 
 
 
@@ -636,11 +666,6 @@ const CompanyUserSignupScreen = () => {
 
     setPostData(prevState => {
       let updatedData = { ...prevState, [key]: value };
-
-      if (key === "company_email_id") {
-        updatedData.is_email_verified = value === verifiedEmail;
-      }
-
       return updatedData;
     });
   };
@@ -743,7 +768,7 @@ const CompanyUserSignupScreen = () => {
         croppedImage.path,
         800,
         800,
-        'JPEG',
+        'WEBP',
         80
       );
 
@@ -849,12 +874,12 @@ const CompanyUserSignupScreen = () => {
 
       const resizedWidth = Math.round(file.width * ratio);
       const resizedHeight = Math.round(file.height * ratio);
-      // 3️⃣ Optionally resize further using ImageResizer
+
       const resizedImage = await ImageResizer.createResizedImage(
         croppedImage.path,
         resizedWidth, // maxWidth
         resizedHeight, // maxHeight
-        'JPEG',
+        'WEBP',
         80   // quality %
       );
 
@@ -909,7 +934,7 @@ const CompanyUserSignupScreen = () => {
       const res = await apiClient.post('/uploadFileToS3', {
         command: 'uploadFileToS3',
         headers: {
-          'Content-Type': imageFileType,
+          'Content-Type': 'image/webp',
           'Content-Length': fileSize,
         },
       });
@@ -925,7 +950,7 @@ const CompanyUserSignupScreen = () => {
         const uploadRes = await fetch(uploadUrl, {
           method: 'PUT',
           headers: {
-            'Content-Type': imageFileType,
+            'Content-Type': 'image/webp',
           },
           body: fileBlob,
         });
@@ -1167,9 +1192,34 @@ const CompanyUserSignupScreen = () => {
     return blob;
   };
 
-
-
   const [isLoading, setIsLoading] = useState(false);
+
+
+  const getEmailToSend = () => {
+    // Same email
+    if (emailInput === profile.company_email_id) {
+      return profile.company_email_id;
+    }
+
+    // Changed email but not verified → keep old email
+    if (!newVerify && profile.is_email_verified) {
+      return profile.company_email_id;
+    }
+
+    // Changed email & verified
+    return emailInput;
+  };
+
+
+  const getIsEmailVerifiedToSend = () => {
+    // If OTP just verified THIS email → trust OTP
+    if (newVerify) {
+      return true;
+    }
+
+    // Otherwise fallback to backend truth
+    return profile.is_email_verified;
+  };
 
   const handlePostSubmission = async () => {
     setIsLoading(true); // Start loading
@@ -1219,8 +1269,6 @@ const CompanyUserSignupScreen = () => {
       }
     }
 
-    const emailToSend = postData.is_email_verified ? postData.company_email_id : verifiedEmail;
-
     try {
       const imageFileKey = imageUri ? await handleUploadImage(imageUri, imageFileType) : postData.fileKey;
 
@@ -1233,17 +1281,19 @@ const CompanyUserSignupScreen = () => {
         company_name: postData.company_name?.trimStart().trimEnd(),
         business_registration_number: postData.business_registration_number?.trimStart().trimEnd(),
         company_contact_number: postData.company_contact_number?.trimStart().trimEnd(),
-        company_email_id: emailToSend?.trimStart().trimEnd(),
+
         company_located_city: postData.company_located_city?.trimStart().trimEnd(),
         company_located_state: postData.company_located_state?.trimStart().trimEnd(),
-        is_email_verified: verifiedEmail || profile?.is_email_verified,
+        company_email_id: getEmailToSend(),
+        is_email_verified: getIsEmailVerifiedToSend(),
+
         Website: postData.Website?.trimStart().trimEnd(),
         company_address: postData.company_address?.trimStart().trimEnd(),
         company_description: postData.company_description?.trimStart().trimEnd(),
         fileKey: imageFileKey || null,
         brochureKey: uploadedFileKey || postData.brochureKey,
-        select_your_profile: selectedProfile,
-        category: selectedCategory,
+        select_your_profile: postData.select_your_profile,
+        category: postData.category,
 
         // dark_mode: { android: false, ios: false, web: false }, 
       };
@@ -1377,23 +1427,23 @@ const CompanyUserSignupScreen = () => {
       ? { uri: localImageUrl }
       : require("../../images/homepage/buliding.jpg");
 
+  const isEmailVerified = () =>
+    emailInput === profile.company_email_id
+      ? profile.is_email_verified
+      : postData.is_email_verified;
 
   return (
     <KeyboardAvoid>
-      <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
+      <View style={{ flex: 1 }}>
 
-      <View style={{ backgroundColor: 'whitesmoke', flex: 1, paddingTop: STATUS_BAR_HEIGHT }}>
-        <View style={styles.headerContainer}>
-          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-            <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
+        <AppHeader
+          title={"Update your profile"}
 
-          </TouchableOpacity>
-        </View>
-
-
+        />
 
         <FlatList
           showsVerticalScrollIndicator={false}
+
           onScrollBeginDrag={() => Keyboard.dismiss()}
           scrollEventThrottle={16}
           data={[{ key: 'image' }, { key: 'formInputs' }]}
@@ -1401,30 +1451,28 @@ const CompanyUserSignupScreen = () => {
             switch (item.key) {
               case 'image':
                 return (
-                  <>
-                    <Text style={styles.header}>Edit your profile</Text>
 
-                    <TouchableOpacity onPress={handleImageSelection} style={styles.imageContainer} activeOpacity={1}>
+                  <TouchableOpacity onPress={handleImageSelection} style={styles.imageContainer} activeOpacity={1}>
 
-                      <FastImage
-                        source={imageSource}
-                        style={styles.image}
-                        resizeMode='cover'
-                        onError={() => { }}
-                      />
+                    <FastImage
+                      source={imageSource}
+                      style={styles.image}
+                      resizeMode='cover'
+                      onError={() => { }}
+                    />
 
-                      <TouchableOpacity style={styles.cameraIconContainer} onPress={handleImageSelection}>
-                        <Camera width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
+                    <View style={styles.cameraIconContainer} >
+                      <Camera width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
 
 
-                      </TouchableOpacity>
-                    </TouchableOpacity>
-                  </>
+                    </View>
+                  </TouchableOpacity>
+
                 );
 
               case 'formInputs':
                 return (
-                  <View activeOpacity={1} style={{ paddingHorizontal: 5, paddingBottom: '20%' }}>
+                  <View activeOpacity={1} style={{ paddingHorizontal: 5, paddingBottom: '20%' }} >
                     {[
                       {
                         placeholder: 'Company name',
@@ -1478,18 +1526,25 @@ const CompanyUserSignupScreen = () => {
                     ))}
 
                     <View style={styles.inputContainer}>
-                      <Text style={[styles.label]}>Email ID <Text style={{ color: 'red' }}>*</Text></Text>
+                      <Text style={styles.label}>
+                        Email ID <Text style={{ color: 'red' }}>*</Text>
+                      </Text>
+
                       <View style={styles.inputWithButton}>
                         <TextInput
                           style={styles.inputemail1}
-                          value={postData.company_email_id || ''}
-                          onChangeText={(value) => handleInputChange('company_email_id', value)}
+                          value={emailInput}
+                          onChangeText={handleEmailChange}
                           placeholder="Email"
-
                         />
 
-                        {profile.is_email_verified && postData.company_email_id === profile.company_email_id ? (
-                          <Success width={dimensions.icon.small} height={dimensions.icon.small} color={colors.success} />
+                        {(emailInput === profile.company_email_id && profile.is_email_verified) ||
+                          newVerify ? (
+                          <Success
+                            width={dimensions.icon.small}
+                            height={dimensions.icon.small}
+                            color={colors.success}
+                          />
                         ) : (
                           <TouchableOpacity
                             style={styles.buttonemailmain}
@@ -1500,9 +1555,9 @@ const CompanyUserSignupScreen = () => {
                             </Text>
                           </TouchableOpacity>
                         )}
-
                       </View>
                     </View>
+
 
                     <View style={styles.inputContainer}>
                       <Text style={styles.label}>Profile type</Text>
@@ -1881,7 +1936,7 @@ const CompanyUserSignupScreen = () => {
           iconType="warning"  // You can change this to any appropriate icon type
         />
       </View>
-    </KeyboardAvoid>
+    </KeyboardAvoid >
   );
 }
 
@@ -1891,8 +1946,7 @@ const styles = StyleSheet.create({
     borderRadius: 70,
     alignSelf: 'center',
     justifyContent: 'center',
-    height: 140,
-    width: 140,
+
     marginVertical: 10,
 
   },
@@ -2006,7 +2060,8 @@ const styles = StyleSheet.create({
     padding: 5
   },
   inputText: {
-    height: 40,
+    minHeight: 40,
+    maxHeight: 120,
     backgroundColor: '#fff',
     borderRadius: 8,
     fontSize: 14,
@@ -2049,8 +2104,8 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   image: {
-    width: 140,
-    height: 140,
+    width: 100,
+    height: 100,
     borderRadius: 75,
   },
   imageText: {
@@ -2233,8 +2288,8 @@ const styles = StyleSheet.create({
     padding: 10,
     fontSize: 14,
     fontWeight: '500',
-    color: colors.text_primary
-
+    color: colors.text_primary,
+    minHeight: 40,
   },
   buttonemailmain: {
     borderRadius: 5,

@@ -23,7 +23,6 @@ export const MediaPreview = ({
   videoStyle,
 }) => {
   if (!uri && !thumbnailBase64) {
-    console.warn('[MediaPreview] Nothing to preview (no uri or thumbnailBase64)');
     return null;
   }
 

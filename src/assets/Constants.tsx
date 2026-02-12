@@ -1289,6 +1289,7 @@ export const topTierCities = [
   "Tirupati", "Udaipur", "Vadodara", "Varanasi", "Vijayawada", "Visakhapatnam", "Warangal"
 ];
 
+
 //JobHireTimeTye
 export const HireType = [
 

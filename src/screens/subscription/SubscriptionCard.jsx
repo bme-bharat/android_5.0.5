@@ -18,8 +18,8 @@ const SubscriptionCard = ({
     if (!selectedPackage) return null;
 
     return (
-        <TouchableOpacity activeOpacity={1}>
-            <View style={styles.fullpage}>
+   
+            <View style={[styles.fullpage,{marginTop:5}]}>
                 {/* Header */}
                 <View style={styles.subscriptionWrapper}>
                     <Text style={styles.durationtext}>{title}</Text>
@@ -65,7 +65,7 @@ const SubscriptionCard = ({
                     </View>
                 </View>
             </View>
-        </TouchableOpacity>
+ 
     );
 };
 

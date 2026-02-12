@@ -20,11 +20,13 @@ import { deleteS3KeyIfExists } from '../helperComponents/s3Helpers';
 import PlayOverlayThumbnail from './Play';
 import { uploadFromBase64 } from './VideoParams';
 import { useS3Uploader } from '../helperComponents/useS3Uploader';
-import ImageResizer from 'react-native-image-resizer';
+import ImageResizer from '@bam.tech/react-native-image-resizer';
+
 import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
 import { colors, dimensions } from '../../assets/theme.jsx';
-import AppStyles, { STATUS_BAR_HEIGHT } from '../AppUtils/AppStyles.js';
 import { sanitizeHtmlBody } from './forumBody.jsx';
+import { AppHeader } from '../AppUtils/AppHeader.jsx';
+import Avatar from '../helperComponents/Avatar.jsx';
 
 const { DocumentPicker } = NativeModules;
 const calculateAspectRatio = (width, height) => {
@@ -90,14 +92,16 @@ const ForumEditScreen = () => {
   const handleStay = () => {
     setShowModal(false);
   };
+  const hasUnsavedChanges = Boolean(hasChanges || isLoading || isCompressing);
+
   useEffect(() => {
     const unsubscribe = navigation.addListener('beforeRemove', (e) => {
-      if (!hasChanges) return;
+      if (!hasUnsavedChanges) return;
       e.preventDefault();
       setShowModal(true);
     });
     return unsubscribe;
-  }, [navigation, hasChanges]);
+  }, [navigation, hasUnsavedChanges]);
 
 
 
@@ -150,10 +154,10 @@ const ForumEditScreen = () => {
         file.uri,
         resizedWidth,
         resizedHeight,
-        'JPEG',
+        'WEBP',
         80
       );
-
+      console.log('compressedImage', compressedImage)
       const compressedSizeMB = compressedImage.size / 1024 / 1024;
       if (compressedSizeMB > 5) {
         showToast("Image size shouldn't exceed 5MB", 'error');
@@ -225,38 +229,38 @@ const ForumEditScreen = () => {
   const initialHtmlRef = useRef(postData.forum_body);
 
   const cleanHtmlSpaces = (html) => {
-     if (!html) return "";
-   
-     let cleaned = html;
- 
-     const emptyBlock = /<div>\s*(?:<span>\s*)?(?:<br\s*\/?>)\s*(?:<\/span>)?\s*<\/div>/gi;
-     cleaned = cleaned.replace(new RegExp(`^(?:${emptyBlock.source})+`, "i"), "");
-     cleaned = cleaned.replace(new RegExp(`(?:${emptyBlock.source})+$`, "i"), "");
-     cleaned = cleaned.trim();
-   
-     return cleaned;
-   };
-   
-   
-   
-   
-   const handleForumBodyChange = (html) => {
-   
-     const cleanedBody = sanitizeHtmlBody(html);
-     const finalBody = cleanHtmlSpaces(cleanedBody);
- 
-     setPostData(prev => ({
-       ...prev,
-       body: finalBody
-     }));
-   };
+    if (!html) return "";
+
+    let cleaned = html;
+
+    const emptyBlock = /<div>\s*(?:<span>\s*)?(?:<br\s*\/?>)\s*(?:<\/span>)?\s*<\/div>/gi;
+    cleaned = cleaned.replace(new RegExp(`^(?:${emptyBlock.source})+`, "i"), "");
+    cleaned = cleaned.replace(new RegExp(`(?:${emptyBlock.source})+$`, "i"), "");
+    cleaned = cleaned.trim();
+
+    return cleaned;
+  };
+
+
+
+
+  const handleForumBodyChange = (html) => {
+
+    const cleanedBody = sanitizeHtmlBody(html);
+    const finalBody = cleanHtmlSpaces(cleanedBody);
+
+    setPostData(prev => ({
+      ...prev,
+      forum_body: finalBody
+    }));
+  };
 
   const handlePostSubmission = async () => {
 
     setIsLoading(true);
 
     try {
-  
+
       if (!postData.forum_body.trim()) {
         showToast("Description is mandatory", "info");
         return;
@@ -296,7 +300,6 @@ const ForumEditScreen = () => {
         (fileKey)
           ? (mediaMeta || post.extraData || {})
           : {};
-      setHasChanges(false);
 
       const postPayload = {
         command: 'updateForumPost',
@@ -335,8 +338,9 @@ const ForumEditScreen = () => {
       setThumbnailUri(null);
       setFileType('');
       setMediaMeta(null);
-
+      setHasChanges(false);
       showToast("Post updated successfully", 'success');
+
       setTimeout(() => navigation.goBack(), 100);
 
     } catch (error) {
@@ -349,46 +353,25 @@ const ForumEditScreen = () => {
 
 
 
-
+  const isPostDisabled =
+    !postData.forum_body?.trim() ||
+    isLoading ||
+    isCompressing
 
 
 
   return (
     <View style={styles.container} >
-      <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
 
-      <View style={styles.headerContainer} >
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-
-        </TouchableOpacity>
-
-        <View style={{ margin: 5, }}>
-          <TouchableOpacity
-            onPress={handlePostSubmission}
-            style={[
-              styles.buttonContainer,
-              (!postData.forum_body.trim() || isLoading || isCompressing) && styles.disabledButton,
-            ]}
-            disabled={!postData.forum_body.trim() || isLoading || isCompressing}
-          >
-            {isLoading || isCompressing ? (
-              <ActivityIndicator size="small" color="#fff" style={styles.activityIndicator} />
-            ) : (
-              <Text
-                style={[
-                  styles.buttonTextdown,
-                  (!postData.forum_body.trim() || isLoading || isCompressing) && styles.disabledButtonText1,
-                ]}
-              >Update</Text>
-            )}
-          </TouchableOpacity>
-
-
-        </View>
-      </View>
+      <AppHeader
+        title="Edit post"
+        onPost={handlePostSubmission}
+        postLabel="Update"
+        postLoading={isLoading || isCompressing}
+        postDisabled={isPostDisabled}
+      />
       <KeyboardAwareScrollView
-        contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 5, paddingBottom: '40%' }}
+        contentContainerStyle={[{ paddingHorizontal: 5, paddingBottom: '30%' }]}
         keyboardShouldPersistTaps="handled"
         extraScrollHeight={20}
         onScrollBeginDrag={() => Keyboard.dismiss()}
@@ -397,36 +380,14 @@ const ForumEditScreen = () => {
 
         <View style={styles.profileContainer}>
           <View style={styles.imageContainer}>
-            {profile?.fileKey ? (
-              <Image
-                source={{ uri: profile?.imageUrl }}
-                style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: 20,
-                  marginRight: 10,
-                }}
-              />
-            ) : (
-              <View
-                style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: 20,
-                  marginRight: 10,
-                  backgroundColor: profile?.companyAvatar?.backgroundColor || '#ccc',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                }}
-              >
-                <Text style={{ color: profile?.companyAvatar?.textColor || '#000', fontWeight: 'bold' }}>
-                  {profile?.companyAvatar?.initials || '?'}
-                </Text>
-              </View>
-            )}
+           <Avatar
+            imageUrl={profile?.imageUrl}
+            name={profile?.first_name || profile?.company_name}
+            size={40}
+          />
           </View>
           <View style={styles.profileTextContainer}>
-            <Text style={styles.profileName}>
+            <Text style={styles.profileName} ellipsizeMode='tail' numberOfLines={1}>
               {profile?.first_name || profile?.last_name
                 ? `${profile?.first_name || ''} ${profile?.last_name || ''}`.trim()
                 : profile?.company_name || ''}
@@ -537,8 +498,7 @@ const ForumEditScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'whitesmoke',
-    paddingTop: STATUS_BAR_HEIGHT
+
   },
 
   profileContainer: {
@@ -549,9 +509,7 @@ const styles = StyleSheet.create({
 
   },
   imageContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 80,
+
     alignSelf: 'center',
     justifyContent: 'center',
     marginRight: 10
@@ -584,11 +542,13 @@ const styles = StyleSheet.create({
   },
   profileTextContainer: {
     justifyContent: 'center',
+    flex: 1
+
   },
   profileName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: 'black'
+    fontSize: 15,
+    fontWeight: '500',
+    width:'80%'
   },
   profileCategory: {
     fontSize: 14,

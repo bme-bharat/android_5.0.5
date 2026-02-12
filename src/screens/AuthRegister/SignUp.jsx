@@ -1,5 +1,5 @@
 import React, { useEffect, useLayoutEffect, useState } from 'react';
-import { View, Text, useWindowDimensions, TouchableOpacity, ScrollView, Modal, StyleSheet, FlatList, TextInput, StatusBar, Image, TouchableWithoutFeedback, Keyboard } from 'react-native';
+import { View, Text, useWindowDimensions, TouchableOpacity, ScrollView, Modal, StyleSheet, FlatList, TextInput, Image, TouchableWithoutFeedback, Keyboard } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 
 import { CountryCodes } from '../../assets/Constants';
@@ -11,7 +11,7 @@ import Check from '../../assets/svgIcons/check.svg';
 import ArrowDown from '../../assets/svgIcons/arrow-down.svg';
 
 import { colors, dimensions } from '../../assets/theme.jsx';
-import AppStyles, { STATUS_BAR_HEIGHT } from '../AppUtils/AppStyles.js';
+import { AppHeader } from '../AppUtils/AppHeader.jsx';
 const EnterPhoneScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
@@ -140,69 +140,56 @@ const EnterPhoneScreen = () => {
 
   return (
     <View style={styles.screen}>
-      <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
+      <AppHeader
+        title="Verify your phone"
 
-      {/* Back Button */}
-      <TouchableOpacity
-        onPress={() => navigation.goBack()}
-        style={styles.backButton}
-      >
-        <ArrowLeftIcon
-          width={dimensions.icon.medium}
-          height={dimensions.icon.medium}
-          color={colors.primary}
-        />
-      </TouchableOpacity>
+      />
 
       <ScrollView
-        contentContainerStyle={styles.scrollContainer}
+        contentContainerStyle={[{
+          paddingHorizontal: 10,
+        }]}
         showsVerticalScrollIndicator={false}
       >
         {/* Header */}
-        <Text style={styles.title}>Verify Your Phone</Text>
         <Text style={styles.subtitle}>
           Let’s verify your phone number to continue
         </Text>
 
-        {/* Instruction */}
-        {/* <Text style={styles.instructionText}>{renderInstructionText()}</Text> */}
+        <View style={styles.phoneRow}>
+          <TouchableOpacity
+            style={styles.countrySelector}
+            onPress={() => setModalVisible('country')}
+          >
+            <Text style={styles.countryText}>{selectedCountry}</Text>
+            <ArrowDown
+              width={dimensions.icon.small}
+              height={dimensions.icon.small}
+              color={colors.primary}
+            />
+          </TouchableOpacity>
 
-        {/* Form Card */}
-        <View style={styles.formCard}>
-          <View style={styles.phoneRow}>
-            <TouchableOpacity
-              style={styles.countrySelector}
-              onPress={() => setModalVisible('country')}
-            >
-              <Text style={styles.countryText}>{selectedCountry}</Text>
-              <ArrowDown
-                width={dimensions.icon.small}
-                height={dimensions.icon.small}
-                color={colors.primary}
-              />
-            </TouchableOpacity>
-
-            <View style={styles.phoneInputFlex}>
-              <Phone
-                width={dimensions.icon.medium}
-                height={dimensions.icon.medium}
-                color={colors.primary}
-              />
-              <TextInput
-                style={styles.input}
-                placeholder="Enter phone number"
-                keyboardType="phone-pad"
-                maxLength={10}
-                placeholderTextColor="#999"
-                onChangeText={(text) => {
-                  setPhoneNumber(text);
-                  handlePhone(text);
-                }}
-                value={phone}
-              />
-            </View>
+          <View style={styles.phoneInputFlex}>
+            <Phone
+              width={dimensions.icon.medium}
+              height={dimensions.icon.medium}
+              color={colors.primary}
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="Enter phone number"
+              keyboardType="phone-pad"
+              maxLength={10}
+              placeholderTextColor="#999"
+              onChangeText={(text) => {
+                setPhoneNumber(text);
+                handlePhone(text);
+              }}
+              value={phone}
+            />
           </View>
         </View>
+
 
         {/* Country Modal */}
         <Modal
@@ -293,8 +280,7 @@ const EnterPhoneScreen = () => {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: '#F8FAFD',
-    paddingTop: STATUS_BAR_HEIGHT
+
   },
   backButton: {
     alignSelf: 'flex-start',
@@ -314,14 +300,14 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: '600',
     color: colors.primary,
-    // textAlign: 'center',
+    marginVertical: 16
   },
   subtitle: {
     fontSize: 15,
     color: '#444',
     // textAlign: 'center',
-    marginTop: 6,
-    marginBottom: 25,
+    marginVertical: 16,
+    
   },
   instructionText: {
     color: '#333',
@@ -333,17 +319,7 @@ const styles = StyleSheet.create({
 
 
   },
-  formCard: {
-    backgroundColor: '#fff',
-    borderRadius: 18,
-    // paddingVertical: 15,
-    // paddingHorizontal: 10,
-    shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowOffset: { width: 0, height: 3 },
-    shadowRadius: 6,
-    // elevation: 3,
-  },
+
   phoneRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -353,7 +329,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     overflow: 'hidden',
     height: 50,
-
+    marginBottom: 26
   },
   countrySelector: {
     flexDirection: 'row',
@@ -407,7 +383,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   submitButton: {
-    marginTop: 20,
+    marginVertical: 26,
     backgroundColor: colors.primary,
     paddingVertical: 12,
     borderRadius: 12,
@@ -417,6 +393,9 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     shadowRadius: 6,
     elevation: 4,
+    alignSelf:'flex-end',
+    paddingHorizontal:16
+
   },
   submitText: {
     color: '#fff',
@@ -430,7 +409,6 @@ const styles = StyleSheet.create({
   checkboxContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 50,
     // marginBottom:20,
     // justifyContent: 'center',
     flexWrap: 'wrap',
@@ -450,11 +428,9 @@ const styles = StyleSheet.create({
   checkboxText: {
     fontSize: 13,
     color: '#444',
-    fontWeight: '500',
   },
   linkText: {
     fontSize: 13,
-    fontWeight: '600',
     color: colors.primary,
     textDecorationLine: 'underline',
   },

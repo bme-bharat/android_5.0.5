@@ -3,6 +3,9 @@
     <item name="android:windowBackground">@color/white</item>
     <item name="android:statusBarColor">@android:color/transparent</item>
     <item name="android:windowLightStatusBar">true</item>
+    <item name="android:navigationBarColor">#FFF</item>
+    <item name="android:windowLightNavigationBar">true</item>
+
 </style>
 
 
@@ -14,6 +17,9 @@
         <item name="android:windowSplashScreenBrandingImage">@drawable/background</item> ✅
         <item name="android:windowSplashScreenAnimatedIcon">@drawable/adaptive_icon</item>
         <item name="postSplashScreenTheme">@style/AppTheme</item>
+
+    <!-- 🔥 Add this to force it for deep links/external starts (API 33+) -->
+    <item name="android:windowSplashScreenBehavior">icon_preferred</item>
 
     </style>
 

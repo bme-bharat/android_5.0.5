@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { forwardRef, useEffect, useState } from 'react';
 import {
     Modal,
     View,
@@ -9,19 +9,23 @@ import {
     Linking,
     Alert,
     StyleSheet,
+    BackHandler,
 } from 'react-native';
 import apiClient from '../ApiClient';
 import { showToast } from '../AppUtils/CustomToast';
 import { useNetwork } from '../AppUtils/IdProvider';
-
 import Information from '../../assets/svgIcons/information.svg';
-
 import { colors, dimensions } from '../../assets/theme.jsx';
+import { trackRecent } from "../appTrack/RecentViews";
+import { TrueSheet } from "@lodev09/react-native-true-sheet"
+import FastImage from '@d11/react-native-fast-image';
 
-const ContactSupplierModal = ({ visible, onClose, company_id }) => {
-    const { myId, myData } = useNetwork();
+const ContactSupplierModal = forwardRef(({ company_id }, sheetRef) => {
+    const { myId } = useNetwork();
     const [contactDetails, setContactDetails] = useState(null);
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
+    const [sheetOpen, setSheetOpen] = useState(false);
+
 
     const openDialPad = (number) => {
         const url = `tel:${number}`;
@@ -30,39 +34,28 @@ const ContactSupplierModal = ({ visible, onClose, company_id }) => {
         });
     };
 
-    const viewResume = async () => {
-        try {
-            if (!contactDetails?.target_user_resume_key) {
-
-                return;
-            }
-
-            const response = await apiClient.post('/getObjectSignedUrl', {
-                command: 'getObjectSignedUrl',
-                key: contactDetails.target_user_resume_key,
-            });
-
-            const signedUrl = typeof response.data === 'string' ? response.data : response.data?.url;
-
-            if (signedUrl) {
-                const supported = await Linking.canOpenURL(signedUrl);
-                if (supported) {
-                    Linking.openURL(signedUrl);
-                } else {
-                    showToast("Cannot open the resume URL on this device", 'error');
+    useEffect(() => {
+        const subscription = BackHandler.addEventListener(
+            'hardwareBackPress',
+            () => {
+                if (sheetOpen && sheetRef.current) {
+                    sheetRef.current.dismiss(); // dismiss sheet instead of exiting
+                    return true; // prevent default back action
                 }
-            } else {
-                showToast("Failed to retrieve resume", 'error');
+                return false; // allow default back action
             }
-        } catch (err) {
+        );
 
-            showToast("An error occurred while opening the resume", 'error');
-        }
-    };
+        return () => subscription.remove(); // cleanup correctly
+    }, [sheetOpen]);
 
-    const getJobSeekersContactDetails = async () => {
+
+
+    const fetchContactDetails = async () => {
+        if (!company_id || !myId) return;
+        setLoading(true);
+
         try {
-            setLoading(true);
 
             const response = await apiClient.post('/getContactDetails', {
                 command: 'getContactDetails',
@@ -85,57 +78,106 @@ const ContactSupplierModal = ({ visible, onClose, company_id }) => {
     };
 
     useEffect(() => {
-        if (visible) {
-            getJobSeekersContactDetails();
-        }
-    }, [visible]);
+        if (!contactDetails?.target_user_id) return;
+
+        trackRecent({
+            type: 'contact',
+            data: {
+                ...contactDetails,
+            },
+            id: contactDetails?.target_user_id
+        });
+    }, [contactDetails?.target_user_id]);
+
+
+    const handlePresent = () => {
+        setSheetOpen(true);
+        fetchContactDetails()
+    };
+
+    const handleDismiss = () => {
+        setSheetOpen(false);
+        setContactDetails(null);
+        setLoading(true);  // reset loader for next open
+        // do NOT call sheetRef.current.dismiss() here!
+    };
+
+
+
 
     return (
-        <Modal transparent animationType="slide" visible={visible} onRequestClose={onClose}>
-            <TouchableWithoutFeedback onPress={onClose}>
-                <View style={styles.contactModalBackdrop}>
-                    <TouchableWithoutFeedback>
-                        <View style={styles.contactModalBox}>
-                            {loading ? (
-                                <ActivityIndicator size="small" color='#075cab' />
-                            ) : contactDetails ? (
-                                <View style={styles.contentContainer}>
-                                    {contactDetails.target_user_name && (
-                                        <Text style={styles.companyName}>{contactDetails.target_user_name}</Text>
-                                    )}
+        <TrueSheet
+            ref={sheetRef}
+            detents={['auto']}
+            onDidPresent={handlePresent}
+            onDidDismiss={handleDismiss}
 
-                                    {contactDetails.target_user_phone_number && (
-                                        <TouchableOpacity
-                                            onPress={() => openDialPad(contactDetails.target_user_phone_number)}
-                                            style={styles.actionButton}
-                                        >
-                                            <Text style={styles.actionButtonText}>{contactDetails.target_user_phone_number}</Text>
-                                        </TouchableOpacity>
-                                    )}
-
-                                    {/* {contactDetails.target_user_resume_key && (
-                                        <TouchableOpacity style={styles.actionButton} onPress={viewResume}>
-                                            <Text style={styles.actionButtonText}>View Resume</Text>
-                                        </TouchableOpacity>
-                                    )} */}
-
-                                    <View style={styles.successMessageRow}>
-                                        <Information width={dimensions.icon.small} height={dimensions.icon.small} color={'#888'} />
-
-                                        <Text style={styles.contactModalMessage}> {contactDetails.successMessage}</Text>
-                                    </View>
+            style={{ paddingVertical: 24, }}
+        >
+            <View style={styles.contactModalBox}>
+                {loading ? (
+                    <ActivityIndicator size="small" color="#075cab" />
+                ) : contactDetails ? (
+                    <>
+                        {/* {image ? (
+                            <FastImage
+                                source={{ uri: image }}
+                                style={styles.sheetImage}
+                            />
+                        ) : (
+                            contactDetails?.target_user_name ? (
+                                <View style={
+                                    styles.sheetAvatar
+                                } >
+                                    <Text style={styles.avatarText}>
+                                        {contactDetails?.target_user_name?.[0]?.toUpperCase()}
+                                    </Text>
                                 </View>
-                            ) : (
-                                <Text style={styles.contactModalLoading}>Failed to load contact details.</Text>
-                            )}
-                        </View>
+                            ) : null
 
-                    </TouchableWithoutFeedback>
-                </View>
-            </TouchableWithoutFeedback>
-        </Modal>
+                        )} */}
+
+                        <View style={styles.contentContainer}>
+                            {contactDetails.target_user_name && (
+                                <Text style={styles.companyName}>
+                                    {contactDetails.target_user_name}
+                                </Text>
+                            )}
+                            {contactDetails.target_user_phone_number && (
+                                <TouchableOpacity
+                                    onPress={() =>
+                                        openDialPad(contactDetails.target_user_phone_number)
+                                    }
+                                    style={styles.actionButton}
+                                >
+                                    <Text style={styles.actionButtonText}>
+                                        {contactDetails.target_user_phone_number}
+                                    </Text>
+                                </TouchableOpacity>
+                            )}
+
+                            <View style={styles.successMessageRow}>
+                                <Information
+                                    width={dimensions.icon.small}
+                                    height={dimensions.icon.small}
+                                    color="#888"
+                                />
+                                <Text style={styles.contactModalMessage}>
+                                    {contactDetails.successMessage}
+                                </Text>
+                            </View>
+                        </View>
+                    </>
+                ) : (
+                    <Text style={styles.contactModalLoading}>
+                        Failed to load contact details.
+                    </Text>
+                )}
+
+            </View>
+        </TrueSheet >
     );
-};
+});
 
 
 const styles = StyleSheet.create({
@@ -151,13 +193,30 @@ const styles = StyleSheet.create({
         backgroundColor: '#fff',
         borderRadius: 14,
         padding: 16,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 6 },
-        shadowOpacity: 0.1,
-        shadowRadius: 10,
-        elevation: 8,
+    },
+    sheetImage: {
+        width: 96,
+        height: 96,
+        borderRadius: 48,
+        marginBottom: 12,
+        borderWidth: 1,
+        borderColor: '#eee',
     },
 
+    sheetAvatar: {
+        width: 96,
+        height: 96,
+        borderRadius: 48,
+        backgroundColor: '#075cab',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 12,
+    },
+    avatarText: {
+        color: '#fff',
+        fontSize: 22,
+        fontWeight: 'bold',
+    },
     contentContainer: {
         alignItems: 'center',
         justifyContent: 'center',
@@ -178,6 +237,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#f0f0f0',
         width: '70%',
         alignItems: 'center',
+        marginBottom: 10
     },
 
     actionButtonText: {
@@ -188,7 +248,7 @@ const styles = StyleSheet.create({
 
     successMessageRow: {
         flexDirection: 'row',
-        marginTop: 12,
+        paddingHorizontal: 16
     },
 
     warningIcon: {

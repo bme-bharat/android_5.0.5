@@ -1,41 +1,24 @@
 import { StyleSheet } from "react-native";
-import { STATUS_BAR_HEIGHT } from "../AppUtils/AppStyles";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-const insets = useSafeAreaInsets();
+import { colors } from "../../assets/theme";
+import { ScaledSheet } from 'react-native-size-matters';
 
-export const settingStyles = StyleSheet.create({
-
-  bottomNavContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'center',
-    paddingVertical: 12,
-    paddingBottom: insets.bottom + 10,
-    backgroundColor: '#ffffff',
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    zIndex: 100,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-
-  },
+export const settingStyles = ScaledSheet.create({
 
   profileContainer: {
-    flexDirection: 'column',
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    padding: 10,
+    justifyContent: 'space-between',
+    paddingVertical: 18,
+    paddingHorizontal: 16,
+    backgroundColor: '#fff',
+    borderBottomLeftRadius: 18,
+    borderBottomRightRadius: 18,
+    elevation: 1,              // Android
+    shadowColor: '#000',       // iOS
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
     
-    elevation: 4,
-    shadowColor: '#aaa',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.2,
-    shadowRadius: 5,
-    backgroundColor: '#fff'
   },
 
   editProfileButton: {
@@ -43,8 +26,8 @@ export const settingStyles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 8,
-    padding: 8,
+    borderRadius: 99,
+    padding: 99,
 
   },
   editProfileText: {
@@ -55,10 +38,8 @@ export const settingStyles = StyleSheet.create({
   },
   profileDetails: {
     flex: 1,
-    alignItems: 'flex-start',
-    // marginLeft: 30,
-    marginTop: 10
-
+    // justifyContent: 'center',
+    alignItems: 'flex-start'
   },
 
   navItem: {
@@ -127,30 +108,25 @@ export const settingStyles = StyleSheet.create({
     fontSize: 15,
     alignSelf: 'flex-start',
   },
-
-  value: {
-    flex: 2, // Take the remaining space
-    flexShrink: 1,
-    color: 'black',
+  fName: {
+    fontSize: 18,
     fontWeight: '500',
-    fontSize: 15,
-    textAlign: 'left', // Align text to the left
-    alignSelf: 'flex-start',
+    color: colors.text_primary,
+    marginLeft: 10
+  },
+  value: {
+    flexShrink: 1,
+    fontSize: 14,
+    marginLeft: 10,
+    color: colors.text_secondary,
   },
   drawerItem: {
-    marginTop: 5,
     flexDirection: 'row',
     fontSize: 15,
     alignItems: 'center',
-    backgroundColor: 'white',
     borderRadius: 5,
-    paddingHorizontal: 5,
     paddingVertical: 5,
-    marginHorizontal: 5,
-    shadowColor: '#ffffff',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
+
   },
 
 
@@ -160,17 +136,15 @@ export const settingStyles = StyleSheet.create({
     fontWeight: '500',
   },
   drawerLabel: {
-    marginLeft: 12,
     fontSize: 16,
-    color: "#075cab",
-    fontWeight: "500",
-    marginVertical: 8,
+    color: colors.text_primary,
+    fontWeight: "400",
+    marginLeft: 10,
   },
 
   subItemsContainer: {
-    paddingVertical: 4,
-    marginHorizontal: 5,
-    backgroundColor: 'white',
+    paddingVertical: 5,
+    marginHorizontal: 10,
     // borderRadius: 5,
     borderBottomRightRadius: 5,
     borderBottomLeftRadius: 5,
@@ -179,33 +153,23 @@ export const settingStyles = StyleSheet.create({
   appversion: {
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 50
-
+marginVertical:10
   },
   appText: {
     fontSize: 13,
     color: 'gray',
     // marginBottom: 5,
-    fontWeight: '400',
-    textAlign: 'justify',
-    alignItems: 'center',
-
   },
-
 
   subItem: {
     padding: 5,
-    marginHorizontal: 30,
-    marginVertical: 1,
     fontSize: 15,
     fontWeight: "500",
-    color: "black",
-
+    color: colors.text_secondary,
   },
 
   container1: {
     flex: 1,
-    paddingTop: STATUS_BAR_HEIGHT
   },
 
   dropdownIcon: {

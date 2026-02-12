@@ -14,8 +14,12 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import android.util.Log
 import com.bmebharat.newapp.phonehint.PhoneHintModule
+import com.google.firebase.analytics.FirebaseAnalytics
 
 class MainActivity : ReactActivity() {
+    
+    private lateinit var firebaseAnalytics: FirebaseAnalytics
+
     private var keepSplash = true
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -27,10 +31,14 @@ class MainActivity : ReactActivity() {
         supportFragmentManager.fragmentFactory = RNScreensFragmentFactory()
 
         super.onCreate(null)
+        
+    // 🔥 Initialize Firebase Analytics
+        firebaseAnalytics = FirebaseAnalytics.getInstance(this)
+        Log.d("Firebase", "Firebase Analytics initialized")
 
-        // Keep splash for 2 seconds
+        // Keep splash for 1 seconds
         lifecycleScope.launch {
-            delay(2000)
+            delay(1000)
             keepSplash = false
         }
 

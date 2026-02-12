@@ -1,9 +1,8 @@
 
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { StyleSheet, Text, View, Image, TouchableOpacity, TextInput, Keyboard, FlatList, RefreshControl, ActivityIndicator, StatusBar, Platform } from 'react-native';
+import { StyleSheet, Text, View, Image, TouchableOpacity, TextInput, Keyboard, FlatList, RefreshControl, ActivityIndicator } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-
 import apiClient from '../ApiClient';
 import { useNetwork } from '../AppUtils/IdProvider';
 import { useConnection } from '../AppUtils/ConnectionProvider';
@@ -14,14 +13,11 @@ import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
 import Search from '../../assets/svgIcons/search.svg';
 import Close from '../../assets/svgIcons/close.svg';
 import { colors, dimensions } from '../../assets/theme.jsx';
+import Animated from 'react-native-reanimated';
 import scrollAnimations from '../helperComponents/scrollAnimations.jsx';
-import Animated from "react-native-reanimated";
+import Avatar from '../helperComponents/Avatar.jsx';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-const STATUS_BAR_HEIGHT =
-  Platform.OS === "android" ? StatusBar.currentHeight || 24 : 44;
-
-const headerHeight = STATUS_BAR_HEIGHT + 60;
-const bottomHeight = 60;
 const CompanyListJobCandidates = () => {
   const { myId, myData } = useNetwork();
   const { isConnected } = useConnection();
@@ -254,7 +250,7 @@ const CompanyListJobCandidates = () => {
         onPress={() => navigation.navigate('CompanyGetJobCandidates', { posts: item, imageUrl })}
       >
         <View style={styles.imageContainer}>
-          {typeof imageUrls[item.user_id] === 'string' ? (
+          {/* {typeof imageUrls[item.user_id] === 'string' ? (
             <Image
               source={{ uri: imageUrls[item.user_id] }}
               style={styles.image}
@@ -276,7 +272,12 @@ const CompanyListJobCandidates = () => {
                 {imageUrls[item.user_id]?.initials}
               </Text>
             </View>
-          )}
+          )} */}
+           <Avatar
+              imageUrl={imageUrl}
+              name={item?.first_name}
+              size={100}
+            />
         </View>
 
 
@@ -302,17 +303,19 @@ const CompanyListJobCandidates = () => {
 
     );
   };
+  const insets = useSafeAreaInsets();
+  const headerHeight = insets?.top+ 44;
+
 
 
   return (
+    <View style={styles.container}>
 
-    <>
-
-      <Animated.View style={[AppStyles.toolbar, toolbarBgStyle]}>
+      <Animated.View style={[AppStyles.toolbar, toolbarBgStyle, {paddingTop:insets.top}]}>
 
         <Animated.View style={[AppStyles.searchRow, headerStyle]}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton} activeOpacity={1}>
-            <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.text_secondary} />
+          <TouchableOpacity onPress={() => navigation.goBack()} style={AppStyles.backButton} activeOpacity={1}>
+            <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} fill={colors.primary} />
 
           </TouchableOpacity>
           <View style={AppStyles.searchBar}>
@@ -320,36 +323,32 @@ const CompanyListJobCandidates = () => {
 
             <TextInput
               ref={searchInputRef}
-              placeholder="Search jobs..."
               style={AppStyles.searchInput}
-              placeholderTextColor="#666"
+              placeholder="Search"
+              placeholderTextColor="gray"
               value={searchQuery}
               onChangeText={handleDebouncedTextChange}
+
             />
           </View>
 
         </Animated.View>
-
-
-
       </Animated.View>
-
 
       {!loading ? (
         <Animated.FlatList
           data={!searchTriggered || searchQuery.trim() === '' ? posts : searchResults}
           onScrollBeginDrag={() => Keyboard.dismiss()}
           refreshControl={
-            <RefreshControl refreshing={isRefreshing} onRefresh={handlerefresh}
-              progressViewOffset={headerHeight} />
+            <RefreshControl refreshing={isRefreshing} onRefresh={handlerefresh} />
           }
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingTop: headerHeight }}
-          renderItem={renderJob} // Use renderJob here
-          keyExtractor={(item, index) => `${item.user_id}-${index}`}
           onScroll={onScroll}
           scrollEventThrottle={16}
-          overScrollMode={'never'}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={ { paddingHorizontal: 5,marginTop:5, paddingTop:headerHeight }}
+          renderItem={renderJob} // Use renderJob here
+          keyExtractor={(item, index) => `${item.user_id}-${index}`}
+
           onEndReached={() => hasMoreJobs && fetchJobs(lastEvaluatedKey)}
           onEndReachedThreshold={0.5}
           ListFooterComponent={() =>
@@ -383,7 +382,7 @@ const CompanyListJobCandidates = () => {
         </View>
       )}
 
-    </>
+    </View>
   );
 
 }
@@ -392,8 +391,7 @@ const styles = StyleSheet.create({
 
   container: {
     flex: 1,
-    backgroundColor: colors.app_background,
-    paddingTop: STATUS_BAR_HEIGHT
+
   },
   nofound: {
     flex: 1,
@@ -432,11 +430,10 @@ const styles = StyleSheet.create({
     textAlign: 'justify',
   },
   backButton: {
-    padding: 12,
     alignSelf: 'center',
-    borderRadius: 10,
-    backgroundColor: colors.background
-},
+    padding: 10,
+
+  },
 
   postContainer: {
     marginBottom: 5,
@@ -449,11 +446,8 @@ const styles = StyleSheet.create({
   },
   imageContainer: {
     marginBottom: 10,
-    width: 100,
-    height: 100,
     alignItems: 'center',
     justifyContent: 'center',
-    alignSelf: 'center'
   },
   image: {
     width: '100%',

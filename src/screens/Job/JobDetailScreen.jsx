@@ -1,6 +1,6 @@
 
 import React, { useCallback, useRef } from 'react';
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Image, Modal, ToastAndroid, Linking, RefreshControl, Pressable, TouchableWithoutFeedback, Share, ActivityIndicator, Alert } from 'react-native';
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Image, Modal, Linking, RefreshControl, Pressable, TouchableWithoutFeedback, Share, ActivityIndicator, Alert } from 'react-native';
 import { useState, useEffect } from 'react';
 import { useNavigation } from '@react-navigation/native';
 
@@ -8,19 +8,25 @@ import { Image as FastImage } from 'react-native';
 import default_image from '../../images/homepage/buliding.jpg'
 import ImageViewer from 'react-native-image-zoom-viewer';
 import apiClient from '../ApiClient';
-import ContactSupplierModal from '../helperComponents/ContactsModal';
 import { showToast } from '../AppUtils/CustomToast';
 import { useNetwork } from '../AppUtils/IdProvider';
 import { openMediaViewer } from '../helperComponents/mediaViewer';
 import { generateAvatarFromName } from '../helperComponents/useInitialsAvatar';
-import AppStyles, { commonStyles, STATUS_BAR_HEIGHT } from '../AppUtils/AppStyles';
+import AppStyles from '../AppUtils/AppStyles';
 import { openLink } from '../AppUtils/openLinks';
 import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
 import ShareIcon from '../../assets/svgIcons/share.svg';
 import { colors, dimensions } from '../../assets/theme';
+import { trackRecent } from "../appTrack/RecentViews"
+import ContactSupplierModal from '../helperComponents/ContactsModal';
+import Avatar from '../helperComponents/Avatar';
+import { MaterialIcons } from '@react-native-vector-icons/material-icons';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { smartGoBack } from '../../navigation/smartGoBack';
+import { AppHeader } from '../AppUtils/AppHeader';
+const PRIMARY = '#075cab'
+const PRIMARY_LIGHT = '#E6EEF9'
 
-
-const defaultImage = Image.resolveAssetSource(default_image).uri;
 const JobDetailScreen = ({ route }) => {
   const { myId, myData } = useNetwork();
 
@@ -29,14 +35,11 @@ const JobDetailScreen = ({ route }) => {
   const [profileCreated, setProfileCreated] = useState(false)
   const navigation = useNavigation();
   const [post, setPost] = useState([])
-
   const [jobImageUrls, setJobImageUrls] = useState({});
   const [isApplied, setIsApplied] = useState(false);
-
   const [profile, setProfile] = useState(null);
   const [isModalVisible, setModalVisible] = useState(false);
-  const [modalVisible1, setModalVisible1] = useState(false);
-
+  const contactSheetRef = useRef(null);
 
   const openModal = (type) => {
     setModalVisible(true);
@@ -60,6 +63,26 @@ const JobDetailScreen = ({ route }) => {
       console.error('❌ Error in fetchProfile1:', error);
     }
   };
+
+  useEffect(() => {
+    if (!post?.post_id) return;
+
+    const jobImage = jobImageUrls?.[post.post_id];
+
+    trackRecent({
+      type: 'job',
+      data: {
+        ...post,
+        image:
+          jobImage?.type === 'url'
+            ? jobImage.value
+            : null, // ✅ resolved URL saved
+      },
+      id: post.post_id,
+    });
+  }, [post?.post_id, jobImageUrls]);
+
+
 
 
 
@@ -110,19 +133,6 @@ const JobDetailScreen = ({ route }) => {
       if (hasValidResponse) {
         const jobData = res.data.response[0];
 
-        if (!jobData.fileKey) {
-          // fallback avatar
-          const avatar = generateAvatarFromName(jobData.company_name);
-          jobData.companyAvatar = avatar;
-
-          setJobImageUrls(prev => ({
-            ...prev,
-            [jobData.post_id]: { type: "avatar", value: avatar },
-          }));
-
-          setPost(jobData);
-          return;
-        }
 
         // fileKey exists → try fetching signed URL
         try {
@@ -136,22 +146,9 @@ const JobDetailScreen = ({ route }) => {
               ...prev,
               [jobData.post_id]: { type: "url", value: imgRes.data },
             }));
-          } else {
-            const avatar = generateAvatarFromName(jobData.company_name);
-            jobData.companyAvatar = avatar;
-            setJobImageUrls(prev => ({
-              ...prev,
-              [jobData.post_id]: { type: "avatar", value: avatar },
-            }));
           }
         } catch (error) {
           console.warn('Error fetching image URL, falling back to avatar:', error);
-          const avatar = generateAvatarFromName(jobData.company_name);
-          jobData.companyAvatar = avatar;
-          setJobImageUrls(prev => ({
-            ...prev,
-            [jobData.post_id]: { type: "avatar", value: avatar },
-          }));
         }
 
         setPost(jobData);
@@ -170,7 +167,7 @@ const JobDetailScreen = ({ route }) => {
     if (routePost) {
       setPost(routePost);
       const fileKey = routePost?.fileKey || routePost?.company_file_key
-      console.log('fileKey', fileKey)
+
       if (fileKey) {
         (async () => {
           try {
@@ -184,36 +181,17 @@ const JobDetailScreen = ({ route }) => {
                 ...prev,
                 [routePost.post_id]: { type: "url", value: imgRes.data },
               }));
-            } else {
-              const avatar = generateAvatarFromName(routePost.company_name);
-              setJobImageUrls(prev => ({
-                ...prev,
-                [routePost.post_id]: { type: "avatar", value: avatar },
-              }));
             }
           } catch (error) {
-            const avatar = generateAvatarFromName(routePost.company_name);
-            setJobImageUrls(prev => ({
-              ...prev,
-              [routePost.post_id]: { type: "avatar", value: avatar },
-            }));
+
           }
         })();
-      } else {
-        const avatar = generateAvatarFromName(routePost.company_name);
-        setJobImageUrls(prev => ({
-          ...prev,
-          [routePost.post_id]: { type: "avatar", value: avatar },
-        }));
       }
     } else {
       console.log('No routePost found, fetching from API'); // 🟡 LOG: from API
       fetchJobs();
     }
   }, []);
-
-
-
 
 
 
@@ -332,9 +310,6 @@ const JobDetailScreen = ({ route }) => {
       if (response.data.status === 'success') {
         setIsApplied(false);
         showToast('The application has been successfully revoked', 'success');
-        setTimeout(() => {
-          navigation.goBack()
-        }, 100)
       } else {
         showToast('Something went wrong', 'error');
 
@@ -345,353 +320,281 @@ const JobDetailScreen = ({ route }) => {
     }
   };
 
-  const handleNavigate = (company_id) => {
-    navigation.navigate('CompanyDetailsPage', { userId: company_id });
+  const handleNavigate = (company) => {
+    navigation.navigate('CompanyDetails', { userId: company.company_id, profile: company });
   };
 
 
 
-  const jobImage = jobImageUrls[post?.post_id];
 
-  if (!post) {
-
-    return (
-      <View style={styles.container}>
-
-        <View style={styles.headerContainer}>
-
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => {
-              if (navigation.canGoBack()) {
-                navigation.goBack();
-              } else {
-                navigation.navigate('Home3');
-              }
-            }}
-          >
-            <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-
-          </TouchableOpacity>
-
-        </View>
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <ActivityIndicator size='small' color='#075cab' />
-        </View>
+  const InfoItem = ({ label, value, icon }) => (
+    <View style={styles.infoItem}>
+      <View style={styles.infoIcon}>
+        <MaterialIcons name={icon} size={20} color="#075CAB" />
       </View>
-    );
-  }
+      <Text style={styles.infoLabel}>{label}</Text>
+      <Text style={styles.infoValue}>{value}</Text>
+    </View>
+  );
 
-  if (post?.removed_by_author) {
+
+  const Section = ({ title, children }) => (
+    <View style={styles.section}>
+      <Text style={styles.sectionTitle}>{title}</Text>
+      {children}
+    </View>
+  )
+
+  const Bullet = ({ text, label }) => (
+    <View style={styles.bulletRow}>
+      <Text style={styles.kLabel} numberOfLines={1}
+        ellipsizeMode="tail"
+      >{label}</Text>
+      <Text style={styles.kColon}>:</Text>
+      <Text style={styles.kValue}>{text}</Text>
+    </View>
+  )
+
+  const KeyValue = ({ label, value, link, onPress }) => {
+    if (!value) return null
     return (
-      <>
-        <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
-
-        <View style={styles.headerContainer}>
-
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => {
-              if (navigation.canGoBack()) {
-                navigation.goBack();
-              } else {
-                navigation.navigate('Home3'); // Fallback to a safe screen
-              }
-            }}
-          >
-            <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-
-          </TouchableOpacity>
-
-        </View>
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <Text style={{ fontSize: 16, color: 'gray' }}>This post was removed by the author</Text>
-        </View>
-      </>
-    );
+      <View style={{ flexDirection: 'row', marginBottom: 6 }}>
+        <Text style={styles.kLabel} numberOfLines={1}
+          ellipsizeMode="tail"
+        >{label}</Text>
+        <Text style={styles.kColon}>:</Text>
+        <Text
+          onPress={onPress}
+          style={[
+            styles.kValue,
+            link && { color: '#075cab', textDecorationLine: 'underline' },
+          ]}
+        >
+          {value}
+        </Text>
+      </View>
+    )
   }
+
+  const isLoading = !post
+  const isRemoved = post?.removed_by_author
+  const hasJob = post?.job_title
+
   return (
 
     <>
-      <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
 
-      <View style={styles.headerContainer}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => {
-            if (navigation.canGoBack()) {
-              navigation.goBack();
-            } else {
-              navigation.navigate('Home3');
-            }
-          }}
-        >
-          <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
+      {/* ===== HEADER (ALWAYS) ===== */}
+      <AppHeader
+        title="Job Details"
+        onShare={() => shareJob(post)}
+      />
 
-        </TouchableOpacity>
+      {/* ===== BODY ===== */}
+      {isLoading && (
+        <View style={AppStyles.center}>
+          <ActivityIndicator size="small" color="#075cab" />
+        </View>
+      )}
 
-        <TouchableOpacity onPress={() => shareJob(post)} style={AppStyles.circle}>
-          <ShareIcon width={24} height={24} color={'#075cab'} />
-          <Text style={{ fontSize: 16, color: '#075cab', fontWeight: '500' }}> Share </Text>
+      {!isLoading && isRemoved && (
+        <View style={AppStyles.center}>
+          <Text style={AppStyles.removedText}>
+            This post was removed by the author
+          </Text>
+        </View>
+      )}
 
-        </TouchableOpacity>
-      </View>
+      {!isLoading && !isRemoved && hasJob && (
+        <>
 
+          {post?.job_title ? (
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={[
 
-      {post ? (
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: '30%', paddingTop: 5, paddingHorizontal: 5 }}>
+                { paddingHorizontal: 12, paddingBottom: '10%' },
+              ]}
+            >
+              {/* ================= IMAGE / AVATAR ================= */}
 
-          <TouchableOpacity
-            onPress={() => {
-              if (jobImage?.type === "url") {
-                openMediaViewer([{ type: "image", url: jobImage.value }]);
-              }
-            }}
-            activeOpacity={1}
-            style={styles.imageContainer}
-          >
-            {jobImage?.type === "url" ? (
-              <FastImage
-                source={{ uri: jobImage.value }}
-                style={styles.detailImage}
-
-              />
-            ) : (
-              <View
-                style={[
-                  AppStyles.avatarContainerDetails,
-                  { backgroundColor: jobImage?.value?.backgroundColor },
-                ]}
-              >
-                <Text
-                  style={[
-                    AppStyles.avatarText,
-                    { color: jobImage?.value?.textColor },
-                  ]}
-                >
-                  {jobImage?.value?.initials}
-                </Text>
-              </View>
-            )}
-          </TouchableOpacity>
-
-
-          <View style={styles.textContainer1}>
-            <Text style={commonStyles.title}>{post?.job_title || 'No Title'}</Text>
-          </View>
-          <View style={commonStyles.labValContainer}>
-            <Text style={commonStyles.label}>Company</Text>
-            <Text style={commonStyles.colon}>:</Text>
-            <Text style={commonStyles.value} onPress={() => handleNavigate(post?.company_id)} >{post?.company_name || ''}</Text>
-          </View>
-
-
-          <View style={commonStyles.labValContainer}>
-
-            <Text style={commonStyles.label}>Category</Text>
-
-            <Text style={commonStyles.colon}>:</Text>
-            <Text style={commonStyles.value}>{post?.company_category || ''}</Text>
-          </View>
-
-          {post?.Website ? (
-            <View style={commonStyles.labValContainer}>
-
-              <Text style={commonStyles.label}>Website</Text>
-
-              <Text style={commonStyles.colon}>:</Text>
-              <Text style={commonStyles.value}>
-                <TouchableOpacity activeOpacity={1} onPress={() => openLink(post.Website)}>
-                  <Text style={[commonStyles.value, { color: "#075cab", textDecorationLine: "underline" }]}>
-                    {post.Website.trim()}
-                  </Text>
-                </TouchableOpacity>
-              </Text>
-
-            </View>
-          ) : null}
-
-          <View style={commonStyles.labValContainer}>
-
-            <Text style={commonStyles.label}>Industry type</Text>
-
-            <Text style={commonStyles.colon}>:</Text>
-            <Text style={commonStyles.value}>{post?.industry_type || ''}</Text>
-          </View>
-
-          {post?.required_qualifications?.trim() && (
-            <View style={commonStyles.labValContainer}>
-
-              <Text style={commonStyles.label}>Required qualification</Text>
-
-              <Text style={commonStyles.colon}>:</Text>
-              <Text style={commonStyles.value}>{post?.required_qualifications.trim()}</Text>
-            </View>
-          )}
-
-          {post?.required_expertise?.trim() && (
-            <View style={commonStyles.labValContainer}>
-
-              <Text style={commonStyles.label}>Required expertise</Text>
-
-              <Text style={commonStyles.colon}>:</Text>
-              <Text style={commonStyles.value}>{post?.required_expertise.trim()}</Text>
-            </View>
-          )}
-
-          {post?.experience_required?.trim() && (
-            <View style={commonStyles.labValContainer}>
-
-              <Text style={commonStyles.label}>Required experience</Text>
-
-              <Text style={commonStyles.colon}>:</Text>
-              <Text style={commonStyles.value}>{post?.experience_required.trim()}</Text>
-            </View>
-          )}
-
-          <View style={commonStyles.labValContainer}>
-
-            <Text style={[commonStyles.label]}>Required speicializations </Text>
-
-            <Text style={commonStyles.colon}>:</Text>
-
-            <Text style={[commonStyles.value]}>{post?.speicializations_required || ''}</Text>
-          </View>
-
-          {post?.working_location?.trim() && (
-            <View style={commonStyles.labValContainer}>
-
-              <Text style={commonStyles.label}>Work location</Text>
-
-              <Text style={commonStyles.colon}>:</Text>
-              <View style={{ flexDirection: "column", flex: 2 }}>
-                {post.working_location
-                  .split(",")
-                  .map((city, index) => (
-                    <Text key={index} style={commonStyles.value}>
-                      {city.trim()}
-                    </Text>
-                  ))}
-              </View>
-            </View>
-          )}
-
-
-          <View style={commonStyles.labValContainer}>
-
-            <Text style={commonStyles.label}>Salary package</Text>
-
-            <Text style={commonStyles.colon}>:</Text>
-            <Text style={commonStyles.value}>{post?.Package || ''}</Text>
-          </View>
-
-          {post?.job_description?.trimStart().trimEnd() ? (
-            <View style={commonStyles.labValContainer}>
-              <Text style={commonStyles.label}>Job description</Text>
-              <Text style={commonStyles.colon}>:</Text>
-              <Text style={commonStyles.value}>{post?.job_description.trim()}</Text>
-            </View>
-          ) : null}
-
-
-
-          {post?.preferred_languages?.trimStart().trimEnd() ? (
-            <View style={commonStyles.labValContainer}>
-
-              <Text style={[commonStyles.label]}>Required languages</Text>
-
-              <Text style={commonStyles.colon}>:</Text>
-
-              <View style={{ flexDirection: "column", flex: 2 }}>
-                {post.preferred_languages
-                  .split(",")
-                  .map((language, index) => (
-                    <Text key={index} style={commonStyles.value}>
-                      {language.trim()}
-                    </Text>
-                  ))}
-              </View>
-            </View>
-          ) : null}
-
-          <View style={commonStyles.labValContainer}>
-
-            <Text style={commonStyles.label}>Posted on</Text>
-
-            <Text style={commonStyles.colon}>:</Text>
-            <Text style={commonStyles.value}>
-              {
-                post?.job_post_created_on
-                  ? (() => {
-                    const date = new Date(post?.job_post_created_on * 1000);
-                    const day = String(date.getDate()).padStart(2, '0');
-                    const month = String(date.getMonth() + 1).padStart(2, '0');
-                    const year = String(date.getFullYear());
-
-                    return `${day}-${month}-${year}`;
-                  })()
-                  : ''
-              }
-            </Text>
-
-          </View>
-
-          {myId !== post?.company_id && (
-            <>
               <TouchableOpacity
-                onPress={() => {
-                  setModalVisible1(true);
-                }}
-                style={{ padding: 10 }}
+                activeOpacity={1}
+                onPress={() => handleNavigate(post)}
+                style={{ alignItems: 'center', marginTop: 10 }}
               >
-                <Text style={styles.contact}>Contact details</Text>
+                <Avatar
+                  imageUrl={post?.imageUrl}
+                  name={post?.company_name}
+                  size={100}
+                />
               </TouchableOpacity>
 
-              <ContactSupplierModal
-                visible={modalVisible1}
-                onClose={() => {
-                  setModalVisible1(false);
-                }}
-                company_id={post?.company_id}
-              />
-            </>
-          )}
 
-        </ScrollView>
-      ) : null}
+              {/* ================= TITLE ================= */}
+              <Text style={styles.jobTitle}>{post?.job_title}</Text>
+
+              <Text
+                style={styles.company}
+                onPress={() => handleNavigate(post)}
+              >
+                {post?.company_name || ''} · {post?.company_category || ''}
+              </Text>
+
+              {/* ================= INFO ROW ================= */}
+              <View style={styles.infoRow}>
+                <InfoItem
+                  label="Salary"
+                  value={post?.Package || '—'}
+                  icon="attach-money"
+                />
+                <InfoItem
+                  label="Experience"
+                  value={post?.experience_required || '—'}
+                  icon="work-outline"
+                />
+                <InfoItem
+                  label="Location"
+                  value={post?.working_location?.split(',')[0] || '—'}
+                  icon="place"
+                />
+              </View>
+
+              {/* ================= REQUIREMENTS ================= */}
+              {(post?.required_qualifications ||
+                post?.required_expertise ||
+                post?.speicializations_required) && (
+                  <Section title="Requirements">
+                    {post?.required_qualifications?.trim() && (
+                      <Bullet label="Qualifications" text={post.required_qualifications.trim()} />
+                    )}
+                    {post?.required_expertise?.trim() && (
+                      <Bullet label="expertise" text={post.required_expertise.trim()} />
+                    )}
+                    {post?.speicializations_required && (
+                      <Bullet label="speicializations" text={post.speicializations_required} />
+                    )}
+                  </Section>
+                )}
+
+              {/* ================= LANGUAGES ================= */}
+
+              {/* {post?.preferred_languages?.trim() && (
+            <Section title="Languages">
+              {post.preferred_languages.split(',').map((lang, index) => (
+                <Bullet key={index} text={lang.trim()} />
+              ))}
+            </Section>
+          )} */}
+
+              {/* ================= OTHER DETAILS ================= */}
+              <Section title="Other Details">
+                <KeyValue label="Industry" value={post?.industry_type} />
+
+                {post?.Website && (
+                  <KeyValue
+                    label="Website"
+                    value={post.Website.trim()}
+                    link
+                    onPress={() => openLink(post.Website)}
+                  />
+                )}
+
+                {post?.preferred_languages && (
+                  <KeyValue
+                    label="Languages"
+                    value={post.preferred_languages.trim()}
+                  />
+                )}
+                <KeyValue
+                  label="Posted on"
+                  value={
+                    post?.job_post_created_on
+                      ? (() => {
+                        const date = new Date(post.job_post_created_on * 1000)
+                        const d = String(date.getDate()).padStart(2, '0')
+                        const m = String(date.getMonth() + 1).padStart(2, '0')
+                        const y = date.getFullYear()
+                        return `${d}-${m}-${y}`
+                      })()
+                      : ''
+                  }
+                />
+              </Section>
 
 
+              {/* ================= JOB DESCRIPTION ================= */}
+              {post?.job_description?.trim() && (
+                <Section title="Job Description">
+                  <Text style={styles.sectionText}>
+                    {post.job_description.trim()}
+                  </Text>
+                </Section>
+              )}
 
-      {(profile?.user_type === 'users') && (
+
+            </ScrollView>
+
+          ) : null}
+        </>
+      )}
+      {/* ================= CONTACT CTA ================= */}
+      {myId !== post?.company_id && (
         <TouchableOpacity
-          style={[
-            styles.applyButton,
-            isApplied && styles.applyButtonRevoke,
-          ]}
-          onPress={() => {
-            if (!profileCreated) {
-
-              showToast("Job profile doesn't exists. Create one before applying for a job", 'info');
-
-              setTimeout(() => {
-                navigation.navigate('UserJobProfileCreate');
-              }, 300);
-            } else {
-              if (isApplied) {
-                openModal('revoke');
-              } else {
-                handleApplyJob();
-              }
-            }
-          }}
-
-          activeOpacity={0.8}
+          style={styles.floatingContact}
+          onPress={() => contactSheetRef.current?.present()}
+          activeOpacity={0.85}
         >
-          <Text style={[styles.buttonText, isApplied && styles.revokeText]}>
-            {isApplied ? 'Revoke' : 'Apply'}
-          </Text>
+          <MaterialIcons name="phone-in-talk" size={36} color="#075cab" />
+
         </TouchableOpacity>
       )}
+
+
+      <ContactSupplierModal
+        ref={contactSheetRef}
+        company_id={post?.company_id}
+      />
+
+      {(profile?.user_type === 'users') && (
+        <View style={styles.footer}>
+          <TouchableOpacity
+            style={[
+              styles.applyBtn,
+              isApplied && styles.applyButtonRevoke,
+            ]}
+            onPress={() => {
+              if (!profileCreated) {
+
+                showToast("Job profile doesn't exists. Create one before applying for a job", 'info');
+
+                setTimeout(() => {
+                  navigation.navigate('UserJobProfileCreate');
+                }, 300);
+              } else {
+                if (isApplied) {
+                  openModal('revoke');
+                } else {
+                  handleApplyJob();
+                }
+              }
+            }}
+
+            activeOpacity={0.8}
+          >
+            <Text style={[styles.buttonText, isApplied && styles.revokeText]}>
+              {isApplied ? 'Revoke' : 'Apply'}
+            </Text>
+
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {/* <View style={styles.footer}>
+        <TouchableOpacity style={styles.applyBtn}>
+          <Text style={styles.applyText}>Apply Now</Text>
+        </TouchableOpacity>
+      </View> */}
 
 
 
@@ -728,9 +631,6 @@ const JobDetailScreen = ({ route }) => {
         </View>
       </Modal>
 
-
-
-
     </ >
 
   );
@@ -740,185 +640,18 @@ const JobDetailScreen = ({ route }) => {
 
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#ffff',
-    paddingTop: STATUS_BAR_HEIGHT
-  },
-  headerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: 'white',
-    borderBottomWidth: 1,
-    borderColor: '#f0f0f0',
-    paddingTop: STATUS_BAR_HEIGHT
-  },
-
-  backButton: {
-    alignSelf: 'flex-start',
-    padding: 10,
-
-  },
-
-  value: {
-    flex: 2, // Take the remaining space
-    flexShrink: 1,
-    color: colors.text_secondary,
-    fontWeight: '500',
-    fontSize: 13,
-    textAlign: 'left', // Align text to the left
-    alignSelf: 'flex-start',
-  },
-
-  textContainer1: {
-    textAlign: 'center',
-    padding: 10,
-
-  },
-  title: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text_primary,
-    paddingHorizontal: 12,
-  },
-
-  textContainer: {
-    marginBottom: 12,
-    flexDirection: 'row',
-  },
-  detailContainer: {
-
-    flexDirection: 'row',  // Align label and detail in a row
-    alignItems: 'center',  // Center the items vertically
-    elevation: 3, // Android shadow
-    backgroundColor: 'white',
-    shadowColor: '#000', // iOS shadow color
-    shadowOffset: { width: 0, height: 2 }, // iOS shadow offset
-    shadowOpacity: 0.2, // iOS shadow opacity
-    shadowRadius: 3, // iOS shadow radius
-    borderRadius: 10,
-    padding: 10,
-    marginVertical: 5,
-    marginHorizontal: 10
-  },
-
-
-  label: {
-    flex: 1, // Take up available space
-    color: colors.text_primary,
-    fontWeight: '500',
-    fontSize: 13,
-    textAlign: 'left', // Align text to the left
-    alignSelf: 'flex-start',
-
-  },
-  colon: {
-    width: 20, // Fixed width for the colon
-    textAlign: 'center', // Center the colon
-    color: 'black',
-    fontWeight: '500',
-    fontSize: 15,
-    alignSelf: 'flex-start',
-
-  },
-
-  dropdownItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 10,
-  },
-
-  icon: {
-    marginRight: 10,
-  },
-
-  dropdownText: {
-    fontSize: 16,
-    color: '#075cab',
-  },
-  imageContainer: {
-    width: '100%',
-    height: 250,
-    alignSelf: 'center',
-    paddingHorizontal: 10
-
-  },
-
-  detailImage: {
-    width: '100%',
-    height: '100%',
-    resizeMode: 'contain'
-  },
-
-  body: {
-    fontSize: 16,
-    color: '#333',
-    textAlign: 'justify',
-    lineHeight: 22
-
-  },
-  modalContainerImage: { flex: 1, backgroundColor: 'white' },
-  closeButton1: { position: 'absolute', top: 70, right: 10 },
-  modalImage: { width: '100%', height: '100%', resizeMode: 'contain' },
-
-  createPostButton: {
-    position: 'absolute',
-    bottom: 80,
-    right: 10,
-    width: 35,
-    height: 35,
-    borderRadius: 30,
-    justifyContent: 'center',
-    alignItems: 'center',
-
-    backgroundColor: "#075cab"
-  },
-  noPostsText: {
-    fontWeight: '400',
-    textAlign: 'center',
-    padding: 10,
-    fontSize: 16
-
-  },
-  contact: {
-    fontSize: 15,
-    fontWeight: '500',
-    color: '#075cab',
-    textDecorationLine: 'underline',
-    marginTop: 10,
-    textAlign: 'center'
-  },
-
-  applyButton: {
-    position: 'absolute',
-    bottom: 50,
-    alignSelf: 'center',
-    width: 80,
-    paddingVertical: 8,
-    borderRadius: 25,
-    borderColor: '#075cab',
-    borderWidth: 1,
-    backgroundColor: '#ffffff',
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-
-  },
-
 
   applyButtonRevoke: {
-    borderColor: '#FF0000',
+    // borderColor: '#FF0000',
+    // borderWidth: 1,
+    backgroundColor: '#e0e0e0'
 
   },
 
   buttonText: {
-    color: '#075cab',
-    fontSize: 15,
-    fontWeight: '400',
-    textAlign: 'center',
-    transition: 'color 0.3s ease',
+    color: '#075CAB',
+    fontSize: 16,
+    fontWeight: '600'
   },
 
   revokeText: {
@@ -1025,6 +758,148 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
 
+  detailImage: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    backgroundColor: '#eee',
+  },
+
+  /* ---------- TITLE ---------- */
+  jobTitle: {
+    marginTop: 16,
+    textAlign: 'center',
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#111',
+  },
+  company: {
+    marginTop: 4,
+    textAlign: 'center',
+
+    color: '#666',
+  },
+
+  /* ---------- INFO ROW ---------- */
+  infoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginVertical: 24,
+
+  },
+  infoItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+
+  infoIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: PRIMARY_LIGHT,
+    marginBottom: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+
+  },
+  infoLabel: {
+    color: '#888',
+  },
+  infoValue: {
+    fontWeight: '500',
+    color: '#222',
+    marginTop: 2,
+    textAlign: 'center',
+  },
+
+  /* ---------- SECTIONS ---------- */
+  section: {
+    marginTop: 5,
+  },
+  sectionTitle: {
+
+    fontWeight: '700',
+    marginBottom: 8,
+    color: '#111',
+  },
+  sectionText: {
+    lineHeight: 20,
+    color: '#555',
+  },
+
+  /* ---------- BULLETS ---------- */
+  bulletRow: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 8,
+  },
+  bulletDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: PRIMARY,
+    marginTop: 6,
+    marginRight: 8,
+  },
+  bulletText: {
+    flex: 1,
+
+    lineHeight: 20,
+    color: '#555',
+  },
+
+  /* ---------- KEY VALUE ---------- */
+  kLabel: {
+    width: 100,
+    color: '#666',
+  },
+  kColon: {
+    marginHorizontal: 4,
+    color: '#666',
+  },
+  kValue: {
+    flex: 1,
+    color: '#111',
+  },
+  floatingContact: {
+    position: 'absolute',
+    right: 16,
+    bottom: 80, // IMPORTANT: above footer
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    borderWidth: 1,
+    borderColor: '#075cab',
+    backgroundColor: '#FFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 6, // Android shadow
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowOffset: { width: 0, height: 3 },
+    shadowRadius: 4,
+  },
+
+  footer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    // borderTopWidth: 1,
+    // borderTopColor: '#ddd',
+    backgroundColor: '#FFF'
+  },
+
+  applyBtn: {
+    height: 48,
+    backgroundColor: '#E7F0FA',
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 
 });
 

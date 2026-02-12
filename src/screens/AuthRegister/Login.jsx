@@ -1,8 +1,8 @@
 
 
 
-import React, { useEffect, useLayoutEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Modal, FlatList, TextInput, StatusBar, StyleSheet, Image, TouchableWithoutFeedback, Button } from 'react-native';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { View, Text, TouchableOpacity, ScrollView, Modal, FlatList, TextInput, StyleSheet, Image, TouchableWithoutFeedback, Button } from 'react-native';
 import axios from 'axios';
 import { useNavigation } from '@react-navigation/native';
 import { COLORS, CountryCodes } from '../../assets/Constants';
@@ -33,29 +33,21 @@ const LoginPhoneScreen = () => {
 
   const [message, setMessage] = useState('');
   const { fcmToken, refreshFcmToken } = useFcmToken();
+  const phoneHintRequestedRef = useRef(false);
 
   useEffect(() => {
-    // Subscribe to Phone Hint events
     const removeListener = addPhoneHintListener(async (number) => {
-      setPhone(number);
+      if (!number) return;
   
-      if (number) {
-        await sendOTPHandle(number);
-      }
+      setPhone(number);
+      await sendOTPHandle(number);
     });
   
-    // Delay showing the phone hint picker
-    const timer = setTimeout(() => {
-      console.log("useEffect ran after 500ms");
-      requestPhoneNumber();
-    }, 100);
-  
-    // ONE cleanup function
     return () => {
-      clearTimeout(timer);
       removeListener();
     };
   }, []);
+  
   
   
 
@@ -169,8 +161,8 @@ const LoginPhoneScreen = () => {
         {/* <Text style={styles.headerSubtitle}>Login to continue</Text> */}
       </View>
 
-      <ScrollView
-        contentContainerStyle={styles.scrollContainer}
+      <View
+        style={styles.scrollContainer}
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.formCard}>
@@ -212,6 +204,13 @@ const LoginPhoneScreen = () => {
                 keyboardType={isPhoneLogin ? 'numeric' : 'email-address'}
                 placeholderTextColor="#9e9e9e"
                 value={phone}
+                onFocus={() => {
+                  if (isPhoneLogin && !phoneHintRequestedRef.current) {
+                    phoneHintRequestedRef.current = true;
+                    requestPhoneNumber();
+                  }
+                }}
+              
                 onChangeText={(text) => {
                   if (isPhoneLogin) {
                     const formatted = text.replace(/\D/g, '').slice(0, 10);
@@ -241,7 +240,7 @@ const LoginPhoneScreen = () => {
             <Text style={styles.switchLoginText}>
               Login with{' '}
               <Text style={styles.switchLoginHighlight}>
-                {isPhoneLogin ? 'Phone number' : 'Email'}
+                {isPhoneLogin ? 'Email' : 'Phone number'}
               </Text>{' '}
               instead
             </Text>
@@ -264,7 +263,7 @@ const LoginPhoneScreen = () => {
               Don’t have an account?{' '}
               <Text
                 style={styles.registerLink}
-                onPress={() => navigation.navigate('Register')}
+                onPress={() => navigation.navigate('ProfileType')}
               >
                 Register
               </Text>
@@ -288,7 +287,7 @@ const LoginPhoneScreen = () => {
             <Text style={styles.policyText}>Terms & Conditions</Text>
           </TouchableOpacity>
         </View>
-      </ScrollView>
+      </View>
 
       {/* Country Picker Modal */}
       <Modal
@@ -330,9 +329,9 @@ const styles = StyleSheet.create({
   },
   headerContainer: {
     alignItems: 'center',
-    paddingTop: 40,
     paddingBottom: 20,
     backgroundColor: colors.primary,
+    paddingTop:60
   },
   logo: {
     width: 120,
@@ -348,7 +347,6 @@ const styles = StyleSheet.create({
   },
   headerSubtitle: {
     color: '#f1f1f1',
-    fontSize: 14,
     marginTop: 4,
   },
   scrollContainer: {
@@ -357,8 +355,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     paddingHorizontal: 15,
-    paddingVertical: 40,
-    marginTop:10,
+    paddingVertical: 20,
   },
   formCard: {
     backgroundColor: '#fff',

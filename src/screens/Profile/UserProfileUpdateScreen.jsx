@@ -1,7 +1,7 @@
 
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Image, StyleSheet, TouchableOpacity, Text, ScrollView, TextInput, Alert, View, Modal, Platform, Pressable, ActivityIndicator, ActionSheetIOS, KeyboardAvoidingView, TouchableWithoutFeedback, Linking, NativeModules, StatusBar } from 'react-native';
+import { Image, StyleSheet, TouchableOpacity, Text, ScrollView, TextInput, Alert, View, Modal, Platform, Pressable, ActivityIndicator, ActionSheetIOS, NativeModules, } from 'react-native';
 import axios from 'axios';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import Toast from 'react-native-toast-message';
@@ -18,14 +18,14 @@ import PhoneDropDown from '../../components/PhoneDropDown';
 import ImagePicker from 'react-native-image-crop-picker';
 import dummy from '../../images/homepage/dummy.png';
 import femaleImage from '../../images/homepage/female.jpg';
-import ImageResizer from 'react-native-image-resizer';
+import ImageResizer from '@bam.tech/react-native-image-resizer';
 
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { useDispatch } from 'react-redux';
 import { updateCompanyProfile } from '../Redux/MyProfile/CompanyProfile_Actions';
 import { showToast } from '../AppUtils/CustomToast';
 import apiClient from '../ApiClient';
-import AppStyles, { STATUS_BAR_HEIGHT } from '../AppUtils/AppStyles';
+import AppStyles from '../AppUtils/AppStyles';
 import { PERMISSIONS, RESULTS, request, check } from 'react-native-permissions';
 import ImageCropPicker from 'react-native-image-crop-picker';
 import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
@@ -37,6 +37,7 @@ import ArrowDown from '../../assets/svgIcons/arrow-down.svg';
 
 import { colors, dimensions } from '../../assets/theme.jsx';
 import KeyboardAvoid from '../AppUtils/KeyboardAvoid.jsx';
+import { AppHeader } from '../AppUtils/AppHeader.jsx';
 
 const defaultImage = Image.resolveAssetSource(dummy).uri;
 const { DocumentPicker } = NativeModules;
@@ -68,6 +69,25 @@ const UserProfileUpdateScreen = () => {
   const [verifiedEmail, setVerifiedEmail] = useState(() => {
     return profile?.is_email_verified && postData?.user_email_id ? postData.user_email_id : '';
   });
+  const [emailInput, setEmailInput] = useState(profile.user_email_id || '');
+  const [newVerify, SetNewVerify] = useState(false)
+
+  const handleEmailChange = (value) => {
+    setEmailInput(value);
+
+    setPostData(prev => ({
+      ...prev,
+      user_email_id: value,
+    }));
+
+    // reset OTP verification if email changes
+    if (value !== profile.user_email_id) {
+      SetNewVerify(false);
+    }
+  };
+
+
+
 
   useEffect(() => {
     if (selectedProfile) {
@@ -128,7 +148,7 @@ const UserProfileUpdateScreen = () => {
   const [postData, setPostData] = useState({
     user_phone_number: profile.user_phone_number || "",
     user_email_id: profile.user_email_id || "",
-    is_email_verified: profile.is_email_verified || false,
+    is_email_verified: profile.is_email_verified,
     first_name: profile.first_name || "",
     last_name: profile.last_name || "",
     city: profile.city || "",
@@ -150,7 +170,7 @@ const UserProfileUpdateScreen = () => {
       college: profile.college || '',
       gender: profile.gender || '',
       user_email_id: profile.user_email_id || '',
-      is_email_verified: profile.is_email_verified || false,
+      is_email_verified: profile.is_email_verified,
       city: profile.city || '',
       first_name: profile.first_name || '',
       last_name: profile.last_name || '',
@@ -163,7 +183,7 @@ const UserProfileUpdateScreen = () => {
       (key) => postData[key] !== initialPostData[key]
     ) || isImageChanged;
     setHasChanges(hasAnyChanges);
-  }, [postData, profile, isImageChanged, selectedCategory, verifiedEmail]);
+  }, [postData, profile, isImageChanged, selectedCategory]);
 
   const hasUnsavedChanges = Boolean(hasChanges);
   const [pendingAction, setPendingAction] = React.useState(null);
@@ -586,8 +606,8 @@ const UserProfileUpdateScreen = () => {
       const resizedImage = await ImageResizer.createResizedImage(
         croppedImage.path,
         800,
-        600,
-        'JPEG',
+        800,
+        'WEBP',
         80
       );
 
@@ -680,12 +700,12 @@ const UserProfileUpdateScreen = () => {
 
       const resizedWidth = Math.round(file.width * ratio);
       const resizedHeight = Math.round(file.height * ratio);
-      // 3️⃣ Optionally resize further using ImageResizer
+
       const resizedImage = await ImageResizer.createResizedImage(
         croppedImage.path,
         resizedWidth, // maxWidth
         resizedHeight, // maxHeight
-        'JPEG',
+        'WEBP',
         80   // quality %
       );
 
@@ -891,55 +911,39 @@ const UserProfileUpdateScreen = () => {
   };
 
   const handleOtpVerification1 = async () => {
-    if (!postData.user_email_id?.trim()) {
-
-      showToast("Please provide a valid email Id", 'error');
+    if (!emailInput.trim()) {
+      showToast('Please provide a valid email Id', 'error');
       return;
     }
 
     if (!otp1.trim()) {
-
-      showToast("Please enter valid OTP", 'error');
+      showToast('Please enter the OTP sent', 'info');
       return;
     }
 
     try {
-      const response = await apiClient.post(
-        '/verifyEmailOtp',
-        {
-          command: "verifyEmailOtp",
-          email: postData.user_email_id,
-          otp: otp1, // Use otp1 directly since it's a string
-        },
-        {
-          headers: {
-            'x-api-key': 'k1xuty5IpZ2oHOEOjgMz57wHfdFT8UQ16DxCFkzk',
-          },
-        }
-      );
+      const response = await apiClient.post('/verifyEmailOtp', {
+        command: "verifyEmailOtp",
+        email: emailInput,
+        otp: otp1,
+      });
 
       if (response.data.status === "success") {
-        setVerifiedEmail(true)
-        setPostData((prevState) => {
-          const updatedState = {
-            ...prevState,
-            is_email_verified: true,
-          };
+        console.log('response.data', response.data)
+        SetNewVerify(true);
+        setPostData((prev) => ({
+          ...prev,
+          is_email_verified: true,
+        }));
 
-          return updatedState;
-        });
-
-        Keyboard.dismiss();
-
-        showToast("Email verified", 'success');
+        showToast('Email verified', 'success');
         setModalVisibleemail(false);
+        Keyboard.dismiss();
       } else {
-
-        showToast(response.data.errorMessage || "Invalid OTP.", 'error');
+        showToast(response.data.errorMessage, 'error');
       }
-    } catch (error) {
-
-      showToast("Error verifying OTP. Please try again", 'error');
+    } catch {
+      showToast("Error verifying OTP\nPlease try again", 'error');
     }
   };
 
@@ -1014,11 +1018,6 @@ const UserProfileUpdateScreen = () => {
     setPostData(prevState => {
       let updatedData = { ...prevState, [key]: trimmedValue };
 
-      // Reset verification state if the email is changed
-      if (key === "company_email_id" || key === "user_email_id") {
-        updatedData.is_email_verified = trimmedValue === verifiedEmail;
-      }
-
       return updatedData;
     });
   };
@@ -1029,6 +1028,31 @@ const UserProfileUpdateScreen = () => {
   const [loading, setLoading] = useState(false);
   const [otpLoading, setOtpLoading] = useState(false);
 
+  const getEmailToSend = () => {
+    // Same email
+    if (emailInput === profile.user_email_id) {
+      return profile.user_email_id;
+    }
+
+    // Changed email but not verified → keep old email
+    if (!newVerify && profile.is_email_verified) {
+      return profile.user_email_id;
+    }
+
+    // Changed email & verified
+    return emailInput;
+  };
+
+
+  const getIsEmailVerifiedToSend = () => {
+    // If OTP just verified THIS email → trust OTP
+    if (newVerify) {
+      return true;
+    }
+
+    // Otherwise fallback to backend truth
+    return profile.is_email_verified;
+  };
 
   const handlePostSubmission = async () => {
     setLoading(true);
@@ -1071,14 +1095,13 @@ const UserProfileUpdateScreen = () => {
 
       setHasChanges(false);
 
-      const emailToSend = postData.is_email_verified ? postData.user_email_id : verifiedEmail;
 
       const postPayload = {
         command: 'updateUserDetails',
         user_id: profile.user_id,
         user_phone_number: postData.user_phone_number?.trimStart().trimEnd(),
-        user_email_id: emailToSend?.trimStart().trimEnd(),
-        is_email_verified: verifiedEmail || profile?.is_email_verified,
+        user_email_id: getEmailToSend(),
+        is_email_verified: getIsEmailVerifiedToSend(),
         first_name: trimmedFirstName,
         last_name: trimmedLastName,
         city: postData.city,
@@ -1102,7 +1125,6 @@ const UserProfileUpdateScreen = () => {
           },
         }
       );
-      console.log('res', res.data)
       if (res.data.status === 'success') {
         setIsImageChanged(false);
 
@@ -1158,7 +1180,6 @@ const UserProfileUpdateScreen = () => {
           payload: authorImagePayload,
         });
 
-        console.log('Dispatching UPDATE_COMPANY_PROFILE with payload:', profileData);
         dispatch(updateCompanyProfile(profileData));
         return profileData;
       }
@@ -1181,462 +1202,466 @@ const UserProfileUpdateScreen = () => {
 
   return (
     <KeyboardAvoid>
-                <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
-          
-        <View style={styles.headerContainer}>
+      <AppHeader
+        title="Update your profile"
 
-          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-            <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
+      />
+
+      <ScrollView
+        contentContainerStyle={[{ paddingHorizontal: 5 }]}
+        showsVerticalScrollIndicator={false}
+        keyboardDismissMode='on-drag'
+        keyboardShouldPersistTaps="never"
+
+      >
+
+        {/* <Text style={styles.header}>Update your profile</Text> */}
+
+        <TouchableOpacity onPress={handleImageSelection} style={styles.imageContainer} activeOpacity={1}>
+
+          <Image
+            source={imageSource}
+            style={styles.image}
+            resizeMode="contain"
+          />
+
+          <TouchableOpacity style={styles.cameraIconContainer} onPress={handleImageSelection} activeOpacity={1}>
+            <Camera width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
+
+          </TouchableOpacity>
+        </TouchableOpacity>
+
+        <View style={styles.inputContainer}>
+
+          <Text style={styles.title}>First name <Text style={{ color: 'red' }}>*</Text></Text>
+
+          <TextInput
+            style={styles.input}
+            ref={firstNameRef}
+            value={postData.first_name}
+            onChangeText={(value) => handleInputChange('first_name', value)}
+            placeholder="First Name"
+            maxLength={50}
+            keyboardType="string-only" 
+          />
+
+
+
+        </View>
+
+        <View style={styles.inputContainer}>
+          <Text style={styles.title}>Last name</Text>
+          <TextInput
+            style={styles.input}
+            ref={lastNameRef}
+            value={postData.last_name}
+            onChangeText={(value) => handleInputChange('last_name', value)}
+            placeholder="Last Name"
+            maxLength={50}
+
+          />
+
+
+        </View>
+
+        <View style={styles.inputContainer} >
+          <Text style={styles.title}>
+            Phone no. <Text style={{ color: 'red' }}>*</Text>
+          </Text>
+
+          <TouchableOpacity style={styles.inputWrapper} onPress={() => setModalVisible(true)} activeOpacity={1}>
+            <TextInput
+              style={styles.input}
+              value={postData.user_phone_number}
+              onChangeText={(value) => handleInputChange('user_phone_number', value)}
+              editable={false}
+              placeholder="Phone Number"
+              placeholderTextColor="gray"
+            />
 
           </TouchableOpacity>
         </View>
-        <ScrollView
-          keyboardShouldPersistTaps="handled"
-          contentContainerStyle={{ paddingBottom: '40%', paddingHorizontal: 5, backgroundColor: 'whitesmoke' }}
-          showsVerticalScrollIndicator={false}
-        >
-          <Text style={styles.header}>Update your profile</Text>
 
-          <TouchableOpacity onPress={handleImageSelection} style={styles.imageContainer} activeOpacity={1}>
 
-            <Image
-              source={imageSource}
-              style={styles.image}
-              resizeMode="contain"
+
+
+
+
+        <Text style={[styles.title]}>Email ID <Text style={{ color: 'red' }}>*</Text></Text>
+
+
+        <View style={styles.inputWithButton}>
+          <TextInput
+            style={styles.inputemail1}
+            value={emailInput}
+            onChangeText={handleEmailChange}
+            placeholder="Email"
+          />
+          {(emailInput === profile.user_email_id && profile.is_email_verified) ||
+            newVerify ? (
+            <Success
+              width={dimensions.icon.small}
+              height={dimensions.icon.small}
+              color={colors.success}
             />
-
-
-            <TouchableOpacity style={styles.cameraIconContainer} onPress={handleImageSelection} activeOpacity={1}>
-              <Camera width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-
+          ) : (
+            <TouchableOpacity
+              style={styles.buttonemailmain}
+              onPress={handleOtpEmail}
+            >
+              <Text style={styles.buttonTextemailtext}>
+                {otpLoading ? 'Sending' : 'Verify'}
+              </Text>
             </TouchableOpacity>
-          </TouchableOpacity>
-
-          <View style={styles.inputContainer}>
-
-            <Text style={styles.title}>First name <Text style={{ color: 'red' }}>*</Text></Text>
-
-            <TextInput
-              style={styles.input}
-              ref={firstNameRef}
-              value={postData.first_name}
-              onChangeText={(value) => handleInputChange('first_name', value)}
-              placeholder="First Name"
-            />
-
-
-
-          </View>
-
-          <View style={styles.inputContainer}>
-            <Text style={styles.title}>Last name</Text>
-            <TextInput
-              style={styles.input}
-              ref={lastNameRef}
-              value={postData.last_name}
-              onChangeText={(value) => handleInputChange('last_name', value)}
-              placeholder="Last Name"
-              placeholderTextColor="gray"
-            />
-
-
-          </View>
-
-          <View style={styles.inputContainer} >
-            <Text style={styles.title}>
-              Phone no. <Text style={{ color: 'red' }}>*</Text>
-            </Text>
-
-            <TouchableOpacity style={styles.inputWrapper} onPress={() => setModalVisible(true)} activeOpacity={1}>
-              <TextInput
-                style={styles.input}
-                value={postData.user_phone_number}
-                onChangeText={(value) => handleInputChange('user_phone_number', value)}
-                editable={false}
-                placeholder="Phone Number"
-                placeholderTextColor="gray"
-              />
-
-            </TouchableOpacity>
-          </View>
-
-
-
-
-
-          <View style={styles.inputContainer}>
-            <Text style={[styles.title]}>Email ID <Text style={{ color: 'red' }}>*</Text></Text>
-            <View style={styles.inputWithButton}>
-              <TextInput
-                style={styles.inputemail1}
-                value={postData.user_email_id || ''}
-                onChangeText={(value) => handleInputChange('user_email_id', value)}
-                placeholder="Email"
-
-              />
-
-              {profile.is_email_verified && postData.user_email_id === profile.user_email_id ? (
-                <Success
-                  width={dimensions.icon.small}
-                  height={dimensions.icon.small}
-                  color={colors.success}
-                />
-              ) : (
-                <TouchableOpacity
-                  style={styles.buttonemailmain}
-                  onPress={handleOtpEmail}
-                >
-                  <Text style={styles.buttonTextemailtext}>
-                    {otpLoading ? 'Sending' : 'Verify'}
-                  </Text>
-                </TouchableOpacity>
-              )}
-
-
-            </View>
-          </View>
-
-          <View style={styles.inputContainer}>
-            <Text style={styles.title}>Profile Type</Text>
-
-            <CustomDropdown
-              items={Object.keys({ ...ProfileSelect.normalProfiles }).map(p => ({
-                label: p,
-                key: p,
-              }))}
-              onSelect={handleProfileSelect}
-              placeholder={selectedProfile || "Select Profile Type"}
-              buttonStyle={styles.dropdownButton}
-              buttonTextStyle={styles.dropdownButtonText}
-              placeholderTextColor="gray"
-            />
-          </View>
-
-
-          {selectedProfile && (
-            <View style={styles.inputContainer}>
-              <Text style={styles.title}>Category <Text style={{ color: 'red' }}>*</Text></Text>
-              <CustomDropdown
-                items={availableCategories.map((cat) => ({
-                  label: cat,
-                  key: cat,
-                }))}
-                onSelect={handleCategorySelect}
-                placeholder={selectedCategory || "Select category"}
-                buttonStyle={styles.dropdownButton}
-                buttonTextStyle={styles.dropdownButtonText}
-                placeholderTextColor="gray"
-                disabled={!selectedProfile}
-              />
-            </View>
           )}
 
 
+
+        </View>
+
+
+
+        <View style={styles.inputContainer}>
+          <Text style={styles.title}>Profile Type</Text>
+
+          <CustomDropdown
+            items={Object.keys({ ...ProfileSelect.normalProfiles }).map(p => ({
+              label: p,
+              key: p,
+            }))}
+            onSelect={handleProfileSelect}
+            placeholder={selectedProfile || "Select Profile Type"}
+            buttonStyle={styles.dropdownButton}
+            buttonTextStyle={styles.dropdownButtonText}
+            placeholderTextColor="gray"
+          />
+        </View>
+
+
+        {selectedProfile && (
           <View style={styles.inputContainer}>
-            <Text style={styles.title}>Gender <Text style={{ color: 'red' }}>*</Text></Text>
+            <Text style={styles.title}>Category <Text style={{ color: 'red' }}>*</Text></Text>
             <CustomDropdown
-              items={genderOptions}
-              onSelect={(item) => handleInputChange('gender', item.label)}
-              placeholder={postData.gender || "Select Gender"}
+              items={availableCategories.map((cat) => ({
+                label: cat,
+                key: cat,
+              }))}
+              onSelect={handleCategorySelect}
+              placeholder={selectedCategory || "Select category"}
               buttonStyle={styles.dropdownButton}
               buttonTextStyle={styles.dropdownButtonText}
               placeholderTextColor="gray"
+              disabled={!selectedProfile}
             />
           </View>
+        )}
 
-          <View style={styles.inputContainer}>
-            <Text style={styles.title}>
-              Date of birth <Text style={{ color: 'red' }}>*</Text>
+
+        <View style={styles.inputContainer}>
+          <Text style={styles.title}>Gender <Text style={{ color: 'red' }}>*</Text></Text>
+          <CustomDropdown
+            items={genderOptions}
+            onSelect={(item) => handleInputChange('gender', item.label)}
+            placeholder={postData.gender || "Select Gender"}
+            buttonStyle={styles.dropdownButton}
+            buttonTextStyle={styles.dropdownButtonText}
+            placeholderTextColor="gray"
+          />
+        </View>
+
+        <View style={styles.inputContainer}>
+          <Text style={styles.title}>
+            Date of birth <Text style={{ color: 'red' }}>*</Text>
+          </Text>
+
+          <TouchableOpacity onPress={() => setShowDatePicker(true)} style={styles.datePickerButton}>
+            <Text style={styles.datePickerButtonText}>
+              {dateOfBirth ? formatDateToDDMMYYYY(dateOfBirth) : 'Select Date of Birth'}
             </Text>
+            <ArrowDown width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
 
-            <TouchableOpacity onPress={() => setShowDatePicker(true)} style={styles.datePickerButton}>
-              <Text style={styles.datePickerButtonText}>
-                {dateOfBirth ? formatDateToDDMMYYYY(dateOfBirth) : 'Select Date of Birth'}
-              </Text>
-              <ArrowDown width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-
-            </TouchableOpacity>
-
-            {showDatePicker && (
-              <DateTimePicker
-                value={dateOfBirth || defaultDateOfBirth}
-                mode="date"
-                display="default"
-                onChange={handleDateChange}
-                minimumDate={minimumDate}
-                maximumDate={maximumDate}
-              />
-            )}
-          </View>
-
-          <View style={[styles.inputContainer, {}]}>
-            <Text style={[styles.title, {}]}>State <Text style={{ color: 'red' }}>*</Text></Text>
-
-            <CustomDropdown
-              items={states}
-              onSelect={handleStateSelect}
-              placeholder={postData.state || "Select State"}
-              buttonStyle={styles.dropdownButton}
-              buttonTextStyle={styles.dropdownButtonText}
-              placeholderTextColor="gray"
-
-            />
-          </View>
-          <View style={[styles.inputContainer, {}]}>
-            <Text style={[styles.title, {}]}>City <Text style={{ color: 'red' }}>*</Text></Text>
-
-            <CustomDropdown
-              items={cities}
-              onSelect={handleCitySelect}
-              placeholder={postData.city || "Select City"}
-              buttonStyle={styles.dropdownButton}
-              buttonTextStyle={styles.dropdownButtonText}
-              placeholderTextColor="gray"
-              disabled={!postData.state}
-            />
-          </View>
-
-
-
-          <View style={styles.inputContainer}>
-            <Text style={styles.title}>Institute / Company:</Text>
-            <TouchableOpacity style={styles.inputWrapper} onPress={focusCollegeInput} activeOpacity={0.8}>
-              <TextInput
-                style={styles.input}
-                ref={collegeRef}
-                multiline
-                value={postData.college}
-                onChangeText={(value) => handleInputChange('college', value)}
-                placeholderTextColor="gray"
-              />
-
-            </TouchableOpacity>
-
-          </View>
-          <TouchableOpacity
-            style={[
-              AppStyles.Postbtn,
-              (!hasChanges || loading) && styles.submitButtonDisabled
-            ]}
-            disabled={!hasChanges || loading}
-            onPress={handlePostSubmission}
-          >
-            {loading ? (
-              <ActivityIndicator size={20} color="#999" />
-            ) : (
-              <Text
-                style={[
-                  AppStyles.PostbtnText,
-                  (!hasChanges || loading) && styles.submitButtonTextDisabled
-                ]}
-              >
-                Update
-              </Text>
-            )}
           </TouchableOpacity>
 
+          {showDatePicker && (
+            <DateTimePicker
+              value={dateOfBirth || defaultDateOfBirth}
+              mode="date"
+              display="default"
+              onChange={handleDateChange}
+              minimumDate={minimumDate}
+              maximumDate={maximumDate}
+            />
+          )}
+        </View>
 
-        </ScrollView>
+        <View style={[styles.inputContainer, {}]}>
+          <Text style={[styles.title, {}]}>State <Text style={{ color: 'red' }}>*</Text></Text>
 
-        <Modal
-          visible={isModalVisible}
-          transparent={true}
-          animationType="slide"
-          onRequestClose={() => setModalVisible(false)}
+          <CustomDropdown
+            items={states}
+            onSelect={handleStateSelect}
+            placeholder={postData.state || "Select State"}
+            buttonStyle={styles.dropdownButton}
+            buttonTextStyle={styles.dropdownButtonText}
+            placeholderTextColor="gray"
+
+          />
+        </View>
+        <View style={[styles.inputContainer, {}]}>
+          <Text style={[styles.title, {}]}>City <Text style={{ color: 'red' }}>*</Text></Text>
+
+          <CustomDropdown
+            items={cities}
+            onSelect={handleCitySelect}
+            placeholder={postData.city || "Select City"}
+            buttonStyle={styles.dropdownButton}
+            buttonTextStyle={styles.dropdownButtonText}
+            placeholderTextColor="gray"
+            disabled={!postData.state}
+          />
+        </View>
+
+
+
+        <View style={styles.inputContainer}>
+          <Text style={styles.title}>Institute / Company:</Text>
+          <TouchableOpacity style={styles.inputWrapper} onPress={focusCollegeInput} activeOpacity={0.8}>
+            <TextInput
+              style={styles.input}
+              ref={collegeRef}
+              multiline
+              value={postData.college}
+              onChangeText={(value) => handleInputChange('college', value)}
+              placeholderTextColor="gray"
+            />
+
+          </TouchableOpacity>
+
+        </View>
+        <TouchableOpacity
+          style={[
+            AppStyles.Postbtn,
+            (!hasChanges || loading) && styles.submitButtonDisabled
+          ]}
+          disabled={!hasChanges || loading}
+          onPress={handlePostSubmission}
         >
-
-          <View style={styles.modalOverlay}
-            onPress={() => {
-              setModalVisible(false)
-              setPhoneNumber('')
-              setOtpSent(false)
-              setIsOTPVerified(false)
-              setTimer(0)
-              setCountryCode('+91')
-              setOtp(['', '', '', '', '', '']);
-            }
-
-            }>
-
-
-            <View style={styles.modalContainer}>
-              <TouchableOpacity
-                style={styles.closeButton}
-                onPress={() => {
-                  setPhoneNumber(''); // Reset the phone number state
-                  setModalVisible(false); // Close the modal
-                  setOtpSent(false)
-                  setIsOTPVerified(false)
-                  setTimer(0)
-                  setCountryCode('+91')
-                  setOtp(['', '', '', '', '', '']);
-                }}
-                activeOpacity={1}
-              >
-                <Close width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.gray} />
-
-              </TouchableOpacity>
-              <View style={styles.inputrow}>
-                <View style={[styles.code, { width: "25%" }]}>
-                  <PhoneDropDown
-                    options={CountryCodes}
-                    selectedValue={countryCode}
-                    onSelect={(item) => setCountryCode(item.value)}
-                  />
-                </View>
+          {loading ? (
+            <ActivityIndicator size={20} color="#999" />
+          ) : (
+            <Text
+              style={[
+                AppStyles.PostbtnText,
+                (!hasChanges || loading) && styles.submitButtonTextDisabled
+              ]}
+            >
+              Update
+            </Text>
+          )}
+        </TouchableOpacity>
 
 
-                <TextInput
-                  style={[
-                    styles.inputPhoneNumber,
-                    phoneNumber.length > 0 && { letterSpacing: 1 },
-                  ]}
-                  value={phoneNumber}
-                  onChangeText={handlePhoneNumberChange}
-                  placeholder="Enter phone number"
-                  keyboardType="phone-pad"
-                  placeholderTextColor="gray"
-                  maxLength={10}
-                  
+      </ScrollView>
+
+      <Modal
+        visible={isModalVisible}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setModalVisible(false)}
+      >
+
+        <View style={styles.modalOverlay}
+          onPress={() => {
+            setModalVisible(false)
+            setPhoneNumber('')
+            setOtpSent(false)
+            setIsOTPVerified(false)
+            setTimer(0)
+            setCountryCode('+91')
+            setOtp(['', '', '', '', '', '']);
+          }
+
+          }>
+
+
+          <View style={styles.modalContainer}>
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={() => {
+                setPhoneNumber(''); // Reset the phone number state
+                setModalVisible(false); // Close the modal
+                setOtpSent(false)
+                setIsOTPVerified(false)
+                setTimer(0)
+                setCountryCode('+91')
+                setOtp(['', '', '', '', '', '']);
+              }}
+              activeOpacity={1}
+            >
+              <Close width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.gray} />
+
+            </TouchableOpacity>
+            <View style={styles.inputrow}>
+              <View style={[styles.code, { width: "25%" }]}>
+                <PhoneDropDown
+                  options={CountryCodes}
+                  selectedValue={countryCode}
+                  onSelect={(item) => setCountryCode(item.value)}
                 />
               </View>
 
-              {otpSent && !isOTPVerified && (
-                <View>
 
-                  <TextInput
-                    style={[
-                      styles.otpInput,
-                      isTypingOtp && { letterSpacing: 5 },
-                    ]}
-                    value={otp}
-                    onChangeText={(value) => {
-                      if (/^\d*$/.test(value)) {
-                        setOtp(value);
-                        setIsTypingOtp(value.length > 0);
-                        if (value.length === 6) {
-                          Keyboard.dismiss();
-                        }
-                      }
-                    }}
-                    placeholder="Enter OTP"
-                    keyboardType="numeric"
-                    maxLength={6}
-                    placeholderTextColor="gray"
-                  />
-
-                  {/* Verify OTP Button */}
-                  <TouchableOpacity onPress={handleVerifyOTP} style={{ alignSelf: 'center', }} activeOpacity={1}>
-                    <Text style={styles.buttonText}>Verify</Text>
-                  </TouchableOpacity>
-
-                  {/* Conditionally render the timer or the resend OTP button */}
-                  {!isResendEnabled ? (
-                    <Text style={styles.timerText}>Resend in {timer}s</Text>
-                  ) : (
-                    <TouchableOpacity onPress={resendHandle} style={{ alignSelf: 'center', }}>
-                      <Text style={styles.buttonText}>Resend OTP</Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-              )}
-              {!otpSent && (
-                <TouchableOpacity onPress={sendOTPHandle} style={{ alignSelf: 'center', }}>
-                  <Text style={styles.buttonText}>Get verification code</Text>
-                </TouchableOpacity>
-              )}
-
-              {isOTPVerified && (
-                <TouchableOpacity onPress={handlePhoneNumberUpdate} style={{ alignSelf: 'center', }}>
-                  <Text style={styles.buttonText}>Update</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-
-          </View>
-        </Modal>
-
-        <Modal
-          visible={modalVisibleemail}
-          animationType="slide"
-          onRequestClose={() => setModalVisibleemail(false)}
-          transparent={true}
-        >
-          <View style={styles.modalContaineremail}>
-            <View style={styles.modalContentemail}>
-              {/* Close Icon */}
-              <TouchableOpacity
-                style={styles.closeButton1}
-                onPress={() => {
-                  setModalVisibleemail(false);
-                  setOtp1(['', '', '', '', '', '']);
-                }}
-              >
-                <Close width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.gray} />
-
-              </TouchableOpacity>
-
-              <Text style={styles.modalTitleemail}></Text>
               <TextInput
-                style={styles.inputemail}
-                value={otp1} // Bind the string state directly
-                onChangeText={(value) => {
-                  setOtp1(value); // Update the string directly
-                  if (value.length === 6) {
-                    Keyboard.dismiss(); // Dismiss keyboard when 6 digits are entered
-                  }
-                }}
-                placeholder="Enter OTP"
-                keyboardType="numeric"
+                style={[
+                  styles.inputPhoneNumber,
+                  phoneNumber.length > 0 && { letterSpacing: 1 },
+                ]}
+                value={phoneNumber}
+                onChangeText={handlePhoneNumberChange}
+                placeholder="Enter phone number"
+                keyboardType="phone-pad"
                 placeholderTextColor="gray"
-                maxLength={6}
+                maxLength={10}
+
               />
-
-              <TouchableOpacity
-                style={styles.buttonemail}
-                onPress={handleOtpVerification1}
-              >
-                <Text style={styles.buttonText}>Verify OTP</Text>
-              </TouchableOpacity>
-
-
-              {!isOTPVerified && otpTimer === 0 && (
-                <TouchableOpacity
-                  style={[styles.buttonemail]}
-                  onPress={() => {
-                    handleResendOtp();
-                    startOtpTimer(); // Restart timer when OTP is resent
-                  }}
-                >
-                  <Text style={styles.buttonText}>Resend OTP</Text>
-                </TouchableOpacity>
-              )}
-              {otpTimer > 0 && !isOTPVerified && (
-                <Text style={styles.timerText}>Resend in {otpTimer}s</Text>
-              )}
             </View>
+
+            {otpSent && !isOTPVerified && (
+              <View>
+
+                <TextInput
+                  style={[
+                    styles.otpInput,
+                    isTypingOtp && { letterSpacing: 5 },
+                  ]}
+                  value={otp}
+                  onChangeText={(value) => {
+                    if (/^\d*$/.test(value)) {
+                      setOtp(value);
+                      setIsTypingOtp(value.length > 0);
+                      if (value.length === 6) {
+                        Keyboard.dismiss();
+                      }
+                    }
+                  }}
+                  placeholder="Enter OTP"
+                  keyboardType="numeric"
+                  maxLength={6}
+                  placeholderTextColor="gray"
+                />
+
+                {/* Verify OTP Button */}
+                <TouchableOpacity onPress={handleVerifyOTP} style={{ alignSelf: 'center', }} activeOpacity={1}>
+                  <Text style={styles.buttonText}>Verify</Text>
+                </TouchableOpacity>
+
+                {/* Conditionally render the timer or the resend OTP button */}
+                {!isResendEnabled ? (
+                  <Text style={styles.timerText}>Resend in {timer}s</Text>
+                ) : (
+                  <TouchableOpacity onPress={resendHandle} style={{ alignSelf: 'center', }}>
+                    <Text style={styles.buttonText}>Resend OTP</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            )}
+            {!otpSent && (
+              <TouchableOpacity onPress={sendOTPHandle} style={{ alignSelf: 'center', }}>
+                <Text style={styles.buttonText}>Get verification code</Text>
+              </TouchableOpacity>
+            )}
+
+            {isOTPVerified && (
+              <TouchableOpacity onPress={handlePhoneNumberUpdate} style={{ alignSelf: 'center', }}>
+                <Text style={styles.buttonText}>Update</Text>
+              </TouchableOpacity>
+            )}
           </View>
-        </Modal>
 
-        <Message1
-          visible={modalVisible1}
-          onClose={closeModal}
-          onOk={closeModal}
-          title={modalTitle}
-          message={modalMessage}
-          iconType="warning"
-        />
+        </View>
+      </Modal>
 
-        <Message3
-          visible={showModal1}
-          onClose={() => setShowModal1(false)}
-          onCancel={handleStay}
-          onOk={handleLeave}
-          title="Are you sure ?"
-          message="Your updates will be lost if you leave this page. This action cannot be undone."
-          iconType="warning"
-        />
-    
+      <Modal
+        visible={modalVisibleemail}
+        animationType="slide"
+        onRequestClose={() => setModalVisibleemail(false)}
+        transparent={true}
+      >
+        <View style={styles.modalContaineremail}>
+          <View style={styles.modalContentemail}>
+            {/* Close Icon */}
+            <TouchableOpacity
+              style={styles.closeButton1}
+              onPress={() => {
+                setModalVisibleemail(false);
+                setOtp1(['', '', '', '', '', '']);
+              }}
+            >
+              <Close width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.gray} />
+
+            </TouchableOpacity>
+
+            <Text style={styles.modalTitleemail}></Text>
+            <TextInput
+              style={styles.inputemail}
+              value={otp1} // Bind the string state directly
+              onChangeText={(value) => {
+                setOtp1(value); // Update the string directly
+                if (value.length === 6) {
+                  Keyboard.dismiss(); // Dismiss keyboard when 6 digits are entered
+                }
+              }}
+              placeholder="Enter OTP"
+              keyboardType="numeric"
+              placeholderTextColor="gray"
+              maxLength={6}
+            />
+
+            <TouchableOpacity
+              style={styles.buttonemail}
+              onPress={handleOtpVerification1}
+            >
+              <Text style={styles.buttonText}>Verify OTP</Text>
+            </TouchableOpacity>
+
+
+            {!isOTPVerified && otpTimer === 0 && (
+              <TouchableOpacity
+                style={[styles.buttonemail]}
+                onPress={() => {
+                  handleResendOtp();
+                  startOtpTimer(); // Restart timer when OTP is resent
+                }}
+              >
+                <Text style={styles.buttonText}>Resend OTP</Text>
+              </TouchableOpacity>
+            )}
+            {otpTimer > 0 && !isOTPVerified && (
+              <Text style={styles.timerText}>Resend in {otpTimer}s</Text>
+            )}
+          </View>
+        </View>
+      </Modal>
+
+      <Message1
+        visible={modalVisible1}
+        onClose={closeModal}
+        onOk={closeModal}
+        title={modalTitle}
+        message={modalMessage}
+        iconType="warning"
+      />
+
+      <Message3
+        visible={showModal1}
+        onClose={() => setShowModal1(false)}
+        onCancel={handleStay}
+        onOk={handleLeave}
+        title="Are you sure ?"
+        message="Your updates will be lost if you leave this page. This action cannot be undone."
+        iconType="warning"
+      />
+
     </KeyboardAvoid>
   );
 };
@@ -1697,15 +1722,7 @@ const styles = StyleSheet.create({
     margin: 10,
     alignSelf: 'flex-start'
   },
-  headerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderColor: '#f0f0f0',
-    paddingTop:STATUS_BAR_HEIGHT
-  },
+  
   otpInputContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -1754,9 +1771,7 @@ const styles = StyleSheet.create({
     borderRadius: 80,
     alignItems: 'center',
     justifyContent: 'center',
-    height: 140,
-    width: 140,
-    marginBottom: 20,
+    marginVertical: 20,
     alignSelf: 'center',
     position: 'relative',
     resizeMode: 'contain'
@@ -1771,8 +1786,8 @@ const styles = StyleSheet.create({
 
   },
   image: {
-    width: '100%',
-    height: '100%',
+    width: 100,
+    height: 100,
     borderRadius: 80,
   },
   avatarContainer: {
@@ -1870,7 +1885,7 @@ const styles = StyleSheet.create({
   },
 
   inputWithButton: {
-    height: 40,
+    minHeight: 40,
     backgroundColor: '#fff',
     borderRadius: 8,
     flexDirection: 'row',
@@ -1936,14 +1951,12 @@ const styles = StyleSheet.create({
   },
   inputemail1: {
     flex: 1,
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '500',
-    color: colors.text_primary,
+    color: colors.text_secondary,
     flexDirection: 'row',
     backgroundColor: '#fff',
     alignItems: 'center',
-
-
 
   },
   buttonemailmain: {

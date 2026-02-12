@@ -173,8 +173,8 @@ const InlineVideo = ({ route }) => {
             paused={paused}
             muted={muted}
             onPlaybackStatus={handlePlaybackStatus}
-            style={{ width: "100%", aspectRatio: videoHeight }}
-            resizeMode="cover"
+            style={{ width: "100%", aspectRatio: videoHeight || 9/16 }}
+            resizeMode="contain"
             repeat
             poster={poster}
             posterResizeMode="cover"

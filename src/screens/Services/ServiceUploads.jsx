@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, Button, Alert, ScrollView, StyleSheet, Image, TouchableOpacity, Keyboard, KeyboardAvoidingView, TouchableWithoutFeedback, ActivityIndicator, NativeModules } from 'react-native';
+import { View, Text, Button, Alert, ScrollView, StyleSheet, Image, TouchableOpacity, Keyboard, KeyboardAvoidingView, TouchableWithoutFeedback, ActivityIndicator, NativeModules, TextInput } from 'react-native';
 import Video from 'react-native-video';
 import { launchImageLibrary } from 'react-native-image-picker';
 
 import RNFS from 'react-native-fs';
-import ImageResizer from 'react-native-image-resizer';
+import ImageResizer from '@bam.tech/react-native-image-resizer';
+
 import * as Compressor from 'react-native-compressor';
 import Toast from 'react-native-toast-message';
-import { TextInput } from 'react-native-gesture-handler';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import CustomDropdown from '../../components/CustomDropDown';
 
@@ -17,7 +17,7 @@ import { useNetwork } from '../AppUtils/IdProvider';
 import apiClient from '../ApiClient';
 import { showToast } from '../AppUtils/CustomToast';
 import { EventRegister } from 'react-native-event-listeners';
-import AppStyles, { STATUS_BAR_HEIGHT } from '../AppUtils/AppStyles';
+import AppStyles from '../AppUtils/AppStyles';
 import { products } from '../../assets/Constants';
 import { useMediaPicker } from '../helperComponents/MediaPicker';
 import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
@@ -26,6 +26,7 @@ import Close from '../../assets/svgIcons/close.svg';
 
 import { colors, dimensions } from '../../assets/theme.jsx';
 import KeyboardAvoid from '../AppUtils/KeyboardAvoid.jsx';
+import { AppHeader } from '../AppUtils/AppHeader.jsx';
 const { DocumentPicker } = NativeModules;
 
 const CreateService = () => {
@@ -126,7 +127,7 @@ const CreateService = () => {
         file.uri,
         resizedWidth,
         resizedHeight,
-        'JPEG',
+        'WEBP',
         80
       );
       console.log('Resized image:', resizedImage);
@@ -456,21 +457,20 @@ const CreateService = () => {
     <KeyboardAvoid>
 
       <View style={styles.container}>
-        <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
 
-        <View style={styles.headerContainer}>
-          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-            <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-          </TouchableOpacity>
-        </View>
+        <AppHeader
+          title={"Add service"}
+
+        />
+
         <KeyboardAwareScrollView
           keyboardShouldPersistTaps="handled"
           extraScrollHeight={20}
           onScrollBeginDrag={() => Keyboard.dismiss()}
-          contentContainerStyle={{ paddingBottom: '20%', top: 15, paddingHorizontal: 5, }} showsVerticalScrollIndicator={false}>
-          <Text style={styles.header}>Add a service</Text>
+          contentContainerStyle={[{ paddingBottom: '20%', paddingHorizontal: 5, }]} showsVerticalScrollIndicator={false}>
+          {/* <Text style={styles.header}>Add a service</Text> */}
 
-          <View style={styles.inputContainer}>
+          <View style={[styles.inputContainer, { marginTop: 10 }]}>
             <Text style={styles.label}>Service name <Text style={{ color: 'red' }}>*</Text></Text>
             <TextInput
               style={styles.input}
@@ -680,8 +680,7 @@ const CreateService = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'whitesmoke',
-    paddingTop: STATUS_BAR_HEIGHT
+
   },
 
   backButton: {

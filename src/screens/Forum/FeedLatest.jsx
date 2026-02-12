@@ -28,12 +28,11 @@ import ShareIcon from '../../assets/svgIcons/share.svg';
 import Add from '../../assets/svgIcons/add.svg';
 
 import { colors, dimensions } from '../../assets/theme.jsx';
+import { useReactionPickerModal } from "./ReactionPicker.jsx";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const { height: screenHeight } = Dimensions.get('window');
-const STATUS_BAR_HEIGHT =
-    Platform.OS === "android" ? StatusBar.currentHeight || 24 : 44;
 
-const headerHeight = STATUS_BAR_HEIGHT + 60;
 const LatestPosts = () => {
     const navigation = useNavigation();
     const { onScroll, headerStyle, bottomStyle, toolbarBgStyle, barStyle } = scrollAnimations();
@@ -114,36 +113,38 @@ const LatestPosts = () => {
     const openCommentSheet = (forum_id, user_id, myId, item) => {
 
         openSheet(
-            <View style={{ flex: 1, backgroundColor: 'white' }}>
-                <CommentsSection
+            <View style={{ flex: 1, backgroundColor: '#F7F8FA' }}>
+                <View style={{ flex: 1 }}>
+                    <CommentsSection
+                        forum_id={forum_id}
+                        currentUserId={myId}
+                        ref={commentSectionRef}
+                        closeBottomSheet={() => {
+                            console.log('[Comment Sheet] Closing sheet');
+                            bottomSheetRef.current?.scrollTo(0);
+                        }}
+                    />
+
+                </View>
+                <CommentInputBar
+                    storedUserId={myId}
                     forum_id={forum_id}
-                    currentUserId={myId}
-                    ref={commentSectionRef}
-                    closeBottomSheet={() => {
-                        console.log('[Comment Sheet] Closing sheet');
-                        bottomSheetRef.current?.scrollTo(0);
+                    item={item}
+                    onCommentAdded={(newCommentData) => {
+                        console.log('[Comment Added] New comment:', newCommentData);
+                        commentSectionRef.current?.handleCommentAdded(newCommentData);
+                    }}
+                    onEditComplete={(updatedComment) => {
+                        console.log('[Comment Edited] Updated comment:', updatedComment);
+                        commentSectionRef.current?.handleEditComplete(updatedComment);
                     }}
                 />
 
-                <InputAccessoryView backgroundColor="#f2f2f2">
-                    <CommentInputBar
-                        storedUserId={myId}
-                        forum_id={forum_id}
-                        item={item}
-                        onCommentAdded={(newCommentData) => {
-                            console.log('[Comment Added] New comment:', newCommentData);
-                            commentSectionRef.current?.handleCommentAdded(newCommentData);
-                        }}
-                        onEditComplete={(updatedComment) => {
-                            console.log('[Comment Edited] Updated comment:', updatedComment);
-                            commentSectionRef.current?.handleEditComplete(updatedComment);
-                        }}
-                    />
-                </InputAccessoryView>
             </View>,
-            -screenHeight
+
         );
     };
+    const { openReactionPicker, ReactionModal } = useReactionPickerModal();
 
     const renderItem = useRenderForumItem({
         localPosts,
@@ -153,6 +154,7 @@ const LatestPosts = () => {
         setSearchResults,
         activeVideo,
         videoEndStates,
+        openReactionPicker,
         setVideoEndStates,
         isFocused,
         videoRefs,
@@ -183,7 +185,15 @@ const LatestPosts = () => {
 
             isRefreshingRef.current = true;
             setIsRefreshing(true);
-
+            Object.values(videoRefs.current || {}).forEach(ref => {
+                try {
+                    ref?.stop?.();     // optional
+                    ref?.pause?.();    // optional
+                    ref?.release?.();  // ✅ MOST IMPORTANT
+                } catch (e) { }
+            });
+            videoRefs.current = {};
+            setLocalPosts([])
             setSearchQuery('');
             setSearchTriggered(false);
             setSearchResults([]);
@@ -260,12 +270,18 @@ const LatestPosts = () => {
         // console.log(`Actual render duration: ${actualDuration}ms`);
     };
 
+    const insets = useSafeAreaInsets();
+    const headerHeight = insets?.top+ 44;
 
     return (
         <>
-            <Animated.View style={[AppStyles.toolbar, toolbarBgStyle]}>
+            <Animated.View style={[AppStyles.toolbar, toolbarBgStyle, { paddingTop: insets.top }]}>
 
                 <Animated.View style={[AppStyles.searchRow, headerStyle]}>
+                    <TouchableOpacity onPress={() => navigation.goBack()} style={AppStyles.backButton} activeOpacity={1}>
+                        <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} fill={colors.primary} />
+
+                    </TouchableOpacity>
                     <View style={AppStyles.searchBar}>
                         <Search width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.text_secondary} />
 
@@ -278,15 +294,6 @@ const LatestPosts = () => {
                             onChangeText={handleDebouncedTextChange}
                         />
                     </View>
-                    <TouchableOpacity
-                        style={AppStyles.circle}
-                        onPress={() => { navigation.navigate('ForumPost'); }}
-                        activeOpacity={1}
-                    >
-                        <Add width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.background} />
-
-                        <Text style={AppStyles.shareText}> Post</Text>
-                    </TouchableOpacity>
                 </Animated.View>
 
             </Animated.View>
@@ -297,7 +304,7 @@ const LatestPosts = () => {
                 renderItem={renderItem}
                 ref={listRef}
                 showsVerticalScrollIndicator={false}
-                keyboardShouldPersistTaps="handled"
+                keyboardShouldPersistTaps="never"
                 onScrollBeginDrag={() => {
                     Keyboard.dismiss();
                     searchInputRef.current?.blur?.();
@@ -317,7 +324,7 @@ const LatestPosts = () => {
 
                 onEndReached={handleEndReached}
                 onEndReachedThreshold={0.3}
-                contentContainerStyle={{ paddingTop: headerHeight, backgroundColor: colors.app_background }}
+                contentContainerStyle={{paddingTop:headerHeight}}
 
                 ListHeaderComponent={
                     <>
@@ -348,6 +355,7 @@ const LatestPosts = () => {
 
 
             <ReactionSheet ref={reactionSheetRef} />
+            <ReactionModal />
 
         </>
 

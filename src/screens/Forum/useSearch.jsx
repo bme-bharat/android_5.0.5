@@ -2,7 +2,6 @@ import apiClient from "../ApiClient";
 import { fetchCommentCount } from "../AppUtils/CommentCount";
 import { showToast } from "../AppUtils/CustomToast";
 import { getSignedUrl } from "../helperComponents/signedUrls";
-import { generateAvatarFromName } from "../helperComponents/useInitialsAvatar";
 import { fetchForumReactionsRaw } from "./useForumReactions";
 
 // forumSearchUtil.js
@@ -54,10 +53,6 @@ export const searchForumPostsWithEnrichment = async ({
                     thumbnailFileKey ? getSignedUrl(forumId, thumbnailFileKey) : Promise.resolve({}),
                 ]);
 
-                const authorImageUri = authorFileKey
-                    ? authorSignedUrl[forumId] || ''
-                    : generateAvatarFromName(post.author || 'U');
-
                 return {
                     ...post,
                     commentCount: commentCount || 0,
@@ -67,7 +62,7 @@ export const searchForumPostsWithEnrichment = async ({
                     fileKeySignedUrl: fileKeySignedUrl[forumId] || '',
                     thumbnailSignedUrl: thumbnailSignedUrl[forumId] || '',
                     authorSignedUrl: authorSignedUrl[forumId] || '',
-                    authorImageUri,
+            
                 };
             })
         );

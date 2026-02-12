@@ -34,7 +34,9 @@ import Pdf from '../../assets/svgIcons/pdf.svg';
 import { colors, dimensions } from '../../assets/theme.jsx';
 import { MediaPreview } from '../helperComponents/MediaPreview.jsx';
 import KeyboardAvoid from '../AppUtils/KeyboardAvoid.jsx';
-import AppStyles, { STATUS_BAR_HEIGHT } from '../AppUtils/AppStyles.js';
+import DropdownItem from '../../components/DropdownItem.jsx';
+import { AppHeader } from '../AppUtils/AppHeader.jsx';
+
 const { DocumentPicker } = NativeModules;
 
 const UserJobProfileUpdateScreen = () => {
@@ -45,7 +47,6 @@ const UserJobProfileUpdateScreen = () => {
 
   const [loading, setLoading] = useState(false);
   const [file, setFile] = useState(null);
-  console.log('file', file)
   const [fileType, setFileType] = useState(null);
 
   const handleRemoveMedia = () => {
@@ -65,7 +66,6 @@ const UserJobProfileUpdateScreen = () => {
     expert_in: profile?.expert_in || '',
     education_qualifications: profile?.education_qualifications || '',
   });
-  console.log('profile?.resume_key', profile?.resume_key)
   const citiesRef = useRef(null);
   const eduRef = useRef(null);
   const expertRef = useRef(null);
@@ -184,6 +184,7 @@ const UserJobProfileUpdateScreen = () => {
   }, [profile]);
 
 
+
   const handleSkillSelect = (selected) => {
     if (!selectedSkills.includes(selected.label)) {
       if (selectedSkills.length >= 3) {
@@ -207,6 +208,8 @@ const UserJobProfileUpdateScreen = () => {
   };
 
 
+  const [cityKey, setCityKey] = useState(0);
+
   const handleCitySelect = (selected) => {
     if (!selectedCities.includes(selected.label)) {
       if (selectedCities.length >= 5) {
@@ -219,6 +222,7 @@ const UserJobProfileUpdateScreen = () => {
     }
   };
 
+
   const removeCity = (city) => {
     const updated = selectedCities.filter(c => c !== city);
     setSelectedCities(updated);
@@ -230,19 +234,9 @@ const UserJobProfileUpdateScreen = () => {
   };
 
   const renderSelectedItems = (items, onRemove) => (
-    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
-      {items.map((item, index) => (
-        <View
-          key={`${item}-${index}`}
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            backgroundColor: '#eee',
-            padding: 6,
-            paddingHorizontal: 10,
-            borderRadius: 18
-          }}
-        >
+    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
+      {items.map(item => (
+        <View key={item} style={{ borderWidth: 1, borderColor: '#ccc', flexDirection: 'row', alignItems: 'center', backgroundColor: '#eee', padding: 6, paddingHorizontal: 10, borderRadius: 18 }}>
           <Text style={{ marginRight: 8, fontSize: 12 }}>{item}</Text>
           <TouchableOpacity
             onPress={() => onRemove(item)}
@@ -256,8 +250,9 @@ const UserJobProfileUpdateScreen = () => {
               marginLeft: 4,
             }}
           >
-            <Text style={{ color: '#fff', fontSize: 10 }}>✕</Text>
+            <Text style={{ color: '#fff', fontSize: 10, }}>✕</Text>
           </TouchableOpacity>
+
         </View>
       ))}
     </View>
@@ -542,30 +537,33 @@ const UserJobProfileUpdateScreen = () => {
     }
   };
 
+  const [focusedField, setFocusedField] = useState(null);
 
+  const renderLabel = (label) => {
+    return (
+      <Text style={[styles.label]}>
+        {label}
+      </Text>
+    );
+  };
 
   return (
 
     <KeyboardAvoid>
-      <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
 
-      <View style={styles.headerContainer}>
-        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
+      <AppHeader
+        title="Update job profile"
 
-        </TouchableOpacity>
-      </View>
-
-
+      />
       <ScrollView
-        keyboardShouldPersistTaps="handled"
+        keyboardShouldPersistTaps="never"
+        keyboardDismissMode='on-drag'
         showsVerticalScrollIndicator={false}
-
-        contentContainerStyle={styles.container}
+        contentContainerStyle={[{ paddingHorizontal: 5, }]}
       >
-        <Text style={styles.header}>Update job profile</Text>
+        {/* <Text style={styles.header} >Update job profile</Text> */}
 
-        <View style={styles.inputContainer}>
+        <View style={[styles.inputContainer, { marginTop: 10 }]}>
           <Text style={[styles.title]}>Industry Type <Text style={{ color: 'red' }}>*</Text></Text>
           <CustomDropDownMenu
             items={industryType}
@@ -577,7 +575,6 @@ const UserJobProfileUpdateScreen = () => {
 
           />
         </View>
-
 
         <View style={styles.inputContainer}>
           <Text style={[styles.title]}>Expert In <Text style={{ color: 'red' }}>*</Text></Text>
@@ -660,7 +657,6 @@ const UserJobProfileUpdateScreen = () => {
             placeholderTextColor="gray"
           />
 
-
         </TouchableOpacity>
 
 
@@ -675,10 +671,10 @@ const UserJobProfileUpdateScreen = () => {
             onChangeText={text => handleInputChange('languages', text)}
             placeholder={postData.languages || ""}
             placeholderTextColor="gray"
-
           />
 
         </TouchableOpacity>
+
 
 
         {!file && (
@@ -750,15 +746,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#fff',
   },
-  headerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#ffffff',
-    borderBottomWidth: 1,
-    borderColor: '#f0f0f0',
-    paddingTop:STATUS_BAR_HEIGHT
-  },
+  
   header: {
     fontSize: 18,
     fontWeight: '600',
@@ -770,9 +758,7 @@ const styles = StyleSheet.create({
   title: {
     color: colors.text_primary,
     fontWeight: '500',
-    fontSize: 14,
-    marginBottom: 10,
-    marginTop: 15,
+    marginBottom: 5,
   },
   title1: {
     color: 'black',
@@ -792,21 +778,16 @@ const styles = StyleSheet.create({
     padding: 10
   },
   input: {
-    height: 40,
-    backgroundColor: '#fff',
-    paddingHorizontal: 15,
-    borderRadius: 8,
-    color: colors.text_secondary,
-    fontWeight: '500',
-    fontSize: 14,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
-    elevation: 2,
+    minHeight: 40,
+    borderColor: '#D3D2D2',
     borderWidth: 1,
-    borderColor: '#ddd'
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    marginBottom: 10,
+    elevation: 2,
+    backgroundColor: '#FFF'
   },
+
   backButton: {
     padding: 10,
     alignSelf: 'flex-start'
@@ -855,6 +836,7 @@ const styles = StyleSheet.create({
 
   dropdownButton: {
     height: 40,
+    marginBottom: 10,
     backgroundColor: '#fff',
     borderRadius: 8,
     flexDirection: 'row',
@@ -885,6 +867,45 @@ const styles = StyleSheet.create({
     color: '#000',
     marginLeft: 10,
     padding: 2
+  },
+
+  label: {
+    fontWeight: '500',
+    color: colors.primary,
+    marginBottom: 5,
+  },
+
+  placeholderStyle: {
+    fontSize: 14,
+    color: colors.text_secondary
+
+  },
+  selectedTextStyle: {
+    fontSize: 14,
+    color: colors.text_primary,
+  },
+  iconStyle: {
+    width: 20,
+    height: 20,
+  },
+  dropdown: {
+    height: 50,
+    borderColor: '#D3D2D2',
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    marginBottom: 10,
+    elevation: 2,
+    backgroundColor: '#FFF'
+  },
+
+  inputSearchStyle: {
+    height: 40,
+    fontSize: 16,
+  },
+  selectedStyle: {
+    borderRadius: 12,
+
   },
 });
 

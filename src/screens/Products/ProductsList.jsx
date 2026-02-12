@@ -5,10 +5,11 @@ import {
     Keyboard,
 
     TouchableWithoutFeedback,
-    StatusBar,
+
     Platform,
+    BackHandler,
 } from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+
 import { useNavigation, useNavigationState, useScrollToTop } from '@react-navigation/native';
 import apiClient from '../ApiClient';
 import { useNetwork } from '../AppUtils/IdProvider';
@@ -19,45 +20,19 @@ import { useConnection } from '../AppUtils/ConnectionProvider';
 import AppStyles from '../AppUtils/AppStyles';
 import { getSignedUrl, highlightMatch, useLazySignedUrls } from '../helperComponents/signedUrls';
 import { Image as FastImage } from 'react-native';
-import BottomNavigationBar from '../AppUtils/BottomNavigationBar';
+
 import scrollAnimations from '../helperComponents/scrollAnimations';
 import Animated from "react-native-reanimated";
 import Search from '../../assets/svgIcons/search.svg';
 import Close from '../../assets/svgIcons/close.svg';
 import Filter from '../../assets/svgIcons/filter.svg';
 import Check from '../../assets/svgIcons/check-fill.svg';
-import HomeBanner from '../Banners/homeBanner3.jsx';
 import Company from '../../assets/svgIcons/company.svg';
-
 import { colors, dimensions } from '../../assets/theme.jsx';
+import { TrueSheet } from '@lodev09/react-native-true-sheet';
+import ProductsBanner from '../Banners/ProductsBanner.jsx';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-
-const STATUS_BAR_HEIGHT =
-    Platform.OS === "android" ? StatusBar.currentHeight || 24 : 44;
-
-const headerHeight = STATUS_BAR_HEIGHT + 60;
-
-const JobListScreen = React.lazy(() => import('../Job/JobListScreen'));
-const AllPosts = React.lazy(() => import('../Forum/Feed'));
-const CompanySettingScreen = React.lazy(() => import('../Profile/CompanySettingScreen'));
-const CompanyHomeScreen = React.lazy(() => import('../CompanyHomeScreen'));
-
-const tabNameMap = {
-    Home3: "Home",
-    ProductsList: "Products",
-    Feed: "Feed",
-    Jobs: "Jobs",
-    Settings: "Settings",
-};
-
-
-const tabConfig = [
-    { name: "Home", component: CompanyHomeScreen, focusedIcon: 'home', unfocusedIcon: 'home-outline', iconComponent: Icon },
-    { name: "Jobs", component: JobListScreen, focusedIcon: 'briefcase', unfocusedIcon: 'briefcase-outline', iconComponent: Icon },
-    { name: "Feed", component: AllPosts, focusedIcon: 'rss', unfocusedIcon: 'rss-box', iconComponent: Icon },
-    { name: "Products", component: ProductsList, focusedIcon: 'shopping', unfocusedIcon: 'shopping-outline', iconComponent: Icon },
-    { name: "Settings", component: CompanySettingScreen, focusedIcon: 'cog', unfocusedIcon: 'cog-outline', iconComponent: Icon },
-];
 
 const ProductsList = () => {
     const searchInputRef = useRef(null);
@@ -76,6 +51,7 @@ const ProductsList = () => {
     const [loadingMore, setLoadingMore] = useState(false);
     const [lastEvaluatedKey, setLastEvaluatedKey] = useState(null);
     const [imageUrls, setImageUrls] = useState({});
+
     const [searchQuery, setSearchQuery] = useState('');
     const [refreshing, setRefreshing] = useState(false);
     const [searchResults, setSearchResults] = useState(false);
@@ -83,10 +59,39 @@ const ProductsList = () => {
     const [filteredCategories, setFilteredCategories] = useState([]);
     const [selectedCategories, setSelectedCategories] = useState({});
     const [isFilterOpen, setIsFilterOpen] = useState(false);
-    const [fetchLimit, setFetchLimit] = useState(20);
+    const [fetchLimit, setFetchLimit] = useState(10);
 
     const flatListRef = useRef(null);
-    const scrollOffsetY = useRef(0);
+
+    const isTabRefreshingRef = useRef(false);
+
+    React.useEffect(() => {
+        const unsubscribe = navigation.addListener('tabPress', (e) => {
+            if (!navigation.isFocused()) return;
+
+            e.preventDefault();
+
+            if (isTabRefreshingRef.current) return;
+            isTabRefreshingRef.current = true;
+
+            console.log('tab pressed again → scroll to top → refresh');
+
+            // 1️⃣ Scroll to top
+            flatListRef.current?.scrollToOffset({
+                offset: 0,
+                animated: true,
+            });
+
+            // 2️⃣ Refresh AFTER scroll is scheduled
+            requestAnimationFrame(() => {
+                Promise.resolve(handleRefresh()).finally(() => {
+                    isTabRefreshingRef.current = false;
+                });
+            });
+        });
+
+        return unsubscribe;
+    }, [navigation, handleRefresh]);
 
     useEffect(() => {
         const handleProductCreated = async ({ newProduct }) => {
@@ -156,7 +161,7 @@ const ProductsList = () => {
         const selectedCategoryKeys = Object.keys(tempSelectedCategories).filter((key) => tempSelectedCategories[key]);
 
         setIsFilterOpen(false);
-
+        sheetRef.current?.dismiss();
         // Clear search query when applying filters
         setSearchQuery('');
 
@@ -172,8 +177,10 @@ const ProductsList = () => {
     };
 
 
+    const sheetRef = useRef(null);
 
     const handleFilterClick = () => {
+        sheetRef.current?.present();
         setTempSelectedCategories(selectedCategories); // clone only when panel opens
         setFilteredCategories(categories);
         setIsFilterOpen(prev => !prev);
@@ -206,47 +213,47 @@ const ProductsList = () => {
 
     const [companyCount, setCompanyCount] = useState(0);
 
-    const fetchProducts = async (lastKey = null) => {
-        if (!isConnected || loading || loadingMore) return;
+    const fetchProducts = async (lastKey = null,) => {
+        if (!isConnected) {
 
+            return;
+        }
+        if (loading || loadingMore) return;
         lastKey ? setLoadingMore(true) : setLoading(true);
+
         const startTime = Date.now();
 
         try {
             const requestData = {
                 command: "getAllProducts",
-                limit: fetchLimit,
+                limit: lastKey ? fetchLimit : 4,
                 ...(lastKey && { lastEvaluatedKey: lastKey }),
             };
 
             const res = await withTimeout(apiClient.post('/getAllProducts', requestData), 10000);
+
             const newProducts = res?.data?.response || [];
-            setCompanyCount(res.data.count);
 
             if (!newProducts.length) {
                 setLastEvaluatedKey(null);
                 return;
             }
 
-            // ⏱️ Adjust fetchLimit based on response time
             const responseTime = Date.now() - startTime;
+
             if (responseTime < 400) {
                 setFetchLimit(prev => Math.min(prev + 5, 10));
             } else if (responseTime > 1000) {
                 setFetchLimit(prev => Math.max(prev - 2, 1));
             }
 
-            // 🧠 Avoid duplicates
-            setProducts(prev => {
-                const existingIds = new Set(prev.map(p => p.product_id));
-                const uniqueNew = newProducts.filter(p => !existingIds.has(p.product_id));
-                return [...prev, ...uniqueNew];
-            });
-
+            setProducts(prev => lastKey ? [...prev, ...newProducts] : newProducts);
             setLastEvaluatedKey(res.data.lastEvaluatedKey || null);
-
+            fetchProductImageUrls(newProducts);
         } catch (error) {
-            // Optional: console.error('❌ fetchProducts error:', error);
+            console.log('error', error)
+            showToast('Slow network', 'info');
+            setLoading(false);
         } finally {
             setLoading(false);
             setLoadingMore(false);
@@ -325,14 +332,7 @@ const ProductsList = () => {
     }, [handleSearch, selectedCategories]);
 
 
-    const {
-        getUrlFor,
-        onViewableItemsChanged,
-        viewabilityConfig
-    } = useLazySignedUrls(products, getSignedUrl, 5, {
-        idField: 'product_id',
-        fileKeyField: 'images[0]',
-    });
+
 
 
     const handleSearch = async (text, selectedCategories = {}) => {
@@ -420,16 +420,12 @@ const ProductsList = () => {
         }, 3000);
     };
 
-    const handleSearchInputFocus = () => {
-        if (isFilterOpen) {
-            setIsFilterOpen(false); // close filter
-        }
-    };
+
 
     const handleAddProduct = (product) => { navigation.navigate('ProductDetails', { product_id: product.product_id, company_id: product.company_id }) };
 
     const renderItem = ({ item, index }) => {
-        const imageUrl = getUrlFor(item.product_id);
+        const imageUrl = imageUrls[item.product_id];
 
         return (
             <TouchableOpacity activeOpacity={1} onPress={() => handleAddProduct(item)} style={styles.card}>
@@ -442,6 +438,8 @@ const ProductsList = () => {
                         style={styles.productImage}
                         onError={() => { }}
                     />
+
+
                 </View>
 
                 <View style={styles.cardContent}>
@@ -453,15 +451,11 @@ const ProductsList = () => {
                     <Text numberOfLines={1} style={styles.category}>{highlightMatch(item.specifications.model_name || '', searchQuery)}</Text>
                     <Text numberOfLines={2} style={styles.description}>{highlightMatch(item.description || '', searchQuery)}</Text>
                     {/* <Text numberOfLines={1} style={styles.companyName}>{highlightMatch(job.company_name || '', searchQuery)}</Text> */}
-                    {/* <TouchableOpacity activeOpacity={0.8} style={styles.headerRow} >
-                            <Company width={dimensions.icon.small} height={dimensions.icon.small} color={colors.secondary} />
-                        </TouchableOpacity> */}
-                    <Text style={styles.companyName} >{highlightMatch(item.company_name || '', searchQuery)}</Text>
+                    <Text style={styles.companyName} numberOfLines={1}>{highlightMatch(item.company_name || '', searchQuery)}</Text>
 
                     <Text numberOfLines={1} style={styles.price}>
-                        ₹ {item.price !== undefined && item.price !== null && item.price !== '' ? item.price : "N/A"}
+                        ₹ {item.price !== undefined && item.price !== null && item.price !== '' ? item.price : "Contact supplier"}
                     </Text>
-                    <Text numberOfLines={1} style={styles.productDetailsText}>View details</Text>
 
                 </View>
 
@@ -473,16 +467,16 @@ const ProductsList = () => {
 
     const renderFooter = () => loadingMore ? <ActivityIndicator size="large" color="#075cab" style={{ marginVertical: 10 }} /> : null;
 
+    const insets = useSafeAreaInsets();
+    const headerHeight = insets?.top + 44;
 
     return (
 
         <>
-            <StatusBar translucent backgroundColor="transparent" barStyle={"light-content"} />
-
-            <Animated.View style={[AppStyles.toolbar, toolbarBgStyle]}>
+            <Animated.View style={[AppStyles.toolbar, toolbarBgStyle, { paddingTop: insets.top }]}>
 
                 <Animated.View style={[AppStyles.searchRow, headerStyle]}>
-                    <View style={AppStyles.searchBar}>
+                    <View style={[AppStyles.searchBar]}>
                         <Search width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.text_secondary} />
 
                         <TextInput
@@ -495,14 +489,12 @@ const ProductsList = () => {
                         />
                     </View>
                     {isConnected && (
-                        <TouchableOpacity onPress={handleFilterClick} style={AppStyles.circle}>
-                            <Filter width={dimensions.icon.minlarge} height={dimensions.icon.minlarge} color={colors.background} />
+                        <TouchableOpacity onPress={handleFilterClick} style={[AppStyles.circle]}>
+                            <Filter width={dimensions.icon.xl} height={dimensions.icon.xl} color={colors.primary} />
 
                         </TouchableOpacity>
                     )}
                 </Animated.View>
-
-
 
             </Animated.View>
 
@@ -517,12 +509,10 @@ const ProductsList = () => {
                         searchInputRef.current?.blur?.();
 
                     }}
-                    keyboardShouldPersistTaps="handled"
-                    onViewableItemsChanged={onViewableItemsChanged}
-                    viewabilityConfig={viewabilityConfig}
+                    keyboardShouldPersistTaps="never"
                     keyExtractor={(item, index) => `${item.product_id}-${index}`}
                     showsVerticalScrollIndicator={false}
-                    contentContainerStyle={{ paddingTop: headerHeight, backgroundColor: colors.app_background, paddingBottom:60 }}
+                    contentContainerStyle={{ paddingTop: headerHeight, }}
                     onEndReached={() => {
                         if (lastEvaluatedKey && !loadingMore && !loading) {
                             fetchProducts(lastEvaluatedKey);
@@ -535,7 +525,7 @@ const ProductsList = () => {
                     onEndReachedThreshold={0.5}
                     refreshControl={
                         <RefreshControl refreshing={refreshing} onRefresh={handleRefresh}
-                            progressViewOffset={headerHeight} />
+                            progressViewOffset={headerHeight} style={{ zIndex: 9999 }} />
                     }
                     ListEmptyComponent={
                         (searchTriggered && searchResults.length === 0) ? (
@@ -546,8 +536,8 @@ const ProductsList = () => {
                     }
                     ListHeaderComponent={
                         <Animated.View >
-                            <View style={{ paddingVertical: 5, backgroundColor: colors.app_background }}>
-                                <HomeBanner bannerId="productAd01" />
+                            <View style={{ paddingVertical: 5, alignSelf: 'center' }}>
+                                <ProductsBanner />
 
                             </View>
 
@@ -578,72 +568,73 @@ const ProductsList = () => {
                 </View>
             )}
 
+            <TrueSheet
+                ref={sheetRef}
+                detents={['auto', 0.9]}
+                scrollable={true}
+                footer={
+                    <View style={styles.buttonWrapper}>
+                        <TouchableOpacity onPress={applyFilters} style={styles.applyButton} activeOpacity={0.8}>
+                            <Text style={styles.applyButtonText}>Apply</Text>
+                        </TouchableOpacity>
 
-            {isFilterOpen && (
-                <View style={StyleSheet.absoluteFill}>
-                    {/* Transparent overlay to detect outside touches */}
-                    <TouchableWithoutFeedback onPress={() => setIsFilterOpen(false)}>
-                        <View style={styles.overlay} />
-                    </TouchableWithoutFeedback>
-
-                    <View style={styles.filterContainer}>
-                        {/* Filter content */}
-                        <View style={styles.buttonWrapper}>
-                            <TouchableOpacity onPress={applyFilters} style={styles.applyButton}>
-                                <Text style={styles.applyButtonText}>Apply</Text>
-                            </TouchableOpacity>
-
-                            <TouchableOpacity onPress={clearFilters} style={styles.clearButton}>
-                                <Text style={styles.clearButtonText}>Clear</Text>
-                            </TouchableOpacity>
-                        </View>
-
-
-                        <Text style={{ fontSize: 15, fontWeight: '500', color: colors.text_primary, paddingHorizontal: 15, marginVertical: 15 }}>Select Category </Text>
-                        <View style={styles.divider} />
-
-                        <FlatList
-                            data={filteredCategories}
-                            keyExtractor={(item) => item}
-                            renderItem={({ item }) => (
-                                <TouchableOpacity
-                                    onPress={() => toggleCheckbox(item)}
-                                    style={styles.checkboxContainer}
-                                >
-                                    <View
-                                        style={[
-                                            styles.checkbox,
-                                            tempSelectedCategories[item] && styles.checkboxChecked,
-                                        ]}
-                                    >
-                                        {tempSelectedCategories[item] && (
-                                            <Check
-                                                width={dimensions.icon.small}
-                                                height={dimensions.icon.small}
-                                                color={colors.success}
-                                            />
-                                        )}
-                                    </View>
-
-                                    <Text
-                                        style={[
-                                            styles.checkboxLabel,
-                                            tempSelectedCategories[item] && { color: colors.text_primary },
-                                        ]}
-                                    >
-                                        {item}
-                                    </Text>
-                                </TouchableOpacity>
-
-                            )}
-                            contentContainerStyle={{ paddingBottom: '20%', paddingHorizontal: 15 }}
-                            showsVerticalScrollIndicator={false}
-                        />
+                        <TouchableOpacity onPress={clearFilters} style={styles.clearButton} activeOpacity={0.8}>
+                            <Text style={styles.clearButtonText}>Clear</Text>
+                        </TouchableOpacity>
                     </View>
-                </View>
-            )}
+                }
+                header={
+                    <View style={{ borderBottomWidth: 0.5, borderBottomColor: '#ccc', }}>
+                        <Text style={{ fontSize: 15, paddingTop: 20, paddingBottom: 10, paddingHorizontal: 15, fontWeight: '500', color: colors.text_primary, }}>Select Category </Text>
+                    </View>
+                }
+            >
 
-            {!isFilterOpen && (
+                <FlatList
+                    data={filteredCategories}
+                    nestedScrollEnabled
+                    keyExtractor={(item) => item}
+                    renderItem={({ item }) => (
+
+                        <TouchableOpacity
+                            onPress={() => toggleCheckbox(item)}
+                            style={styles.checkboxContainer}
+                            activeOpacity={1}
+                        >
+                            <View
+                                style={[
+                                    styles.checkbox,
+                                    tempSelectedCategories[item] && styles.checkboxChecked,
+                                ]}
+                            >
+                                {tempSelectedCategories[item] && (
+                                    <Check
+                                        width={dimensions.icon.small}
+                                        height={dimensions.icon.small}
+                                        color={colors.success}
+                                    />
+                                )}
+                            </View>
+
+                            <Text
+                                style={[
+                                    styles.checkboxLabel,
+                                    tempSelectedCategories[item] && { color: colors.text_primary },
+                                ]}
+                            >
+                                {item}
+                            </Text>
+                        </TouchableOpacity>
+
+                    )}
+                    contentContainerStyle={{ paddingHorizontal: 15 }}
+                    showsVerticalScrollIndicator={false}
+                />
+
+
+            </TrueSheet>
+
+            {/* {!isFilterOpen && (
                 <BottomNavigationBar
                     tabs={tabConfig}
                     currentRouteName={currentRouteName}
@@ -654,7 +645,7 @@ const ProductsList = () => {
                     tabNameMap={tabNameMap}
                 />
 
-            )}
+            )} */}
         </>
 
     );
@@ -713,8 +704,7 @@ const styles = StyleSheet.create({
         color: colors.text_primary,
         fontWeight: '500',
         fontSize: 13,
-        marginBottom: 5
-
+        paddingBottom: 5
     },
 
     discountPrice: {
@@ -804,7 +794,6 @@ const styles = StyleSheet.create({
 
     description: {
         color: colors.text_primary,
-        fontWeight: '400',
         fontSize: 14,
         marginBottom: 5
 
@@ -812,16 +801,16 @@ const styles = StyleSheet.create({
 
     companyName: {
         color: colors.text_primary,
-        fontWeight: '400',
+        fontWeight: '500',
         fontSize: 14,
 
 
     },
     headerRow: {
         flexDirection: 'row',
-        alignItems: 'center',
         alignItems: 'flex-start',
-
+        marginTop: 2,
+        flex: 1
 
     },
     priceRow: {
@@ -830,36 +819,20 @@ const styles = StyleSheet.create({
     },
     price: {
         color: colors.primary,
-        fontWeight: '600',
+        fontWeight: 'bold',
         fontSize: 15,
-
+        paddingTop: 5
     },
-    separator: {
-
-        margin: 2,
-        width: '98%',
-        borderWidth: 0.5,
-        borderColor: '#ddd',
-    },
-
-
 
     productDetailsText: {
         fontSize: 14,
         color: '#075cab',
-        fontWeight: '400',
         alignSelf: 'flex-end',
     },
     filterContainer: {
-        position: 'absolute',
-        right: 0,
-        top: headerHeight,
-        bottom: 0,
-        width: '80%',
+
         backgroundColor: '#fff',
-        zIndex: 100,
-        elevation: 10,
-        flex: 1,
+
     },
     overlay: {
         ...StyleSheet.absoluteFillObject,
@@ -868,14 +841,10 @@ const styles = StyleSheet.create({
 
 
     buttonWrapper: {
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
         flexDirection: 'row',
-        backgroundColor: '#f1f6ff',
         zIndex: 10,
-        elevation: 3,
+        borderColor: '#ccc',
+        borderWidth: 0.5,
     },
 
     applyButton: {
@@ -925,8 +894,8 @@ const styles = StyleSheet.create({
     },
 
     checkbox: {
-        width: 13,
-        height: 13,
+        width: 15,
+        height: 15,
         // borderRadius: 6,
         borderWidth: 1,
         borderColor: colors.text_secondary,
@@ -941,8 +910,7 @@ const styles = StyleSheet.create({
 
     checkboxLabel: {
         color: colors.text_secondary,
-        fontWeight: '500',
-        fontSize: 14,
+        fontSize: 15,
     },
 
 

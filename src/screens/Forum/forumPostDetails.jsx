@@ -17,13 +17,13 @@ import {
   ActivityIndicator,
   InputAccessoryView,
   Dimensions,
-  TouchableWithoutFeedback
+  TouchableWithoutFeedback,
+  Pressable
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 
 import Video from 'react-native-video';
 import { Image as FastImage } from 'react-native';
-import { BackHandler } from 'react-native';
 import apiClient from '../ApiClient';
 import { showToast } from '../AppUtils/CustomToast';
 import { useNetwork } from '../AppUtils/IdProvider';
@@ -36,24 +36,27 @@ import { getSignedUrl, getTimeDisplay, getTimeDisplayForum } from '../helperComp
 import { openMediaViewer } from '../helperComponents/mediaViewer';
 import ReactionSheet from '../helperComponents/ReactionUserSheet';
 import { ForumBody, normalizeHtml } from './forumBody';
-import { generateAvatarFromName } from '../helperComponents/useInitialsAvatar';
-import useForumReactions, { fetchForumReactionsRaw } from './useForumReactions';
-import ArrowleftIcon from '../../assets/svgIcons/back.svg';
+import useForumReactions, { fetchForumReactionsRaw, reactionConfig } from './useForumReactions';
+import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
 import ShareIcon from '../../assets/svgIcons/share.svg';
 import Comment from '../../assets/svgIcons/comment.svg';
 import Thumb from '../../assets/svgIcons/thumb.svg';
-
+import { ScaledSheet } from 'react-native-size-matters';
 
 import { colors, dimensions } from '../../assets/theme.jsx';
-import AppStyles, { STATUS_BAR_HEIGHT } from '../AppUtils/AppStyles.js';
+import AppStyles from '../AppUtils/AppStyles.js';
+import Avatar from '../helperComponents/Avatar.jsx'
+import { smartGoBack } from '../../navigation/smartGoBack.jsx';
+import { AppHeader } from '../AppUtils/AppHeader.jsx';
+import { Divider, Avatar as PaperAvatar } from 'react-native-paper';
 
 const screenHeight = Dimensions.get('window').height;
 const { width } = Dimensions.get('window');
 const { width: deviceWidth, height: deviceHeight } = Dimensions.get('window');
+const IMAGE_WIDTH = Dimensions.get('window').width - 10;
 
 const CommentScreen = ({ route }) => {
   const { highlightId, highlightReactId, forum_id, url } = route.params;
-
   const { myId, myData } = useNetwork();
   const { isConnected } = useConnection();
   const { openSheet, closeSheet } = useBottomSheet();
@@ -61,31 +64,29 @@ const CommentScreen = ({ route }) => {
   const [post, setPost] = useState(null);
   const [mediaUrl, setMediaUrl] = useState('');
   const [mediaUrl1, setMediaUrl1] = useState('');
-  const [isModalVisible, setModalVisible] = useState(false);
 
   const navigation = useNavigation();
   const [count, setCount] = useState();
   const [errorMessage, setErrorMessage] = useState();
   const [loading, seLoading] = useState();
-
-  const commentSectionRef = useRef();
+  const commentSectionRef = useRef(null);
 
   useEffect(() => {
-    if (highlightId) {
-      const timeout = setTimeout(() => {
-        openCommentsSheet();
-      }, 1000);
+    if (!highlightId || !post) return;
 
-      return () => clearTimeout(timeout);
-    }
-  }, [highlightId]);
+    const timeout = setTimeout(() => {
+      openCommentsSheet();
+    }, 1000);
+
+    return () => clearTimeout(timeout);
+  }, [highlightId, post]);
 
 
   useEffect(() => {
     if (highlightReactId && reactionSheetRef.current) {
       // Delay to ensure sheet is mounted
       const timeout = setTimeout(() => {
-        reactionSheetRef.current?.open(forum_id, 'All', highlightReactId);
+        reactionSheetRef.current?.present(forum_id, 'All', highlightReactId);
       }, 1000); // Give enough time for ReactionSheet to mount
 
       return () => clearTimeout(timeout);
@@ -93,7 +94,11 @@ const CommentScreen = ({ route }) => {
   }, [highlightReactId, forum_id]);
 
   const reactionSheetRef = useRef();
-  const [reaction, setReaction] = useState()
+  const commentRef = useRef(null);
+  const [reaction, setReaction] = useState();
+  const activeReactions = reactionConfig.filter(
+    cfg => reaction?.reactionsCount?.[cfg.type] > 0
+  );
 
   useEffect(() => {
     async function logReactions() {
@@ -110,22 +115,13 @@ const CommentScreen = ({ route }) => {
 
   const { handleReactionUpdate } = useForumReactions(myId);
 
-  const reactionConfig = [
-    { type: 'Like', emoji: '👍', color: 'text-blue-600', label: 'Like', outlineIcon: 'thumb-up-outline' },
-    { type: 'Insightful', emoji: '💡', color: 'text-yellow-500', label: 'Insightful', outlineIcon: 'lightbulb-on-outline' },
-    { type: 'Support', emoji: '🤝', color: 'text-green-500', label: 'Support', outlineIcon: 'handshake-outline' },
-    { type: 'Funny', emoji: '😂', color: 'text-yellow-400', label: 'Funny', outlineIcon: 'emoticon-excited-outline' },
-    { type: 'Thanks', emoji: '🙏', color: 'text-rose-500', label: 'Thanks', outlineIcon: 'hand-heart-outline' },
-  ];
-
   const selectedReaction = reactionConfig.find(r => r.type === reaction?.userReaction && reaction?.userReaction !== 'None');
 
   const [showReactions, setShowReactions] = useState(false);
-
   const openCommentsSheet = () => {
     if (!post) return;
     openSheet(
-      <View style={{ flex: 1, backgroundColor: 'white' }}>
+      <View style={{ flex: 1, backgroundColor: '#F7F8FA' }}>
         {/* Container with column layout */}
         <View style={{ flex: 1 }}>
           {/* Comments list fills space above input */}
@@ -142,6 +138,7 @@ const CommentScreen = ({ route }) => {
           forum_id={forum_id}
           item={post}
           onCommentAdded={(newCommentData) => {
+            console.log('newCommentData', newCommentData)
             commentSectionRef.current?.handleCommentAdded(newCommentData);
           }}
           onEditComplete={(updatedComment) => {
@@ -151,9 +148,10 @@ const CommentScreen = ({ route }) => {
         {/* Fixed input bar at bottom */}
 
       </View>,
-      -screenHeight
+
     );
   };
+
 
 
 
@@ -165,10 +163,6 @@ const CommentScreen = ({ route }) => {
   };
 
   const fetchPosts = async () => {
-    if (!isConnected) {
-
-      return;
-    }
 
     seLoading(true);
 
@@ -202,16 +196,15 @@ const CommentScreen = ({ route }) => {
       setErrorMessage('');
 
       // Set post and comments
-      setPost(postData);
       await fetchCommentsCount(forum_id);
 
 
-      const mediaUrlPromise = postData.fileKey
+      const mediaUrlPromise = postData?.fileKey
         ? getSignedUrl('mediaUrl', postData.fileKey)
         : Promise.resolve({ mediaUrl: '' });
 
 
-      const mediaUrl1Promise = postData.author_fileKey
+      const mediaUrl1Promise = postData?.author_fileKey
         ? getSignedUrl('mediaUrl1', postData.author_fileKey)
         : Promise.resolve({ mediaUrl1: '' });
 
@@ -222,19 +215,15 @@ const CommentScreen = ({ route }) => {
       if (authorMediaRes.mediaUrl1) {
 
         setMediaUrl1(authorMediaRes.mediaUrl1);
-      } else {
-        const fallbackName = postData?.author || 'BME';
-        const avatarData = generateAvatarFromName(fallbackName);
-
-        setMediaUrl1(avatarData);
       }
 
-      seLoading(false);
+      setPost(postData);
+
     } catch (error) {
 
       if (error.message === 'Network Error' || !error.response) {
         showToast('Network error, please check your connection', 'error');
-        setErrorMessage('Network error, please check your connection');
+
       } else {
         setErrorMessage('This post was removed by the author');
       }
@@ -242,6 +231,9 @@ const CommentScreen = ({ route }) => {
       setMediaUrl('');
 
       setMediaUrl1('');
+
+    }
+    finally {
       seLoading(false);
     }
   };
@@ -318,28 +310,13 @@ const CommentScreen = ({ route }) => {
 
   const handleNavigate = (item) => {
     if (item.user_type === "company") {
-      navigation.navigate('CompanyDetailsPage', { userId: item.user_id });
+      navigation.navigate('CompanyDetails', { userId: item.user_id });
     } else if (item.user_type === "users") {
 
-      navigation.navigate('UserDetailsPage', { userId: item.user_id });
+      navigation.navigate('UserDetails', { userId: item.user_id });
     }
   };
 
-  useEffect(() => {
-    const handleBackPress = () => {
-      if (isModalVisible) {
-        setModalVisible(false);
-        return true;
-      }
-      return false;
-    };
-
-    const backHandler = BackHandler.addEventListener('hardwareBackPress', handleBackPress);
-
-    return () => {
-      backHandler.remove();
-    };
-  }, [isModalVisible]);
 
 
 
@@ -365,64 +342,10 @@ const CommentScreen = ({ route }) => {
   const isVideo = post?.fileKey && videoExtensions.some(ext => post.fileKey.endsWith(ext));
 
 
-  if (loading) {
-    // Post is not loaded yet or null
-    return (
-      <>
-      <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
 
-        <View style={styles.headerContainer1}>
-
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => {
-              if (navigation.canGoBack()) {
-                navigation.goBack();
-              } else {
-                navigation.navigate('Home3');
-              }
-            }}
-          >
-            <ArrowleftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-
-          </TouchableOpacity>
-
-        </View>
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <ActivityIndicator size='small' color='#075cab' />
-        </View>
-      </>
-    );
-  }
-
-  if (errorMessage) {
-    return (
-      <>
-      <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
-
-        <View style={styles.headerContainer1}>
-
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => {
-              if (navigation.canGoBack()) {
-                navigation.goBack();
-              } else {
-                navigation.navigate('Home3');
-              }
-            }}
-          >
-            <ArrowleftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-
-          </TouchableOpacity>
-
-        </View>
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <Text style={{ fontSize: 16, color: 'gray' }}>{errorMessage}</Text>
-        </View>
-      </>
-    );
-  }
+  const isRemoved = errorMessage
+  const isLoading = !isRemoved && !post;
+  const hasPost = post?.forum_body
 
   const maxAllowedHeight = Math.round(deviceHeight * 0.6);
 
@@ -438,306 +361,321 @@ const CommentScreen = ({ route }) => {
 
   return (
     <>
-      <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
+      <AppHeader
+        title="Post"
+      // onShare={() => shareJob(post)}
+      />
 
-      <View style={styles.headerContainer1}>
+      {isRemoved ? (
+        <View style={AppStyles.center}>
+          <Text style={AppStyles.removedText}>
+            This post was removed by the author
+          </Text>
+        </View>
+      ) : !post ? (
+        <View style={AppStyles.center}>
+          <ActivityIndicator size="small" color="#075cab" />
+        </View>
+      ) : null}
 
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => {
-            if (navigation.canGoBack()) {
-              navigation.goBack();
-            } else {
-              navigation.navigate('Home3');
-            }
-          }}
-        >
-          <ArrowleftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
+      {!isRemoved && hasPost && (
+        <>
+          <ScrollView contentContainerStyle={[{ paddingHorizontal: 5 }]}
+            onScrollBeginDrag={() => Keyboard.dismiss()}
+            showsVerticalScrollIndicator={false}
+          >
 
-        </TouchableOpacity>
+            <View style={styles.headerContainer}>
+              <TouchableOpacity style={styles.leftHeader} onPress={() => handleNavigate(post)} activeOpacity={1}>
+                <Avatar
+                  imageUrl={mediaUrl1}
+                  name={post?.author}
+                  size={40}
+                />
 
-      </View>
+                <View style={styles.authorInfo}>
+                  <Text style={styles.author} numberOfLines={1} >{post?.author || ''}</Text>
+                  <Text style={styles.authorCategory}>{post?.author_category || ''}</Text>
+                </View>
+              </TouchableOpacity>
 
-      <ScrollView contentContainerStyle={styles.scrollViewContent}
-        onScrollBeginDrag={() => Keyboard.dismiss()}
-        showsVerticalScrollIndicator={false}
-      >
-
-        <View style={styles.headerContainer}>
-          <View style={styles.leftHeader}>
-            {typeof mediaUrl1 === 'string' && mediaUrl1 !== '' ? (
-              <FastImage
-                source={{ uri: mediaUrl1 }}
-                style={styles.profileIcon}
-                resizeMode="cover"
-                onError={(e) => {
-                  console.log('Image load failed:', e.nativeEvent);
-                }}
-              />
-            ) : (
-              <View
-                style={[
-                  styles.profileIcon,
-                  {
-                    backgroundColor: mediaUrl1?.backgroundColor || '#ccc',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                  },
-                ]}
-              >
-                <Text
-                  style={{
-                    color: mediaUrl1?.textColor || '#000',
-                    fontWeight: 'bold',
-                    fontSize: 16,
-                  }}
-                >
-                  {mediaUrl1?.initials || ''}
+              <View style={styles.rightHeader}>
+                <Text style={styles.timeText}>
+                  {getTimeDisplayForum(post?.posted_on)}
                 </Text>
               </View>
-            )}
-
-
-            <View style={styles.authorInfo}>
-              <Text style={styles.author} onPress={() => handleNavigate(post)}>{post?.author || ''}</Text>
-              <Text style={styles.authorCategory}>{post?.author_category || ''}</Text>
             </View>
-          </View>
 
-          <View style={styles.rightHeader}>
-            <Text style={styles.timeText}>
-              {getTimeDisplayForum(post?.posted_on)}
-            </Text>
-          </View>
-        </View>
-
-        <ForumBody
-          html={normalizeHtml(post?.forum_body, '')}
-          forumId={post?.forum_id}
-          isExpanded={expandedTexts[post?.forum_id]}
-          toggleFullText={toggleFullText}
-          ignoredDomTags={['font']}
-        />
-
-        {mediaUrl ? (
-          isVideo ? (
-
-            <Video
-              source={{ uri: mediaUrl }}
-              style={{
-                width: '100%',
-                height: height,
-              }}
-              controls
-              repeat={true}
-              paused={false}
-              resizeMode="contain"
-              poster={url ? { uri: url } : undefined} // ✅ ensure poster is an object
-              posterResizeMode="cover"
+            <ForumBody
+              html={normalizeHtml(post?.forum_body, '')}
+              forumId={post?.forum_id}
+              isExpanded={expandedTexts[post?.forum_id]}
+              toggleFullText={toggleFullText}
+              ignoredDomTags={['font']}
             />
 
-          ) : (
-            <TouchableOpacity
-              onPress={() => openMediaViewer([{ type: 'image', url: mediaUrl }])}
-              activeOpacity={1}
-            >
-              <Image
-                source={{ uri: mediaUrl }}
-                style={[styles.image, { width: '100%', height: height }]}
-                resizeMode="cover"
-              />
-            </TouchableOpacity>
-          )
-        ) : null}
+            {mediaUrl ? (
+              isVideo ? (
 
-
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', height: 40, }}>
-          <View>
-            <TouchableOpacity
-              onPress={async () => {
-                const selectedType = reaction?.userReaction && reaction?.userReaction !== 'None' ? 'None' : 'Like';
-
-                setReaction(prev => {
-                  const currentReaction = prev?.userReaction || 'None';
-                  let newTotal = Number(prev?.totalReactions || 0);
-                  const hadReaction = currentReaction && currentReaction !== 'None';
-
-                  const updatedCounts = { ...prev?.reactionsCount };
-
-                  if (selectedType === 'None' && hadReaction) {
-                    updatedCounts[currentReaction] = Math.max(0, (updatedCounts[currentReaction] || 1) - 1);
-                    newTotal -= 1;
-                  } else if (!hadReaction) {
-                    updatedCounts['Like'] = (updatedCounts['Like'] || 0) + 1;
-                    newTotal += 1;
-                  } else if (hadReaction && currentReaction !== 'Like') {
-                    updatedCounts[currentReaction] = Math.max(0, (updatedCounts[currentReaction] || 1) - 1);
-                    updatedCounts['Like'] = (updatedCounts['Like'] || 0) + 1;
-                  }
-
-                  return {
-                    ...prev,
-                    userReaction: selectedType === 'None' ? null : 'Like',
-                    totalReactions: newTotal,
-                    reactionsCount: updatedCounts,
-                  };
-                });
-
-                await handleReactionUpdate(forum_id, selectedType);
-              }}
-
-              onLongPress={() => {
-                setShowReactions(true);
-              }}
-
-              activeOpacity={0.7}
-              style={{
-
-                padding: 4,
-                flexDirection: 'row',
-                alignItems: 'center',
-
-              }}
-            >
-              {selectedReaction ? (
-                <>
-                  <Text style={{ fontSize: 16 }}>{selectedReaction.emoji} </Text>
-                  {/* <Text style={{ fontSize: 12, color: '#777' }}>{selectedReaction.label}</Text> */}
-                </>
-              ) : (
-                <>
-                  {/* <Text style={{ fontSize: 12, color: '#777', marginRight: 6 }}>React: </Text> */}
-                  <Thumb width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-
-                </>
-              )}
-              {reaction?.totalReactions > 0 && (
-                <TouchableOpacity
-                  onPress={() => {
-                    reactionSheetRef.current?.open(post?.forum_id, 'All');
+                <Video
+                  source={{ uri: mediaUrl }}
+                  style={{
+                    width: '100%',
+                    height: height,
                   }}
-                  style={{ paddingHorizontal: 8 }}
+                  controls
+                  repeat={true}
+                  paused={false}
+                  resizeMode="cover"
+                  poster={url ? { uri: url } : undefined} // ✅ ensure poster is an object
+                  posterResizeMode="cover"
+                />
+
+              ) : (
+                // <SnapbackZoom
+                //   hitSlop={{ vertical: 50, horizontal: 50 }}
+                //   timingConfig={{ duration: 150, easing: Easing.linear }}
+                //   onTap={(e) => console.log(e)}
+                //   onDoubleTap={(e) => console.log(e)}
+                //   onPinchStart={(e) => console.log(e)}
+                //   onPinchEnd={(e) => console.log(e)}
+                //   onUpdate={(e) => {
+                //     'worklet';
+                //     console.log(e);
+                //   }}
+                //   onGestureEnd={() => console.log('animation finished!')}
+
+                // >
+                //   <Image
+                //     source={{ uri: mediaUrl }}
+                //     style={[styles.image, { width: IMAGE_WIDTH, height: height }]}
+                //     resizeMode="cover"
+                //   />
+                // </SnapbackZoom>
+                <TouchableOpacity
+                  onPress={() => openMediaViewer([{ type: 'image', url: mediaUrl }])}
+                  activeOpacity={1}
+                  onLongPress={() => {
+                    setShowReactions(true);
+                  }}
+                  delayLongPress={100}
                 >
-                  <Text style={{ color: '#333', fontSize: 12, fontWeight: '500' }}>
-                    ({reaction?.totalReactions})
+                  <Image
+                    source={{ uri: mediaUrl }}
+                    style={[styles.image, { width: '100%', height: height }]}
+                    resizeMode="cover"
+                  />
+                </TouchableOpacity>
+              )
+            ) : null}
+
+
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+
+              {activeReactions.length > 0 && (
+
+                <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 6, paddingHorizontal: 12, }}
+                  onPress={() => reactionSheetRef.current?.present(post?.forum_id, 'All')} >
+                  {activeReactions.map((cfg, index) => (
+                    <PaperAvatar.Icon
+                      key={cfg.type}
+                      size={20}
+                      icon={cfg.outlineIcon}
+                      style={[
+                        styles.avatar,
+                        { marginLeft: index === 0 ? 0 : -6 },
+                      ]}
+                    />
+                  ))}
+                  {reaction.totalReactions > 0 && (
+                    <Text style={{ color: colors.text_secondary, fontSize: 12 }}>({reaction.totalReactions})</Text>
+                  )}
+                </TouchableOpacity>
+              )}
+
+              {(count > 0 || post?.viewsCount) && (
+                <TouchableOpacity
+                  style={{ paddingVertical: 6, paddingHorizontal: 12, marginLeft: 'auto' }}
+                  onPress={() => {
+                    openCommentsSheet();
+                  }}
+                >
+                  <Text style={{ marginLeft: 'auto', fontSize: 12 }}>
+                    {`${post?.viewsCount > 0 ? `${post?.viewsCount} Views` : ''}${post.viewsCount > 0 && count > 0 ? ' · ' : ''
+                      }${count > 0
+                        ? `${count > 0 ? ` ${count}` : ''} Comments`
+                        : ''
+                      }`}
                   </Text>
                 </TouchableOpacity>
               )}
-            </TouchableOpacity>
-
-            <View style={{
-              position: 'absolute',
-              top: -60,
-              left: 0
-            }}>
-              {showReactions && (
-                <>
-                  <TouchableWithoutFeedback onPress={() => setShowReactions(false)}>
-                    <View
-                      style={{
-                        position: 'absolute',
-                        top: -1000,
-                        left: -1000,
-                        right: -1000,
-                        bottom: -1000,
-                        zIndex: 0,
-                      }}
-                    />
-                  </TouchableWithoutFeedback>
-
-                  <View
-                    style={styles.reactionContainer}
-                  >
-                    {reactionConfig.map(({ type, emoji, label }) => {
-                      const isSelected = reaction?.userReaction === type;
-                      return (
-                        <TouchableOpacity
-                          key={type}
-                          onPress={async () => {
-                            setReaction(prev => {
-                              const currentReaction = prev?.userReaction || 'None';
-                              let newTotal = Number(prev?.totalReactions || 0);
-                              const hadReaction = currentReaction && currentReaction !== 'None';
-
-                              const updatedCounts = { ...prev?.reactionsCount };
-
-                              if (type === 'None' && hadReaction) {
-                                updatedCounts[currentReaction] = Math.max(0, (updatedCounts[currentReaction] || 1) - 1);
-                                newTotal -= 1;
-                              } else if (!hadReaction) {
-                                updatedCounts[type] = (updatedCounts[type] || 0) + 1;
-                                newTotal += 1;
-                              } else if (hadReaction && currentReaction !== type) {
-                                updatedCounts[currentReaction] = Math.max(0, (updatedCounts[currentReaction] || 1) - 1);
-                                updatedCounts[type] = (updatedCounts[type] || 0) + 1;
-                              }
-
-                              return {
-                                ...prev,
-                                userReaction: type === 'None' ? null : type,
-                                totalReactions: newTotal,
-                                reactionsCount: updatedCounts,
-                              };
-                            });
-
-                            await handleReactionUpdate(forum_id, type);
-                            setShowReactions(false); // hide the popup after selection
-                          }}
-
-
-                          style={styles.reactionButton}
-                        >
-                          <Text style={{ fontSize: 20 }}>{emoji}</Text>
-                          {/* <Text style={{ fontSize: 8 }}>{label}</Text> */}
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </View>
-                </>
-              )}
             </View>
+            <Divider style={{ height: 1, backgroundColor: '#ddd' }} />
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', }}>
+
+              <TouchableOpacity
+                onPress={async () => {
+                  setShowReactions(false);
+
+                  const selectedType = reaction?.userReaction && reaction?.userReaction !== 'None' ? 'None' : 'Like';
+                  setReaction(prev => {
+                    const currentReaction = prev?.userReaction || 'None';
+                    let newTotal = Number(prev?.totalReactions || 0);
+                    const hadReaction = currentReaction && currentReaction !== 'None';
+
+                    const updatedCounts = { ...prev?.reactionsCount };
+
+                    if (selectedType === 'None' && hadReaction) {
+                      updatedCounts[currentReaction] = Math.max(0, (updatedCounts[currentReaction] || 1) - 1);
+                      newTotal -= 1;
+                    } else if (!hadReaction) {
+                      updatedCounts['Like'] = (updatedCounts['Like'] || 0) + 1;
+                      newTotal += 1;
+                    } else if (hadReaction && currentReaction !== 'Like') {
+                      updatedCounts[currentReaction] = Math.max(0, (updatedCounts[currentReaction] || 1) - 1);
+                      updatedCounts['Like'] = (updatedCounts['Like'] || 0) + 1;
+                    }
+                    return {
+                      ...prev,
+                      userReaction: selectedType === 'None' ? null : 'Like',
+                      totalReactions: newTotal,
+                      reactionsCount: updatedCounts,
+                    };
+                  });
+
+                  await handleReactionUpdate(forum_id, selectedType);
+                }}
+
+                onLongPress={() => {
+                  setShowReactions(true);
+                }}
+                delayLongPress={100}
+
+                style={{ paddingVertical: 6, paddingHorizontal: 12, flexDirection: 'row' }}
+
+              >
+                {selectedReaction ? (
+                  <>
+                    <Text style={{ fontSize: 16 }}>{selectedReaction.emoji} </Text>
+                    {/* <Text style={{ fontSize: 12, color: '#777' }}>{selectedReaction.label}</Text> */}
+                  </>
+                ) : (
+                  <>
+                    {/* <Text style={{ fontSize: 12, color: '#777', marginRight: 6 }}>React: </Text> */}
+                    <Thumb width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.text_primary} />
+
+                  </>
+                )}
+                <Text style={{ color: colors.text_primary, }}> Like</Text>
+
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={{ paddingVertical: 6, paddingHorizontal: 12, flexDirection: 'row' }}
+                onPress={() => {
+                  openCommentsSheet();
+                }}>
+                <Comment width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.text_primary} styles={{ padding: 10 }} />
+
+                <Text style={{ color: colors.text_primary, }}> Comment</Text>
+
+              </TouchableOpacity>
+
+
+              <TouchableOpacity
+                style={{ paddingVertical: 6, paddingHorizontal: 12, flexDirection: 'row' }}
+                onPress={() => shareJob(post)}
+              >
+                <ShareIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.text_primary} styles={{ padding: 10 }} />
+
+                <Text style={{ color: colors.text_primary, }}> Share</Text>
+
+              </TouchableOpacity>
+            </View>
+
+
+          </ScrollView>
+        </>
+      )}
+      <Modal
+        visible={showReactions}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowReactions(false)} // Android back button
+      >
+        {/* BACKDROP */}
+        <Pressable
+          style={styles.backdrop}
+          onPress={() => setShowReactions(false)}
+        />
+
+        {/* REACTION POPUP */}
+        <View style={styles.reactionModalWrapper}>
+          <View style={styles.reactionContainer}>
+            {reactionConfig.map(({ type, emoji, label }) => {
+              const isSelected = reaction?.userReaction === type;
+
+              return (
+                <TouchableOpacity
+                  key={type}
+                  style={[
+                    styles.reactionButton,
+                    isSelected && styles.selectedReaction,
+                  ]}
+                  onPress={async () => {
+                    setReaction(prev => {
+                      const currentReaction = prev?.userReaction || 'None';
+                      let newTotal = Number(prev?.totalReactions || 0);
+                      const hadReaction = currentReaction && currentReaction !== 'None';
+
+                      const updatedCounts = { ...prev?.reactionsCount };
+
+                      if (type === 'None' && hadReaction) {
+                        updatedCounts[currentReaction] = Math.max(0, (updatedCounts[currentReaction] || 1) - 1);
+                        newTotal -= 1;
+                      } else if (!hadReaction) {
+                        updatedCounts[type] = (updatedCounts[type] || 0) + 1;
+                        newTotal += 1;
+                      } else if (hadReaction && currentReaction !== type) {
+                        updatedCounts[currentReaction] = Math.max(0, (updatedCounts[currentReaction] || 1) - 1);
+                        updatedCounts[type] = (updatedCounts[type] || 0) + 1;
+                      }
+
+                      return {
+                        ...prev,
+                        userReaction: type === 'None' ? null : type,
+                        totalReactions: newTotal,
+                        reactionsCount: updatedCounts,
+                      };
+                    });
+
+                    await handleReactionUpdate(forum_id, type);
+                    setShowReactions(false); // hide the popup after selection
+                  }}
+                >
+                  <Text style={{ fontSize: 30 }}>{emoji}</Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
-
-
         </View>
+      </Modal>
 
 
-        {/* <View style={styles.divider} /> */}
-
-        <View style={styles.iconContainer}>
-
-          <TouchableOpacity
-            style={styles.commentButton}
-            onPress={() => {
-              openCommentsSheet();
-            }}
-          >
-            <Comment width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-
-            <Text style={styles.iconText}>
-              Comments{count > 0 ? ` ${count}` : ''}
-            </Text>
-          </TouchableOpacity>
-
-
-          <TouchableOpacity onPress={() => shareJob(post)} style={styles.dropdownItem}>
-            <ShareIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-
-            <Text style={styles.dropdownText}>Share</Text>
-          </TouchableOpacity>
-        </View>
-
-      </ScrollView>
 
       <ReactionSheet ref={reactionSheetRef} />
-
-
+      {/* <CommentsSection
+        forum_id={forum_id}
+        currentUserId={myId}
+        ref={commentSectionRef}
+        highlightCommentId={highlightId}
+      /> */}
 
     </>
   );
 };
 
-const styles = StyleSheet.create({
+const styles = ScaledSheet.create({
   divider: {
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
@@ -748,6 +686,11 @@ const styles = StyleSheet.create({
     bottom: 60,
     left: 0,
     right: 0,
+  },
+  avatar: {
+    backgroundColor: '#E7F0FA',
+    borderWidth: 1,
+    borderColor: '#eee',
   },
   inputRow: {
     flexDirection: 'row',
@@ -773,12 +716,6 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
 
-  outerContainer: {
-    flex: 1,
-    backgroundColor: 'white',
-    paddingTop: STATUS_BAR_HEIGHT
-  },
-
   erroText: {
     fontWeight: '400',
     textAlign: 'center',
@@ -796,19 +733,10 @@ const styles = StyleSheet.create({
   headerContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 5,
 
+    paddingVertical: 10
   },
-  headerContainer1: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: 'white',
-    borderBottomWidth: 1,
-    borderColor: '#f0f0f0',
-    paddingTop:STATUS_BAR_HEIGHT
-  },
+
   backButton: {
     alignSelf: 'flex-start',
     padding: 10
@@ -816,9 +744,12 @@ const styles = StyleSheet.create({
   },
 
   leftHeader: {
-    flexDirection: 'row', // Row layout for profile icon and text
-    alignItems: 'flex-start', // Align items at the top
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,        // 🔑 take remaining width
+    minWidth: 0,    // 🔥 REQUIRED
   },
+
 
   profileIcon: {
     width: 40,
@@ -828,15 +759,19 @@ const styles = StyleSheet.create({
     backgroundColor: '#eee'
   },
   authorInfo: {
-    flexDirection: 'column', // Stack author name and category vertically
+    marginLeft: 8,
+    flex: 1,        // 🔑 allow shrinking
+    minWidth: 0,    // 🔥 prevents overflow
   },
+
 
   // Author styling
   author: {
     fontSize: 16,
     fontWeight: '600',
     color: colors.text_primary,
-    color: 'black'
+    width: '70%'
+
   },
 
   // Author Category Styling
@@ -853,45 +788,17 @@ const styles = StyleSheet.create({
   },
 
 
-  mediaContainer: {
-    width: width,
-    height: width,
-    marginTop: 10,
-    borderRadius: 10,
-    // borderWidth:1,
-    alignSelf: 'center',
-    borderColor: '#f0f0f0',
-    paddingHorizontal: 2,
-    backgroundColor: 'white'
-  },
 
-  image: {
-    width: '100%',
-    height: '100%',
-    // borderRadius: 10,
-
-  },
 
   iconContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between', // Space out the icons
-    paddingVertical: 10,
 
+    flexDirection: 'row',
+    height: 50,
   },
 
   commentButton: {
     flexDirection: 'row',
     alignItems: 'center',
-  },
-
-  dropdownItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-
-  icon: {
-    marginRight: 5,
-    marginLeft: 3
   },
 
   iconText: {
@@ -902,208 +809,31 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
 
-  dropdownText: {
-    fontSize: 15,
-    color: '#075cab',
-    fontWeight: '500',
-  },
-
-
-  textContainer: {
-    paddingHorizontal: 10
-  },
-  body: {
-    fontSize: 15,
-    color: 'black',
-    fontWeight: '400',
-    textAlign: 'justify',
-    alignItems: 'center',
-    lineHeight: 23,
-
-  },
-
-  readMore: {
-    color: 'gray', // Blue color for "Read More"
-    fontWeight: '300', // Make it bold if needed
-    fontSize: 13,
-  },
-
-  modalContainer: {
-    flex: 1,
-    backgroundColor: 'white',
-    marginTop: 200, // Adjust to make the modal appear from the top
-    marginHorizontal: 5,
-    borderRadius: 20,
-    justifyContent: 'flex-end',
-    overflow: 'hidden',
-  },
-  stickyContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#f9f9f9",
-    padding: 10,
-    height: 50,
-    marginHorizontal: 5,
-    marginVertical: 15,
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 25,
-
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-
-  },
-  headerTitle: {
-    fontWeight: 'bold',
-    fontSize: 16,
-  },
-
-
-  commentCount: {
-    fontSize: 15,
-    marginLeft: 8, // Optional: Add space between "Comments" text and count
-    color: 'black',
-  },
-  modalHeader: {
-    flexDirection: 'row', // Align items horizontally in one row
-    alignItems: 'center', // Vertically align the elements in the center
-    padding: 10, // Adjust padding as necessary
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginLeft: 10,
-    color: 'black',
-  },
-  closeButton: {
-    position: 'absolute',
-    top: 10,
-    right: 20,
-  },
-
-  commentItem: {
-    paddingVertical: 10,
-    borderRadius: 8,
-  },
-  highlightedComment: {
-    borderWidth: 0.5,
-    borderColor: 'black', // Highlighted border color
-  },
-  commentHeader: {
-    flexDirection: 'row',
-
-  },
-  profileImage: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    marginRight: 10,
-    alignSelf: 'flex-start',
-  },
-  commentTextContainer: {
-    flex: 1,
-  },
-  authorText: {
-    fontWeight: '500',
-    fontSize: 13,
-    color: "black",
-    alignSelf: 'flex-start',
-  },
-  commentText: {
-    fontSize: 12,
-    fontWeight: '500',
-    marginTop: 5,
-    color: "black",
-    textAlign: 'justify',
-  },
-  timestampText: {
-    fontSize: 11,
-    fontWeight: '400',
-    color: 'gray',
-    marginTop: 5,
-  },
-  deleteButton: {
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    marginHorizontal: 3,
-    backgroundColor: "#ffe6e6",
-    borderRadius: 5,
-  },
-  editButton: {
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    marginHorizontal: 3,
-    backgroundColor: "#e6f0ff",
-    borderRadius: 5,
-  },
-  blockButton: {
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    marginHorizontal: 3,
-    backgroundColor: "#fff3e6",
-    borderRadius: 5,
-  },
-  buttonContainer: {
-    flexDirection: 'row',
-    position: "absolute",
-    top: 10,
-    right: 8,
-    backgroundColor: "#fff",
-    borderRadius: 8,
-  },
-
-  buttonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-  },
-  videoContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContainer1: {
-    flex: 1,
-    backgroundColor: 'white',
-
-  },
-  closeButton1: {
-    position: 'absolute',
-    top: 70, // Adjust for your layout
-    left: 10, // Adjust for your layout
-    zIndex: 1, // Ensure it appears above the video
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    padding: 5,
-    borderRadius: 30,
-  },
-  modalImage: {
-    width: '100%',
-    height: '100%',
-    resizeMode: 'contain',
-  },
-  modalVideo: {
-    width: '100%',
-    height: '100%',
-    flex: 1,
-  },
-  controls: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    width: '100%',
-    padding: 10,
-  },
-  button: {
-    padding: 10,
-    backgroundColor: 'white',
-    borderRadius: 5,
-  },
   timeText: {
     fontSize: 13,
     fontWeight: '300',
     color: '#666',
+  },
+  backdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.2)',
+  },
+
+  reactionModalWrapper: {
+    position: 'absolute',
+    bottom: 120,   // 👈 adjust relative to button
+    left: 20,
+    right: 20,
+    alignItems: 'center',
+  },
+
+
+  reactionContainer: {
+    position: 'absolute',
+    bottom: 40,
+    left: 0,
+    borderRadius: 40,
+    flexDirection: 'row',
   },
   reactionButton: {
     padding: 8,
@@ -1113,12 +843,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#ccc'
   },
-  reactionContainer: {
-    position: 'absolute',
-
-    left: 0,
-    borderRadius: 40,
-    flexDirection: 'row',
+  selectedReaction: {
+    backgroundColor: '#c2d8f0',
   },
 });
 

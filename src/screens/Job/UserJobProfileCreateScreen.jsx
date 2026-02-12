@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Alert, Keyboard, KeyboardAvoidingView, TouchableWithoutFeedback, NativeModules } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Keyboard, KeyboardAvoidingView, TouchableWithoutFeedback, NativeModules, Pressable, TextInput, ActivityIndicator } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import Toast from 'react-native-toast-message';
 import RNFS from 'react-native-fs';
@@ -11,12 +11,15 @@ import Message3 from '../../components/Message3';
 import { showToast } from '../AppUtils/CustomToast';
 import { useNetwork } from '../AppUtils/IdProvider';
 import apiClient from '../ApiClient';
-import AppStyles, { STATUS_BAR_HEIGHT } from '../AppUtils/AppStyles';
+import AppStyles from '../AppUtils/AppStyles';
 
 import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
 import { colors, dimensions } from '../../assets/theme.jsx';
 import { MediaPreview } from '../helperComponents/MediaPreview.jsx';
-
+import KeyboardAvoid from '../AppUtils/KeyboardAvoid.jsx';
+import { Dropdown, MultiSelect } from 'react-native-element-dropdown';
+import DropdownItem from '../../components/DropdownItem.jsx'
+import { AppHeader } from '../AppUtils/AppHeader.jsx';
 const { DocumentPicker } = NativeModules;
 
 const UserJobProfileCreateScreen = () => {
@@ -47,9 +50,11 @@ const UserJobProfileCreateScreen = () => {
   const [postData, setPostData] = useState(initialPostData);
   const initialDataRef = useRef(initialPostData);
   const [expertiseOptions, setExpertiseOptions] = useState([]);
-  const [expertiseKey, setExpertiseKey] = useState(Date.now());
+  const [expertiseKey, setExpertiseKey] = useState(0);
+
   const [selectedCities, setSelectedCities] = useState([]);
   const [selectedSkills, setSelectedSkills] = useState([]);
+
   const handleIndustrySelect = (selectedItem) => {
     const { label } = selectedItem;
 
@@ -76,12 +81,16 @@ const UserJobProfileCreateScreen = () => {
     }
   };
 
+
+
   const removeSkill = (skill) => {
     const updated = selectedSkills.filter(s => s !== skill);
     setSelectedSkills(updated);
     handleInputChange('expert_in', updated.length > 0 ? updated.join(', ') : '');
   };
 
+
+  const [cityKey, setCityKey] = useState(0);
 
 
   const handleCitySelect = (selected) => {
@@ -96,6 +105,7 @@ const UserJobProfileCreateScreen = () => {
     }
   };
 
+
   const removeCity = (city) => {
     const updated = selectedCities.filter(c => c !== city);
     setSelectedCities(updated);
@@ -104,9 +114,9 @@ const UserJobProfileCreateScreen = () => {
 
 
   const renderSelectedItems = (items, onRemove) => (
-    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
+    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 5 }}>
       {items.map(item => (
-        <View key={item} style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#eee', padding: 6, paddingHorizontal: 10, borderRadius: 18 }}>
+        <View key={item} style={{ borderWidth: 1, borderColor: '#ccc', flexDirection: 'row', alignItems: 'center', backgroundColor: '#eee', padding: 6, paddingHorizontal: 10, borderRadius: 18 }}>
           <Text style={{ marginRight: 8, fontSize: 12 }}>{item}</Text>
           <TouchableOpacity
             onPress={() => onRemove(item)}
@@ -436,7 +446,7 @@ const UserJobProfileCreateScreen = () => {
         showToast('Something went wrong.', 'error');
       }
     }
-    setLoading(true);
+    setLoading(false);
     setHasChanges(false);
     console.log('✅ handlePostSubmission complete');
   };
@@ -465,176 +475,174 @@ const UserJobProfileCreateScreen = () => {
   };
 
 
+  const submitDisabled = !postData.industry_type || !postData.expert_in || !postData.domain_strength || !postData.work_experience || !postData.expected_salary || !postData.education_qualifications;
+
   return (
 
-    <View style={styles.container}>
-      <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
+    <KeyboardAvoid>
+      <View style={styles.container}>
 
-      <View style={styles.headerContainer}>
-        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-
-        </TouchableOpacity>
-      </View>
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
-      >
-        <KeyboardAwareScrollView
-          contentContainerStyle={{ paddingBottom: '40%', paddingHorizontal: 5, backgroundColor: 'whitesmoke' }}
-          keyboardShouldPersistTaps="handled"
-          extraScrollHeight={20}
+        <AppHeader
+          title="Create job profile"
+        />
+        <ScrollView
+          contentContainerStyle={[{ paddingHorizontal: 5, }]}
+          keyboardShouldPersistTaps="never"
+          keyboardDismissMode='on-drag'
         >
-          <Text style={styles.header}>Create job profile</Text>
 
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>
-              Industry type <Text style={{ color: colors.danger }}>*</Text>
-            </Text>
-            <CustomDropDownMenu
-              items={industryType}
-              onSelect={handleIndustrySelect}
-              buttonStyle={styles.dropdownButton}
-              buttonTextStyle={styles.dropdownButtonText}
-              placeholderTextColor="gray"
-              placeholder=""
-            />
-          </View>
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>
+                Industry type <Text style={{ color: 'red' }}>*</Text>
+              </Text>
+              <CustomDropDownMenu
+                items={industryType}
+                onSelect={handleIndustrySelect}
+                buttonStyle={styles.dropdownButton}
+                buttonTextStyle={styles.dropdownButtonText}
+                placeholderTextColor="gray"
+                placeholder=""
+              />
+            </View>
 
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>
-              Expert In <Text style={{ color: colors.danger }}>*</Text>
-            </Text>
-            <CustomDropDownMenu
-              key={expertiseKey}
-              items={expertiseOptions.map(item => ({ label: item, value: item }))}
-              onSelect={handleSkillSelect}
-              buttonStyle={styles.dropdownButton}
-              buttonTextStyle={styles.dropdownButtonText}
-              placeholder="Select skills"
-              multiSelect
-            />
-            {selectedSkills.length === 0 && (
-              <Text style={styles.instructionText}>You can select up to 3 skills</Text>
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>
+                Expert In <Text style={{ color: 'red' }}>*</Text>
+              </Text>
+              <CustomDropDownMenu
+                key={expertiseKey}
+                items={expertiseOptions.map(item => ({ label: item, value: item }))}
+                onSelect={handleSkillSelect}
+                buttonStyle={styles.dropdownButton}
+                buttonTextStyle={styles.dropdownButtonText}
+                placeholder="Select skills"
+                multiSelect
+              />
+              {selectedSkills.length === 0 && (
+                <Text style={styles.instructionText}>You can select up to 3 skills</Text>
+              )}
+
+              {renderSelectedItems(selectedSkills, removeSkill)}
+            </View>
+
+            <View style={styles.inputContainer}>
+              <Text style={styles.label} >Domain Strength <Text style={{ color: 'red' }}>*</Text></Text>
+              <CustomDropDownMenu
+                items={DomainStrengthType}
+                onSelect={DomainStrength}
+                buttonStyle={styles.dropdownButton}
+                buttonTextStyle={styles.dropdownButtonText}
+
+                placeholderTextColor="gray"
+              />
+            </View>
+
+            <View style={styles.inputContainer}>
+              <Text style={styles.label} >Experience <Text style={{ color: 'red' }}>*</Text></Text>
+              <CustomDropDownMenu
+                items={ExperienceType}
+                onSelect={Experience}
+                buttonStyle={styles.dropdownButton}
+                buttonTextStyle={styles.dropdownButtonText}
+
+                placeholderTextColor="gray"
+
+              />
+            </View>
+
+            <View style={styles.inputContainer}>
+              <Text style={styles.label} >Expected Salary <Text style={{ color: 'red' }}>*</Text></Text>
+              <CustomDropDownMenu
+                items={SalaryType}
+                onSelect={Salary}
+                buttonStyle={styles.dropdownButton}
+                buttonTextStyle={styles.dropdownButtonText}
+
+                placeholderTextColor="gray"
+
+              />
+            </View>
+
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>Educational Qualification <Text style={{ color: 'red' }}>*</Text></Text>
+              <TextInput
+                style={[styles.input]}
+                multiline
+                onChangeText={(value) => handleInputChange('education_qualifications', value)}
+                value={postData.education_qualifications} // Ensure controlled input
+              />
+            </View>
+
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>
+                Preferred Cities <Text style={{ color: 'red' }}>*</Text>
+              </Text>
+              <CustomDropDownMenu
+                items={topTierCities.map(city => ({ label: city, value: city }))}
+                onSelect={handleCitySelect}
+                buttonStyle={styles.dropdownButton}
+                buttonTextStyle={styles.dropdownButtonText}
+                placeholderTextColor="gray"
+                placeholder="Select cities"
+                multiSelect
+              />
+              {selectedCities.length === 0 && (
+                <Text style={styles.instructionText}>You can select up to 5 cities</Text>
+              )}
+
+              {renderSelectedItems(selectedCities, removeCity)}
+            </View>
+
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>Languages Known </Text>
+              <TextInput
+                style={[styles.input]}
+                multiline
+                onChangeText={(value) => handleInputChange('languages', value)}
+                value={postData.languages} // Ensure controlled input
+              />
+            </View>
+
+            {!file && (
+              <TouchableOpacity
+                style={[styles.uploadButton, resumeKey ? { backgroundColor: '#ccc' } : {}]}
+                onPress={handleFileChange}
+                disabled={!!resumeKey}
+              >
+                {file ? (
+                  <Text style={styles.uploadButtonText}>{file.name}</Text>
+                ) : loading ? (
+                  <Text style={[styles.uploadButtonText, { textAlign: 'center', color: 'black' }]}>
+                    Uploading...
+                  </Text>
+                ) : (
+                  <Text style={[styles.uploadButtonText, { fontWeight: 'bold' }]}>
+                    Upload Your Resume <Text style={{ color: colors.danger }}>*</Text>
+                  </Text>
+                )}
+              </TouchableOpacity>
+
             )}
 
-            {renderSelectedItems(selectedSkills, removeSkill)}
-          </View>
 
-          <View style={styles.inputContainer}>
-            <Text style={styles.label} >Domain Strength <Text style={{ color: colors.danger }}>*</Text></Text>
-            <CustomDropDownMenu
-              items={DomainStrengthType}
-              onSelect={DomainStrength}
-              buttonStyle={styles.dropdownButton}
-              buttonTextStyle={styles.dropdownButtonText}
-
-              placeholderTextColor="gray"
+            <MediaPreview
+              uri={file?.uri}
+              mime={file?.mime || 'application/octet-stream'}
+              name={file?.name}
+              onRemove={handleRemoveMedia}
             />
-          </View>
-
-          <View style={styles.inputContainer}>
-            <Text style={styles.label} >Experience <Text style={{ color: colors.danger }}>*</Text></Text>
-            <CustomDropDownMenu
-              items={ExperienceType}
-              onSelect={Experience}
-              buttonStyle={styles.dropdownButton}
-              buttonTextStyle={styles.dropdownButtonText}
-
-              placeholderTextColor="gray"
-
-            />
-          </View>
-
-          <View style={styles.inputContainer}>
-            <Text style={styles.label} >Expected Salary <Text style={{ color: colors.danger }}>*</Text></Text>
-            <CustomDropDownMenu
-              items={SalaryType}
-              onSelect={Salary}
-              buttonStyle={styles.dropdownButton}
-              buttonTextStyle={styles.dropdownButtonText}
-              placeholderTextColor="gray"
-
-            />
-          </View>
-
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Educational Qualification <Text style={{ color: colors.danger }}>*</Text></Text>
-            <TextInput
-              style={[styles.input]}
-              multiline
-              onChangeText={(value) => handleInputChange('education_qualifications', value)}
-              value={postData.education_qualifications} // Ensure controlled input
-            />
-          </View>
-
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>
-              Preferred Cities <Text style={{ color: colors.danger }}>*</Text>
-            </Text>
-            <CustomDropDownMenu
-              items={topTierCities.map(city => ({ label: city, value: city }))}
-              onSelect={handleCitySelect}
-              buttonStyle={styles.dropdownButton}
-              buttonTextStyle={styles.dropdownButtonText}
-              placeholderTextColor="gray"
-              placeholder="Select cities"
-              multiSelect
-            />
-            {selectedCities.length === 0 && (
-              <Text style={styles.instructionText}>You can select up to 5 cities</Text>
-            )}
-
-            {renderSelectedItems(selectedCities, removeCity)}
-          </View>
-
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Languages Known </Text>
-            <TextInput
-              style={[styles.input]}
-              multiline
-              onChangeText={(value) => handleInputChange('languages', value)}
-              value={postData.languages}
-            />
-          </View>
-
-
-
-          {!file && (
-            <TouchableOpacity
-              style={[styles.uploadButton, resumeKey ? { backgroundColor: '#ccc' } : {}]}
-              onPress={handleFileChange}
-              disabled={!!resumeKey}
+            <TouchableOpacity style={[AppStyles.Postbtn, (submitDisabled) && styles.postButtonDisabled,]} onPress={handlePostSubmission}
+              disabled={submitDisabled}
             >
-              {file ? (
-                <Text style={styles.uploadButtonText}>{file.name}</Text>
-              ) : loading ? (
-                <Text style={[styles.uploadButtonText, { textAlign: 'center', color: 'black' }]}>
-                  Uploading...
-                </Text>
+              {loading ? (
+                <ActivityIndicator size="small" color="#075CAB" />
               ) : (
-                <Text style={[styles.uploadButtonText, { fontWeight: 'bold' }]}>
-                  Upload Your Resume <Text style={{ color: colors.danger }}>*</Text>
-                </Text>
+                <Text style={AppStyles.PostbtnText}>Submit</Text>
+
               )}
             </TouchableOpacity>
 
-          )}
-
-
-          <MediaPreview
-            uri={file?.uri}
-            mime={file?.mime || 'application/octet-stream'}
-            name={file?.name}
-            onRemove={handleRemoveMedia}
-          />
-          <TouchableOpacity style={AppStyles.Postbtn} onPress={handlePostSubmission}
-            disabled={loading}>
-            <Text style={AppStyles.PostbtnText}>Submit</Text>
-          </TouchableOpacity>
-
-
+  
           <Message3
             visible={showModal1}
             onClose={() => setShowModal1(false)}  // Optional if you want to close it from outside
@@ -644,11 +652,10 @@ const UserJobProfileCreateScreen = () => {
             message="Your updates will be lost if you leave this page. This action cannot be undone."
             iconType="warning"  // You can change this to any appropriate icon type
           />
-        </KeyboardAwareScrollView>
-      </KeyboardAvoidingView>
-      <Toast />
-    </View>
+        </ScrollView>
 
+      </View>
+    </KeyboardAvoid>
 
   );
 };
@@ -657,8 +664,7 @@ const UserJobProfileCreateScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'whitesmoke',
-    paddingTop: STATUS_BAR_HEIGHT
+
   },
 
   backButton: {
@@ -669,11 +675,12 @@ const styles = StyleSheet.create({
   instructionText: {
     fontSize: 12,
     color: '#666',
-    marginTop: 4,
     fontStyle: 'italic',
     paddingHorizontal: 10
   },
-
+  postButtonDisabled: {
+    opacity: 0.5,
+  },
   heading: {
     fontSize: 22,
     fontWeight: '500',
@@ -691,21 +698,12 @@ const styles = StyleSheet.create({
   },
   input: {
     minHeight: 40,
-    maxHeight: 120,
-    backgroundColor: '#fff',
-    paddingHorizontal: 15,
-    borderRadius: 8,
-    color: colors.text_secondary,
-    fontWeight: '500',
-    fontSize: 14,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
-    elevation: 2,
+    borderColor: '#D3D2D2',
     borderWidth: 1,
-    borderColor: '#ddd'
-
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    elevation: 2,
+    backgroundColor: '#FFF'
   },
   uploadButton: {
     padding: 10,
@@ -733,6 +731,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',  // Prevent the text from overflowing the container
     textOverflow: 'ellipsis',  // Add ellipsis if the text is too long
     alignSelf: 'center',
+    padding:10
   },
 
   closeButton: {
@@ -817,15 +816,46 @@ const styles = StyleSheet.create({
     padding: 2
   },
   label: {
-    marginBottom: 5,
-    color: colors.text_primary,
     fontWeight: '500',
-    fontSize: 14,
-    paddingHorizontal: 10
+    color: colors.text_primary,
+    marginBottom: 5,
   },
   inputContainer: {
-    marginBottom: 10,
+    marginTop: 10
   },
+  placeholderStyle: {
+    fontSize: 14,
+    color: colors.text_secondary
+
+  },
+  selectedTextStyle: {
+    fontSize: 14,
+    color: colors.text_primary,
+  },
+  iconStyle: {
+    width: 20,
+    height: 20,
+  },
+  dropdown: {
+    height: 50,
+    borderColor: '#D3D2D2',
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    marginBottom: 10,
+    elevation: 2,
+    backgroundColor: '#FFF'
+  },
+
+  inputSearchStyle: {
+    height: 40,
+    fontSize: 16,
+  },
+  selectedStyle: {
+    borderRadius: 12,
+
+  },
+
 });
 
 export default UserJobProfileCreateScreen

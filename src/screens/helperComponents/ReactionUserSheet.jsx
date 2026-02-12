@@ -7,6 +7,8 @@ import {
   ActivityIndicator,
   Pressable,
   Image,
+
+  TextInput,
   BackHandler
 } from 'react-native';
 import Animated, {
@@ -23,11 +25,14 @@ import { useForumReactionUsers } from '../Forum/useForumReactions';
 import Close from '../../assets/svgIcons/close-large.svg';
 
 import { colors, dimensions } from '../../assets/theme.jsx';
+import { TrueSheet } from '@lodev09/react-native-true-sheet';
+import Avatar from './Avatar.jsx';
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 const MAX_TRANSLATE_Y = -SCREEN_HEIGHT * 0.80;
 
 const ReactionSheet = forwardRef(({ onClose }, ref) => {
-
+  const sheetRef = useRef(null);
+  const textRef = useRef(null)
   const navigation = useNavigation();
   const translateY = useSharedValue(SCREEN_HEIGHT);
   const gestureContext = useSharedValue({ startY: 0 });
@@ -50,6 +55,7 @@ const ReactionSheet = forwardRef(({ onClose }, ref) => {
     level: ReanimatedLogLevel.warn,
     strict: true, // Reanimated runs in strict mode by default
   });
+
 
 
   useEffect(() => {
@@ -81,38 +87,22 @@ const ReactionSheet = forwardRef(({ onClose }, ref) => {
 
 
   const flatListRef = useRef(null);
-  const prevIsActive = useRef(false);
-
-  const updatePrevIsActive = (val) => {
-    prevIsActive.current = val;
-  };
-
-  const scrollTo = (destination) => {
-    'worklet';
-    const clamped = Math.min(
-      Math.max(destination, MAX_TRANSLATE_Y),
-      SCREEN_HEIGHT
-    );
-    
-    const shouldClose = clamped === SCREEN_HEIGHT;
-
-    isActive.value = !shouldClose;
-    runOnJS(setActive)(!shouldClose);
-
-    translateY.value = withSpring(clamped, {
-      damping: 20,
-      stiffness: 200,
-      overshootClamping: true,
-    }, () => {
-      if (shouldClose && onClose) {
-        runOnJS(onClose)();
-      }
-    });
-
-    runOnJS(updatePrevIsActive)(!shouldClose);
-  };
 
 
+  useImperativeHandle(ref, () => ({
+    present: (forumIdParam, type = 'All', highlightId = null) => {
+      setForumId(forumIdParam);
+      setReactionType(type);
+      setHighlightReactId(highlightId);
+
+      // open sheet first
+      sheetRef.current?.present();
+      setActive(true);
+      // fetch reactions
+      fetchUsers(type, highlightId);
+    },
+
+  }));
 
 
   useEffect(() => {
@@ -121,32 +111,6 @@ const ReactionSheet = forwardRef(({ onClose }, ref) => {
       fetchUsers(reactionType, highlightReactId);
     }
   }, [forumId, reactionType, active]);
-
-
-
-
-  const closeSheet = () => {
-    scrollTo(SCREEN_HEIGHT);
-    setForumId(null);
-    setReactionType('All');
-    setHighlightReactId(null);
-    resetUsers();
-  };
-
-
-
-  useImperativeHandle(ref, () => ({
-    open: (forumIdParam, type = 'All', highlightId = null,) => {
-      setForumId(forumIdParam);
-      setReactionType(type);
-
-      setHighlightReactId(highlightId);
-      scrollTo(MAX_TRANSLATE_Y);
-      fetchUsers(type, highlightId);
-    },
-    close: closeSheet,
-    isActive: () => isActive.value,
-  }));
 
 
   const highlightedFlash = useSharedValue(0);
@@ -161,59 +125,6 @@ const ReactionSheet = forwardRef(({ onClose }, ref) => {
       highlightedFlash.value = 0;
     }, 600); // reset after animation time
   }, [highlightReactId, usersByReaction]);
-
-  useEffect(() => {
-    const backHandler = BackHandler.addEventListener(
-      "hardwareBackPress",
-      () => {
-        if (ref.current?.isActive()) {
-          ref.current?.close();   // CLOSE FIRST
-          return true;                         // BLOCK BACK PRESS
-        }
-        return false;                           // allow normal back
-      }
-    );
-  
-    return () => backHandler.remove();
-  }, []);
-  
-
-  const gesture = Gesture.Pan()
-    .onStart(() => {
-      gestureContext.value = { startY: translateY.value };
-    })
-    .onUpdate((event) => {
-      const clampedY = gestureContext.value.startY + event.translationY;
-      translateY.value = Math.max(clampedY, MAX_TRANSLATE_Y);
-    })
-    .onEnd((event) => {
-      const SNAP_THRESHOLD = SCREEN_HEIGHT / 3;
-      if (event.velocityY > 500 || translateY.value > MAX_TRANSLATE_Y + SNAP_THRESHOLD) {
-        scrollTo(SCREEN_HEIGHT); // close
-      } else {
-        scrollTo(MAX_TRANSLATE_Y); // open
-      }      
-    });
-
-  const animatedStyle = useAnimatedStyle(() => {
-    const borderRadius = interpolate(
-      translateY.value,
-      [MAX_TRANSLATE_Y, 0],
-      [25, 5],
-      Extrapolation.CLAMP
-    );
-
-    return {
-      transform: [{ translateY: translateY.value }],
-      borderTopLeftRadius: borderRadius,
-      borderTopRightRadius: borderRadius,
-    };
-    
-  });
-
-  const backdropOpacity = useAnimatedStyle(() => ({
-    opacity: withTiming(isActive.value ? 0.5 : 0, { duration: 150 }),
-  }));
 
 
   const reactionConfig = [
@@ -232,13 +143,12 @@ const ReactionSheet = forwardRef(({ onClose }, ref) => {
 
 
   const handleNavigate = (item) => {
-
-    closeSheet();
+    sheetRef.current?.dismiss();
     setTimeout(() => {
       if (item.user_type === "company") {
-        navigation.navigate('CompanyDetailsPage', { userId: item.user_id });
+        navigation.navigate('CompanyDetails', { userId: item.user_id });
       } else if (item.user_type === "users") {
-        navigation.navigate('UserDetailsPage', { userId: item.user_id });
+        navigation.navigate('UserDetails', { userId: item.user_id });
       }
     }, 300);
   };
@@ -268,36 +178,13 @@ const ReactionSheet = forwardRef(({ onClose }, ref) => {
             animatedStyle,
           ]}
         >
-          {item.fileKey ? (
-            <FastImage
-              source={{ uri: item.profileUrl }}
-              style={{
-                width: 35,
-                height: 35,
-                borderRadius: 20,
-                marginRight: 12,
-                backgroundColor: '#ddd',
-              }}
-            />
-          ) : (
-            <View
-              style={{
-                width: 35,
-                height: 35,
-                borderRadius: 20,
-                marginRight: 12,
-                backgroundColor: item.userAvatar?.backgroundColor || '#ccc',
-                justifyContent: 'center',
-                alignItems: 'center',
-              }}
-            >
-              <Text style={{ color: item.userAvatar?.textColor || '#000', fontSize: 14, fontWeight: 'bold' }}>
-                {item.userAvatar?.initials || ''}
-              </Text>
-            </View>
-          )}
 
-          <View>
+          <Avatar
+            imageUrl={item?.profileUrl}
+            name={item?.author}
+            size={40}
+          />
+          <View style={{marginLeft:10}}>
             <Text style={{ fontWeight: '400', fontSize: 14, color: colors.text_primary }}>{item.author}</Text>
             <Text style={{ fontSize: 12, color: colors.text_secondary }}>
               {(reactionType === 'All' || item.reaction_type !== reactionType)
@@ -313,29 +200,27 @@ const ReactionSheet = forwardRef(({ onClose }, ref) => {
 
   return (
     <>
-      <TouchableWithoutFeedback onPress={closeSheet}>
-        <Animated.View
-          pointerEvents={active ? 'auto' : 'none'}
-          style={[styles.backdrop, backdropOpacity]}
-        />
-      </TouchableWithoutFeedback>
 
+      <TrueSheet
+        ref={sheetRef}
+        detents={['auto', 0.9]}
+        style={{ paddingTop: 40, }}
+        onPresent={() => {
+          isActive.value = true;
+          setActive(true);
+        }}
+        onDismiss={() => {
+          isActive.value = false;
+          setActive(false);
+          resetUsers();
+        }}
+      >
 
-      <Animated.View style={[styles.sheet, animatedStyle]}>
-        <GestureDetector gesture={gesture}>
-          <View style={styles.header}>
-            <View style={styles.handle} />
-            <View style={styles.titleRow}>
-              <Text style={styles.title}>Reactions</Text>
+        <View style={styles.titleRow}>
+          <Text style={styles.title}>Reactions</Text>
 
-              <TouchableOpacity onPress={closeSheet} activeOpacity={1} style={{ padding: 5,paddingHorizontal:10  }}> 
-                <Close width={dimensions.icon.small} height={dimensions.icon.small} color={colors.secondary} />
+        </View>
 
-              </TouchableOpacity>
-            </View>
-
-          </View>
-        </GestureDetector>
 
         <View style={styles.divider} />
 
@@ -372,7 +257,7 @@ const ReactionSheet = forwardRef(({ onClose }, ref) => {
 
 
 
-        <View style={styles.divider1} />
+        {/* <View style={styles.divider1} /> */}
 
         {getting ? (
           <View style={{ paddingTop: 50 }}>
@@ -426,7 +311,7 @@ const ReactionSheet = forwardRef(({ onClose }, ref) => {
 
         )}
 
-      </Animated.View>
+      </TrueSheet>
 
     </>
   );
@@ -464,7 +349,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: SCREEN_HEIGHT,
-    backgroundColor: 'white',
+    backgroundColor: '#F7F8FA',
     zIndex: 1000,
     paddingTop: 10,
   },
@@ -493,7 +378,7 @@ const styles = StyleSheet.create({
   titleRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    
+    paddingHorizontal: 8
   },
 
   title: {

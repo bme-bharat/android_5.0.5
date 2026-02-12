@@ -5,11 +5,9 @@ import { Image as FastImage } from 'react-native';
 import { EventRegister } from 'react-native-event-listeners';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigation } from '@react-navigation/native';
-import { useBottomSheet } from './SheetProvider';
 import { showToast } from './CustomToast';
 import { useConnection } from './ConnectionProvider';
 import { getTimeDisplay } from '../helperComponents/signedUrls';
-import { generateAvatarFromName } from '../helperComponents/useInitialsAvatar';
 import Dots from '../../assets/svgIcons/dots.svg';
 import Edit from '../../assets/svgIcons/pencil.svg';
 import Delete from '../../assets/svgIcons/delete.svg';
@@ -17,25 +15,31 @@ import Block from '../../assets/svgIcons/restrict.svg';
 
 
 import { colors, dimensions } from '../../assets/theme.jsx';
+import { TrueSheet } from '@lodev09/react-native-true-sheet';
+import { useNetwork } from './IdProvider.jsx';
+import CommentInputBar from './InputBar.jsx';
+import Avatar from '../helperComponents/Avatar.jsx';
 
-const { height: SCREEN_HEIGHT } = Dimensions.get('window');
-const MAX_TRANSLATE_Y = -SCREEN_HEIGHT;
 
-const CommentsSection = forwardRef(({ forum_id, currentUserId, onEditComment, highlightCommentId }, ref) => {
+
+const CommentsSection = forwardRef(({ forum_id, onEditComment, highlightCommentId }, ref) => {
     const profile = useSelector(state => state.CompanyProfile.profile);
-
+    const commentRef = useRef(null);
+    const { myId, myData } = useNetwork();
+    const [activeForumId, setActiveForumId] = useState(null);
+    console.log('myId',myId)
     const navigation = useNavigation();
     const [comments, setComments] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [dropdownVisible, setDropdownVisible] = useState({});
-    const { closeSheet } = useBottomSheet();
     const flatListRef = useRef(null);
     const [lastEvaluatedKey, setLastEvaluatedKey] = useState(null);
     const [fetchLimit, setFetchLimit] = useState(10);
     const [isFetchingMore, setIsFetchingMore] = useState(false);
     const [hasMore, setHasMore] = useState(true);
     const { isConnected } = useConnection();
+    const [active, setActive] = useState(false);
 
     const withTimeout = (promise, timeout = 5000) =>
         Promise.race([
@@ -149,11 +153,10 @@ const CommentsSection = forwardRef(({ forum_id, currentUserId, onEditComment, hi
     const getSignedUrlForComment = async (comment) => {
         if (!comment.fileKey) {
             const name = comment.author || 'Unknown';
-            const avatarProps = generateAvatarFromName(name);
 
             return {
                 ...comment,
-                avatarProps, // fallback to initials-based avatar
+                
             };
         }
 
@@ -256,10 +259,23 @@ const CommentsSection = forwardRef(({ forum_id, currentUserId, onEditComment, hi
 
 
     useImperativeHandle(ref, () => ({
+        present: (forumId) => {
+            console.log('received id ', forumId)
+            setActiveForumId(forumId);
+            commentRef.current?.present();
+            setActive(true);
+        },
+
         fetchComments,
         handleEditComplete,
         handleCommentAdded,
     }));
+
+    useEffect(() => {
+        if (active && forum_id) {
+            fetchComments();
+        }
+    }, [active, forum_id]);
 
     const handleDropdownToggle = (commentId, forceClose = false) => {
         setDropdownVisible((prev) => {
@@ -274,7 +290,7 @@ const CommentsSection = forwardRef(({ forum_id, currentUserId, onEditComment, hi
         try {
             const response = await apiClient.post('/deleteComment', {
                 command: 'deleteComment',
-                user_id: currentUserId,
+                user_id: myId,
                 comment_id: commentId,
             });
 
@@ -309,7 +325,7 @@ const CommentsSection = forwardRef(({ forum_id, currentUserId, onEditComment, hi
         try {
             const payload = {
                 command: 'blockUser',
-                blocked_by_user_id: currentUserId,
+                blocked_by_user_id: myId,
                 blocked_user_id: userId,
             };
 
@@ -334,12 +350,12 @@ const CommentsSection = forwardRef(({ forum_id, currentUserId, onEditComment, hi
 
     const handleNavigate = (item) => {
         setDropdownVisible({});
-        closeSheet();
+
         setTimeout(() => {
             if (item.user_type === "company") {
-                navigation.navigate('CompanyDetailsPage', { userId: item.user_id });
+                navigation.navigate('CompanyDetails', { userId: item.user_id });
             } else if (item.user_type === "users") {
-                navigation.navigate('UserDetailsPage', { userId: item.user_id });
+                navigation.navigate('UserDetails', { userId: item.user_id });
             }
         }, 300);
     };
@@ -353,32 +369,32 @@ const CommentsSection = forwardRef(({ forum_id, currentUserId, onEditComment, hi
     };
 
     const renderComment = ({ item }) => {
-        const imageUrl = item.signedUrl;
-        const isNotAdmin = item.user_type !== "BME_ADMIN";
+    
+        const isNotAdmin = item?.user_type !== "BME_ADMIN";
         const safeTrim = (str) => (typeof str === 'string' ? str.trim() : '');
 
-        const isForumOwner = currentUserId && safeTrim(currentUserId) === safeTrim(item.forum_owner_id);
-        const isCommentOwner = currentUserId && safeTrim(currentUserId) === safeTrim(item.user_id);
+        const isForumOwner = myId && safeTrim(myId) === safeTrim(item?.forum_owner_id);
+        const isCommentOwner = myId && safeTrim(myId) === safeTrim(item?.user_id);
         const forumOwnerType = profile?.user_type || "";
 
-        const canDelete = currentUserId && isNotAdmin && (isCommentOwner || (isForumOwner && !isCommentOwner));
+        const canDelete = myId && isNotAdmin && (isCommentOwner || (isForumOwner && !isCommentOwner));
 
-        const canEdit = currentUserId && isNotAdmin && isCommentOwner;
+        const canEdit = myId && isNotAdmin && isCommentOwner;
 
         const canBlock =
-            currentUserId &&
+        myId &&
             isNotAdmin &&
             isForumOwner &&
-            !isCommentOwner && ((forumOwnerType === "company" ? item.user_type === "company" : true));
+            !isCommentOwner && ((forumOwnerType === "company" ? item?.user_type === "company" : true));
 
-        const animatedValue = animatedValuesRef.current[item.comment_id];
+        const animatedValue = animatedValuesRef.current[item?.comment_id];
 
         const animatedBackground = animatedValue
             ? animatedValue.interpolate({
                 inputRange: [0, 1],
-                outputRange: ['white', '#e0e0e0'], // subtle flash gray
+                outputRange: ['#F7F8FA', '#e0e0e0'], // subtle flash gray
             })
-            : 'white';
+            : '#F7F8FA';
 
         const animatedBorderColor = animatedValue
             ? animatedValue.interpolate({
@@ -400,12 +416,7 @@ const CommentsSection = forwardRef(({ forum_id, currentUserId, onEditComment, hi
 
         return (
             <>
-                {Object.values(dropdownVisible).some(Boolean) && (
-                    <Pressable
-                        onPress={() => setDropdownVisible({})}
-                        style={StyleSheet.absoluteFill}
-                    />
-                )}
+
 
                 <TouchableOpacity
                     onPress={() => handleDropdownToggle(item.comment_id, true)}
@@ -424,51 +435,21 @@ const CommentsSection = forwardRef(({ forum_id, currentUserId, onEditComment, hi
                     >
 
                         <View style={styles.commentContent}>
-                            {/* Profile Image / Avatar */}
-                            <TouchableOpacity onPress={() => handleNavigate(item)}>
-                                <View style={styles.imageContainer}>
-                                    {item.signedUrl ? (
-                                        <FastImage
-                                            source={{ uri: item.signedUrl }}
-                                            style={styles.profileIcon}
-                                            resizeMode="cover"
-                                            onError={() => {
-                                                // Optional: fallback if image fails
-                                            }}
-                                        />
-                                    ) : item.avatarProps ? (
-                                        <View
-                                            style={[
-                                                styles.profileIcon,
-                                                {
-                                                    backgroundColor: item.avatarProps.backgroundColor,
-                                                    justifyContent: 'center',
-                                                    alignItems: 'center',
-                                                },
-                                            ]} >
-                                            <Text
-                                                style={{
-                                                    color: item.avatarProps.textColor,
-                                                    fontWeight: 'bold',
-                                                }}
-                                            >
-                                                {item.avatarProps.initials}
-                                            </Text>
-                                        </View>
-                                    ) : (
-                                        <View style={[styles.profileIcon, { backgroundColor: '#ccc' }]} />
-                                    )}
-                                </View>
+                    
+                            <TouchableOpacity onPress={() => handleNavigate(item)} style={styles.imageContainer}>
+
+                                <Avatar
+                                    imageUrl={item?.signedUrl}
+                                    name={item?.author}
+                                    size={40}
+                                />
                             </TouchableOpacity>
 
                             {/* Comment Details */}
                             <View style={styles.commentBody}>
                                 {/* Author + Timestamp + Menu */}
                                 <View style={styles.authorRow}>
-                                    <Text
-                                        style={styles.authorText}
-                                        onPress={() => handleNavigate(item)}
-                                    >
+                                    <Text style={styles.authorText} >
                                         {item.author}
                                     </Text>
 
@@ -558,6 +539,7 @@ const CommentsSection = forwardRef(({ forum_id, currentUserId, onEditComment, hi
         );
     };
 
+
     if (loading) {
         return <View style={{ alignSelf: 'center', marginTop: 200 }}><ActivityIndicator size="small" color={"#075cab"} /></View>
     }
@@ -568,42 +550,53 @@ const CommentsSection = forwardRef(({ forum_id, currentUserId, onEditComment, hi
 
     return (
         <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+
             <FlatList
                 ref={flatListRef}
                 data={comments}
-                keyExtractor={(item, index) => item?.comment_id?.toString() || `index-${index}`}
+                keyExtractor={(item, index) =>
+                    item?.comment_id?.toString() || `index-${index}`
+                }
                 renderItem={renderComment}
                 keyboardShouldPersistTaps="handled"
                 extraData={dropdownVisible}
                 ListEmptyComponent={<Text style={styles.emptyText}>No comments yet</Text>}
-                contentContainerStyle={{ paddingBottom: '50%' }}
-                showsVerticalScrollIndicator={false}
                 onEndReached={onEndReached}
-                ListFooterComponent={isFetchingMore ? <ActivityIndicator size="small" color={"#075cab"} /> : null}
-
+                ListFooterComponent={
+                    isFetchingMore ? (
+                        <ActivityIndicator size="small" color="#075cab" />
+                    ) : null
+                }
+                contentContainerStyle={{ paddingBottom: '50%', paddingTop: 10 }}
             />
+
         </TouchableWithoutFeedback>
     );
+
 
 });
 
 const styles = StyleSheet.create({
     commentItem: {
         flexDirection: 'row',
-        alignItems: 'flex-start',
-        paddingVertical: 7,
+
+        marginBottom: 10,
         paddingHorizontal: 10,
-        margin: 5,
+        // marginBottom: 5,
         borderRadius: 12,
     },
-
+    header: {
+        padding: 16,
+        borderBottomWidth: 1,
+        borderBottomColor: '#eee',
+    },
     imageContainer: {
         marginRight: 10,
     },
 
     profileIcon: {
-        width: 35,
-        height: 35,
+        width: 40,
+        height: 40,
         borderRadius: 20,
         backgroundColor: '#eee',
     },
@@ -611,6 +604,7 @@ const styles = StyleSheet.create({
     commentContent: {
         flex: 1,
         flexDirection: 'row',
+
     },
 
     commentBody: {
@@ -620,15 +614,12 @@ const styles = StyleSheet.create({
 
     authorRow: {
         flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 2,
+
     },
 
     authorText: {
         fontWeight: '500',
-        fontSize: 14,
-        color: colors.text_primary,
-        maxWidth: '70%',
+        maxWidth: '60%',
         paddingHorizontal: 2,
 
     },
@@ -647,10 +638,6 @@ const styles = StyleSheet.create({
     },
 
     commentText: {
-        marginTop: 2,
-        fontSize: 14,
-        fontWeight: '400',
-        lineHeight: 20,
         paddingHorizontal: 2,
         color: colors.text_secondary,
     },

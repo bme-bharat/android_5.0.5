@@ -20,7 +20,8 @@ import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
 import Add from '../../assets/svgIcons/add.svg';
 
 import { colors, dimensions } from '../../assets/theme.jsx';
-import AppStyles, { STATUS_BAR_HEIGHT } from '../AppUtils/AppStyles.js';
+import { useNavigation, useRoute } from '@react-navigation/native';
+
 
 const defaultLogo = Image.resolveAssetSource(defaultImage).uri;
 
@@ -29,17 +30,21 @@ const videoExtensions = [
   '.m4v', '.3gp', '.3g2', '.f4v', '.f4p', '.f4a', '.f4b', '.qt', '.quicktime'
 ];
 
-
-const YourForumListScreen = ({ navigation, route }) => {
+const YourForumListScreen = ({ userId, onScroll }) => {
+  const route = useRoute();
 
   const { myId, myData } = useNetwork();
 
+  const profileUserId = route.params?.userId ?? myId
+
+  const isMyProfile = profileUserId === myId
+  const navigation = useNavigation();
   const [allForumPost, setAllForumPost] = useState([]);
-  console.log('allForumPost', allForumPost)
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [postToDelete, setPostToDelete] = useState(null);
   const scrollViewRef = useRef(null)
   const [fileKeyToDelete, setFileKeyToDelete] = useState(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
 
   useEffect(() => {
@@ -110,14 +115,14 @@ const YourForumListScreen = ({ navigation, route }) => {
 
 
   const fetchPosts = async (lastEvaluatedKey = null) => {
-    if (!myId || loading || loadingMore) return;
+    if (!profileUserId || loading || loadingMore) return;
 
     lastEvaluatedKey ? setLoadingMore(true) : setLoading(true);
 
     try {
       const requestData = {
         command: "getUsersAllForumPosts",
-        user_id: myId,
+        user_id: profileUserId,
         limit: 10,
         ...(lastEvaluatedKey && { lastEvaluatedKey })
       };
@@ -251,7 +256,32 @@ const YourForumListScreen = ({ navigation, route }) => {
     setFileKeyToDelete(null);
   };
 
+  // This stays OUTSIDE the RenderPostItem component
+  const RightActions = ({ item, imageUri, isDefaultImage, onEdit, onDelete }) => {
+    return (
+      <View style={styles.swipeActionsContainer}>
+        <TouchableOpacity
+          style={[styles.actionButton, styles.editSwipeButton]}
+          onPress={() => onEdit(item, isDefaultImage ? undefined : imageUri)}
+        >
+          <Text style={styles.actionText}>Edit</Text>
+        </TouchableOpacity>
 
+        <TouchableOpacity
+          style={[styles.actionButton, styles.deleteSwipeButton]}
+          onPress={() => onDelete(item.forum_id, item.fileKey, item.thumbnail_fileKey)}
+        >
+          <Text style={styles.actionText}>Delete</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  };
+
+  const handleRefresh = async() => {
+    setIsRefreshing(true);
+    await fetchPosts();
+    setIsRefreshing(false);
+  }
   const RenderPostItem = ({ item }) => {
     const imageUri = item.signedUrl || item.thumbnailUrl || item.imageUrl || defaultLogo;
 
@@ -265,30 +295,41 @@ const YourForumListScreen = ({ navigation, route }) => {
     const cleanUri = (uri) => uri?.split('?')[0];
 
     const isDefaultImage = cleanUri(imageUri) === cleanUri(defaultLogo);
+    const renderRight = () => (
+      <RightActions
+        item={item}
+        imageUri={imageUri}
+        isDefaultImage={isDefaultImage}
+        onEdit={handleEditPress}
+        onDelete={handleDelete}
+      />
+    );
 
     return (
+
+
       <TouchableOpacity activeOpacity={1} onPress={() => {
         forumDetails(item.forum_id, isDefaultImage ? undefined : imageUri);
-      }} >
-        <View style={styles.postContainer}>
-          <View style={styles.imageContainer}>
-            <Image
-              source={{ uri: imageUri }}
-              style={styles.image}
-              resizeMode="contain"
-              onError={() => console.log('Image load error')}
-            />
+      }} style={styles.postContainer}>
 
-          </View>
+        <View style={styles.imageContainer}>
+          <Image
+            source={{ uri: imageUri }}
+            style={styles.image}
+            resizeMode="contain"
+            onError={() => console.log('Image load error')}
+          />
 
-          <View style={styles.textContainer}>
-            <MyPostBody
-              html={item.forum_body}
-              forumId={item?.forum_id}
-              numberOfLines={2}
-            />
-            <Text style={styles.value}>{formattedDate || ""}</Text>
+        </View>
 
+        <View style={styles.textContainer}>
+          <MyPostBody
+            html={item.forum_body}
+            forumId={item?.forum_id}
+            numberOfLines={2}
+          />
+          <Text style={styles.value}>{formattedDate || ""}</Text>
+          {isMyProfile &&
             <View style={styles.buttonContainer}>
               <TouchableOpacity
                 style={styles.editButton}
@@ -304,35 +345,20 @@ const YourForumListScreen = ({ navigation, route }) => {
                 <Text style={styles.deleteButtonText}>Delete</Text>
               </TouchableOpacity>
             </View>
-          </View>
+          }
         </View>
+
       </TouchableOpacity>
+
     );
   };
 
-  const keyExtractor = (item) =>
-    item.id ? item.id.toString() : Math.random().toString();
 
   if (Array.isArray(allForumPost) && allForumPost.length === 0 && !loading) {
 
     return (
 
       <>
-        <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
-
-        <View style={styles.headerContainer}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-            <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.circle}
-            onPress={() => navigation.navigate("ForumPost")} activeOpacity={0.8}>
-            <Add width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-
-            <Text style={styles.shareText}>Post</Text>
-          </TouchableOpacity>
-        </View>
 
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
           <Text style={{ fontSize: 16, color: 'gray' }}>No posts available</Text>
@@ -346,29 +372,15 @@ const YourForumListScreen = ({ navigation, route }) => {
 
 
     <>
-      <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
-
-      <View style={styles.headerContainer}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.circle}
-          onPress={() => navigation.navigate("ForumPost")} activeOpacity={0.8}>
-          <Add width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-
-          <Text style={styles.shareText}>Post</Text>
-        </TouchableOpacity>
-
-      </View>
-
 
       <FlatList
         data={allForumPost}
         renderItem={RenderPostItem}
+        onScroll={onScroll}
+        refreshControl={
+          <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />
+        }
         onScrollBeginDrag={() => Keyboard.dismiss()}
-        contentContainerStyle={{ paddingBottom: '20%' }}
         keyExtractor={(item) => item.forum_id}
         showsHorizontalScrollIndicator={false}
         showsVerticalScrollIndicator={false}
@@ -410,15 +422,47 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     marginBottom: 5,
     marginHorizontal: 5,
-    backgroundColor: 'white',
-    justifyContent: 'center',
+    backgroundColor: '#FFF',
     borderRadius: 10,
-    borderWidth: 0.5,
-    borderColor: '#ddd',
-    shadowColor: '#000',
-    top: 5,
-    elevation: 2
+    // borderWidth: 0.5,
+    // borderColor: '#ddd',
   },
+
+  swipeContainer: {
+    marginBottom: 5,
+
+  },
+  rowWrapper: {
+    minHeight: 120,           // 🔑 SINGLE source of truth
+    overflow: 'hidden',
+    marginBottom: 5,
+  },
+
+  swipeActionsContainer: {
+    flexDirection: 'row',
+    overflow: 'hidden',
+  },
+
+  actionButton: {
+    width: 90,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  editSwipeButton: {
+    backgroundColor: '#2E7D32', // calm green
+  },
+
+  deleteSwipeButton: {
+    backgroundColor: '#C62828', // strong red
+  },
+
+  actionText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+
   noPostsContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -440,68 +484,8 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     backgroundColor: 'whitesmoke',
   },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    width: '100%',
-    borderRadius: 10,
-    paddingHorizontal: 10,
-    backgroundColor: 'whitesmoke',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  searchInput: {
-    flex: 1,
-    height: 30,
-    marginHorizontal: 10,
-    paddingHorizontal: 10,
-    color: "black",
-    fontSize: 14,
-    paddingTop: 0,
-    paddingBottom: 0,
-    lineHeight: 20,
-  },
 
-  plusicon: {
-    color: 'white',
-    backgroundColor: '#075cab',
 
-  },
-  circle: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 10,
-
-  },
-  shareText: {
-    color: '#075cab',
-    fontSize: 16,
-    fontWeight: '600',
-    marginLeft: 4,
-
-  },
-  headerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: 'white',
-    elevation: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    paddingTop: STATUS_BAR_HEIGHT
-
-  },
-  container: {
-    flex: 1,
-    backgroundColor: 'whitesmoke',
-    paddingTop: STATUS_BAR_HEIGHT
-  },
   imageContainer: {
     flex: 1,
     justifyContent: 'flex-start',
@@ -517,17 +501,7 @@ const styles = StyleSheet.create({
     // backgroundColor:'blue',
   },
 
-  videoContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    marginLeft: 5
-  },
-  video: {
-    width: 100,
-    height: 100,
-    borderRadius: 8
 
-  },
 
   textContainer: {
     flex: 2,
@@ -576,7 +550,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 8,
     paddingHorizontal: 12,
-    borderRadius: 5,
+    borderRadius: 8,
     backgroundColor: '#ffffff',
     elevation: 2,
     shadowColor: '#000',
@@ -599,8 +573,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 8,
     paddingHorizontal: 12,
-    borderRadius: 5,
     marginLeft: 10,
+    borderRadius: 8,
     backgroundColor: '#ffffff',
     elevation: 2,
     shadowColor: '#000',
@@ -612,98 +586,6 @@ const styles = StyleSheet.create({
   },
 
 
-  shareButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    left: 10
-  },
-  shareButtonText: {
-    color: "#075cab",
-  },
-  confirmationContainer: {
-    position: 'absolute',
-    top: '50%',
-    left: '50%',
-    transform: [{ translateX: -150 }, { translateY: -120 }],
-    backgroundColor: '#fff',
-    borderRadius: 15,
-    padding: 30,
-    width: 320,
-    alignItems: 'center',
-    zIndex: 999,
-    elevation: 10, // For shadow effect on Android
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-  },
-  confirmationTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: 'black',
-    marginBottom: 15,
-  },
-  confirmationText: {
-    fontSize: 15,
-    textAlign: 'center',
-    color: 'black',
-    marginBottom: 25,
-  },
-  confirmationButtons: {
-    flexDirection: 'row',
-
-
-  },
-  confirmButton: {
-    backgroundColor: '#3498db',
-    paddingVertical: 10,
-    paddingHorizontal: 30,
-    borderRadius: 10,
-    marginRight: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  confirmButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  cancelButton: {
-    backgroundColor: '#FF0000',
-    paddingVertical: 10,
-    paddingHorizontal: 30,
-    borderRadius: 10,
-    marginLeft: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cancelButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  iconStyle: {
-    backgroundColor: 'whitesmoke',
-    borderRadius: 25,
-    padding: 10,
-    marginBottom: 20,
-  },
-  backdrop: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    zIndex: 998,
-  },
-
-
 });
 
 export default YourForumListScreen;
-
-
-
-
-

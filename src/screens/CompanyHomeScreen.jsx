@@ -9,32 +9,23 @@ import apiClient from './ApiClient';
 import { useDispatch, useSelector } from 'react-redux';
 import { updateCompanyProfile } from './Redux/MyProfile/CompanyProfile_Actions';
 import { useNetwork } from './AppUtils/IdProvider';
-import useFetchData, { fetchJobs, fetchLatestPosts, fetchProducts, fetchServices, fetchTrendingPosts } from './helperComponents/HomeScreenData';
+import { fetchJobs, fetchLatestPosts, fetchProducts, fetchServices, fetchTrendingPosts } from './helperComponents/HomeScreenData';
 import { useConnection } from './AppUtils/ConnectionProvider';
 import { getSignedUrl, getTimeDisplay, getTimeDisplayForum, getTimeDisplayHome } from './helperComponents/signedUrls';
-import AppStyles, { styles } from './AppUtils/AppStyles';
+import { styles } from './AppUtils/AppStyles';
 import { ForumPostBody } from './Forum/forumBody';
-import { generateAvatarFromName } from './helperComponents/useInitialsAvatar';
-import BottomNavigationBar from './AppUtils/BottomNavigationBar';
 import Banner01 from './Banners/homeBanner';
-import Banner02 from './Banners/homeBanner2';
-import Banner03 from './Banners/homeBanner3';
+import Banner02 from './Banners/MiddleBanner';
+import Banner03 from './Banners/LastBanner';
 
 
 import Notification from '../assets/svgIcons/notification.svg';
-import Job from '../assets/svgIcons/jobs.svg';
-import Fire from '../assets/svgIcons/fire.svg';
-import Service from '../assets/svgIcons/services.svg';
-import Product from '../assets/svgIcons/products.svg';
-import Latest from '../assets/svgIcons/latest.svg';
-import Name from '../assets/svgIcons/id-card.svg';
 import Description from '../assets/svgIcons/description.svg';
 import Company from '../assets/svgIcons/company.svg';
 import Money from '../assets/svgIcons/money.svg';
 import AnimatedTextSequence from './animations/AnimatedTextSequence';
 import FastImage from "@d11/react-native-fast-image";
 import Menu from "../assets/svgIcons/menu.svg";
-import User from "../assets/svgIcons/user.svg";
 import LinearGradient from 'react-native-linear-gradient';
 
 import Animated, {
@@ -47,6 +38,13 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import { colors, dimensions } from '../assets/theme';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
+import { Badge } from 'react-native-paper';
+import Avatar from './helperComponents/Avatar';
+import Video from 'react-native-video';
+import MaterialIcons from '@react-native-vector-icons/material-icons';
+import SCREENS from '../navigation/screens';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 
 const { width, height } = Dimensions.get("window");
@@ -54,25 +52,15 @@ const HEADER_HEIGHT = width * (10 / 16);
 const COLLAPSED_HEIGHT = 60;
 const TOP_HEADER_HEIGHT = 60;
 
-const STATUS_BAR_HEIGHT =
-  Platform.OS === "android" ? StatusBar.currentHeight || 24 : 44;
-
-
 const SHOW_THRESHOLD = 8; // small scroll threshold to hide top header
 const DIRECTION_THRESHOLD = 0.5; // small delta to avoid jitter
-
-const UserSettingScreen = React.lazy(() => import('./Profile/UserSettingScreen'));
-const ProductsList = React.lazy(() => import('./Products/ProductsList'));
-const AllPosts = React.lazy(() => import('./Forum/Feed'));
-const JobListScreen = React.lazy(() => import('./Job/JobListScreen'));
-
 
 
 const sectionThemes = {
   latest: {
     icon: "🔥",
     gradient: [
-      "rgb(211, 210, 210)",   
+      "rgb(211, 210, 210)",
       "rgba(122, 180, 224, 0.10)"
     ],
     shadow: "rgba(122,180,224,0.25)",
@@ -82,7 +70,7 @@ const sectionThemes = {
   jobs: {
     icon: "💼",
     gradient: [
-      "rgb(211, 210, 210)",   
+      "rgb(211, 210, 210)",
       "rgba(122, 180, 224, 0.10)"
     ],
     shadow: "rgba(74,146,209,0.25)",
@@ -92,7 +80,7 @@ const sectionThemes = {
   trending: {
     icon: "📈",
     gradient: [
-      "rgb(211, 210, 210)",   
+      "rgb(211, 210, 210)",
       "rgba(122, 180, 224, 0.10)"
     ],
     shadow: "rgba(168,210,238,0.25)",
@@ -102,7 +90,7 @@ const sectionThemes = {
   products: {
     icon: "🛍️",
     gradient: [
-      "rgb(211, 210, 210)",   
+      "rgb(211, 210, 210)",
       "rgba(122, 180, 224, 0.10)"
     ],
     shadow: "rgba(223,240,250,0.25)",
@@ -112,7 +100,7 @@ const sectionThemes = {
   services: {
     icon: "🛠️",
     gradient: [
-      "rgb(211, 210, 210)",   
+      "rgb(211, 210, 210)",
       "rgba(122, 180, 224, 0.10)"
     ],
     shadow: "rgba(30,111,190,0.25)",
@@ -122,7 +110,7 @@ const sectionThemes = {
   default: {
     icon: "✨",
     gradient: [
-      "rgb(211, 210, 210)",   
+      "rgb(211, 210, 210)",
       "rgba(122, 180, 224, 0.10)"
     ],
     shadow: "rgba(122,180,224,0.2)",
@@ -142,7 +130,7 @@ const SectionWrapper = ({
   fetchDataFn,
   onVisible,
   childrenRenderer,
-  placeholderHeight = height,
+  placeholderHeight = height - 44,
   isLast,  // NEW: Prop to know if this is the last rendered section
   onLoaded,
 }) => {
@@ -155,14 +143,15 @@ const SectionWrapper = ({
   const [loading, setLoading] = useState(false);
 
   const navigationMap = [
-    { key: "jobs", navigate: () => navigation.navigate("Jobs") },
-    { key: "trending", navigate: () => navigation.navigate("Trending") },
-    { key: "latest", navigate: () => navigation.navigate("Latest") },
-    { key: "products", navigate: () => navigation.navigate("Products") },
-    { key: "services", navigate: () => navigation.navigate("Services") },
+    { key: "jobs", navigate: () => navigation.navigate(SCREENS.JOB) },
+    { key: "trending", navigate: () => navigation.navigate('Trending') }, // trending tab
+    { key: "latest", navigate: () => navigation.navigate('Latest') },   // latest tab
+    { key: "products", navigate: () => navigation.navigate(SCREENS.PRODUCTS) },
+    { key: "services", navigate: () => navigation.navigate(SCREENS.SERVICES) }, // if it's a drawer screen
   ];
-  
- const seeMoreFn = navigationMap.find(n => keyName?.toLowerCase().includes(n.key))?.navigate;
+
+
+  const seeMoreFn = navigationMap.find(n => keyName?.toLowerCase().includes(n.key))?.navigate;
 
   useEffect(() => {
     if (data !== null && isLast && onLoaded) {  // data is set (either [] for no fetch or actual data)
@@ -193,7 +182,7 @@ const SectionWrapper = ({
   // =============================================
   if (isBanner) {
     return (
-      <View style={{ marginBottom: 10 }}>
+      <View style={{ marginBottom: 5, }}>
         {childrenRenderer(data)}
       </View>
     );
@@ -211,7 +200,7 @@ const SectionWrapper = ({
         borderRadius: 20,
         padding: 5,
         marginHorizontal: 5,
-        marginBottom: 10,
+        marginBottom: 5,
         shadowColor: theme.shadow,
         shadowOpacity: 0.6,
         shadowRadius: 14,
@@ -224,7 +213,7 @@ const SectionWrapper = ({
       {/* HEADER */}
       {title && (
         <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 14, paddingHorizontal: 10, justifyContent: 'space-between' }}>
-          <View style={{flexDirection: "row",alignItems: "center",}}>
+          <View style={{ flexDirection: "row", alignItems: "center", }}>
             <Text style={{ fontSize: 26, marginRight: 8 }}>{theme.icon}</Text>
             <Text style={{
               color: theme.textColor,
@@ -266,40 +255,16 @@ const SectionWrapper = ({
 };
 
 
-
-
-
-
-
-const tabNameMap = {
-  Home3: "Home",
-  ProductsList: "Products",
-  Feed: "Feed",
-  Jobs: "Jobs",
-  Settings: "Settings",
-};
-
-const tabConfig = [
-  { name: "Home", component: CompanyHomeScreen },
-  { name: "Jobs", component: JobListScreen },
-  { name: "Feed", component: AllPosts },
-  { name: "Products", component: ProductsList },
-  { name: "Settings", component: UserSettingScreen },
-];
-
-
 const CompanyHomeScreen = React.memo(() => {
   const { myId, myData } = useNetwork();
-
   const { isConnected } = useConnection();
-
   const currentRouteName = useNavigationState((state) => {
     const route = state.routes[state.index];
 
     return route.name;
   });
   const profile = useSelector(state => state.CompanyProfile.profile);
-
+  const insets = useSafeAreaInsets();
   const dispatch = useDispatch();
 
   const navigation = useNavigation();
@@ -314,6 +279,36 @@ const CompanyHomeScreen = React.memo(() => {
   // topHeaderVisible: 1 -> visible at top (scrollY <= SHOW_THRESHOLD OR scrolling up)
   // 0 -> hidden when scrolled down
   const topHeaderVisible = useSharedValue(1);
+
+  const isTabRefreshingRef = useRef(false);
+
+  React.useEffect(() => {
+    const unsubscribe = navigation.addListener('tabPress', (e) => {
+      if (!navigation.isFocused()) return;
+
+      e.preventDefault();
+
+      if (isTabRefreshingRef.current) return;
+      isTabRefreshingRef.current = true;
+
+      console.log('tab pressed again → scroll to top → refresh');
+
+      // 1️⃣ Scroll to top
+      flatListRef.current?.scrollToOffset({
+        offset: 0,
+        animated: true,
+      });
+
+      // 2️⃣ Refresh AFTER scroll is scheduled
+      requestAnimationFrame(() => {
+        Promise.resolve(handleRefresh()).finally(() => {
+          isTabRefreshingRef.current = false;
+        });
+      });
+    });
+
+    return unsubscribe;
+  }, [navigation, handleRefresh]);
 
   const onScroll = useAnimatedScrollHandler({
     onScroll: (event) => {
@@ -347,30 +342,6 @@ const CompanyHomeScreen = React.memo(() => {
       prevScrollY.value = y;
     },
   });
-
-  // Animated style for StatusBar-like background
-  const statusBarBgStyle = useAnimatedStyle(() => {
-    // fade from 0 → 1 as scroll moves from 0 → HEADER_HEIGHT (adjust as needed)
-    const opacity = interpolate(
-      scrollY.value,
-      [0, HEADER_HEIGHT],
-      [0, 1],
-      Extrapolate.CLAMP
-    );
-
-    return {
-      backgroundColor: `rgba(255,255,255,${opacity})`,
-    };
-  });
-
-  const headerAnimatedStyle = useAnimatedStyle(() => ({
-    height: interpolate(
-      scrollY.value,
-      [0, HEADER_HEIGHT],
-      [HEADER_HEIGHT, COLLAPSED_HEIGHT + STATUS_BAR_HEIGHT],
-      Extrapolate.CLAMP
-    ),
-  }));
 
   const toolbarBgStyle = useAnimatedStyle(() => {
     // fade from 0 → 1 as scroll moves from 0 → 40 (you can adjust)
@@ -443,11 +414,12 @@ const CompanyHomeScreen = React.memo(() => {
     switch (key) {
 
       case "banner1":
-        return <Banner02 />
-      case "latest":
+        return <Banner02 bannerId={'adban01'} onScroll={onScroll} />
+      case "trending":
         return (
           <FlatList
             data={data}
+
             showsHorizontalScrollIndicator={false}
             keyExtractor={(item) => item.forum_id.toString()}
             renderItem={({ item }) => (
@@ -461,39 +433,23 @@ const CompanyHomeScreen = React.memo(() => {
                   <View style={{ marginTop: 5 }}>
 
                     <View style={[styles.authorRow]}>
-                      {item?.authorImage ? (
-                        <Image
-                          source={{ uri: item.authorImage }}
-                          style={styles.authorImage}
-                          resizeMode="cover"
-                        />
-                      ) : (
-                        <View
-                          style={[
-                            styles.authorImage,
-                            {
-                              backgroundColor: item.avatar?.backgroundColor || '#ccc',
-                              justifyContent: 'center',
-                              alignItems: 'center',
-                            }
-                          ]}
-                        >
-                          <Text style={{ color: item.avatar?.textColor || '#fff', fontWeight: 'bold', fontSize: 24 }}>
-                            {item.avatar?.initials}
-                          </Text>
-                        </View>
-                      )}
 
 
-                      <View style={styles.authorInfo}>
+                      <Avatar
+                        imageUrl={item?.authorImage}
+                        name={item.author}
+                        size={40}
+                      />
+                      <View style={{ marginLeft: 10 }}>
                         <Text
                           style={styles.authorName}
                           numberOfLines={1}
                           ellipsizeMode="tail"
                         >
-                          {item.author || 'No Name'}
+                          {item.author}
                         </Text>
-                        <Text style={styles.badgeText}>{item.author_category || ''}</Text>
+                        <Text style={styles.badgeText} numberOfLines={1}
+                          ellipsizeMode="tail">{item.author_category || ''}</Text>
 
                         <Text style={styles.articleTime}>{getTimeDisplayForum(item.posted_on)}</Text>
                       </View>
@@ -502,13 +458,29 @@ const CompanyHomeScreen = React.memo(() => {
                   </View>
 
                   {item.mediaUrl && (
-
-                    <Image
-                      source={{ uri: item.mediaUrl }}
-                      style={styles.articleMedia}
-                      resizeMode="cover"
-                    />
-
+                    item?.extraData?.type?.startsWith('video') ? (
+                      < View style={styles.articleMedia}>
+                        <Video
+                          source={{ uri: item.mediaUrl }}
+                          style={{ width: '100%', height: '100%', backgroundColor: '#fff' }}
+                          resizeMode="cover"
+                          paused={true}
+                          muted={true}
+                          repeat={false}
+                          controls={false}
+                        />
+                        <FastImage
+                          source={require('../images/homepage/PlayIcon.png')}
+                          style={styles.playIcon}
+                          resizeMode="contain" />
+                      </View>
+                    ) : (
+                      <Image
+                        source={{ uri: item.mediaUrl }}
+                        style={styles.articleMedia}
+                        resizeMode="cover"
+                      />
+                    )
                   )}
 
                 </View>
@@ -526,7 +498,7 @@ const CompanyHomeScreen = React.memo(() => {
         );
 
       case "banner2":
-        return <Banner02 />
+        return <Banner03 bannerId={'adban02'} />
 
       case "jobs":
         return (
@@ -540,13 +512,13 @@ const CompanyHomeScreen = React.memo(() => {
                 style={styles.eduCard}
               >
                 <View style={styles.eduCardLeft}>
-                  {item.image ? (
-                    <Image source={{ uri: item.image }} style={styles.eduImage} />
-                  ) : (
-                    <View style={styles.cardImage1}>
-                      <Text style={styles.avatarText}>{item.companyAvatar.initials}</Text>
-                    </View>
-                  )}
+
+                  <Avatar
+                    imageUrl={item?.image}
+                    name={item?.company_name}
+                    size={100}
+                    radius={8}
+                  />
                 </View>
                 <View style={styles.eduCardRight}>
                   <Text numberOfLines={1} ellipsizeMode="tail" style={styles.eduTitle}>
@@ -581,7 +553,7 @@ const CompanyHomeScreen = React.memo(() => {
         );
 
 
-      case "trending":
+      case "latest":
         return (
           <FlatList
             data={data}
@@ -596,26 +568,13 @@ const CompanyHomeScreen = React.memo(() => {
               >
                 {/* HEADER */}
                 <View style={styles.postHeader}>
-                  {item.authorImage ? (
-                    <Image source={{ uri: item.authorImage }} style={styles.postAvatar} />
-                  ) : (
-                    <View
-                      style={[
-                        styles.authorImage,
-                        {
-                          backgroundColor: item.avatar?.backgroundColor || '#ccc',
-                          justifyContent: 'center',
-                          alignItems: 'center',
-                        }
-                      ]}
-                    >
-                      <Text style={{ color: item.avatar?.textColor || '#fff', fontWeight: 'bold', fontSize: 24 }}>
-                        {item.avatar?.initials}
-                      </Text>
-                    </View>
-                  )}
 
-                  <View style={{ marginLeft: 12, flex: 1 }}>
+                  <Avatar
+                    imageUrl={item?.authorImage}
+                    name={item.author}
+                    size={40}
+                  />
+                  <View style={{ marginLeft: 10, flex: 1 }}>
                     <Text style={styles.postAuthor} numberOfLines={1}>
                       {item.author}
                     </Text>
@@ -626,9 +585,30 @@ const CompanyHomeScreen = React.memo(() => {
                   </View>
                 </View>
 
-                {/* IMAGE */}
                 {item.mediaUrl && (
-                  <Image source={{ uri: item.mediaUrl }} style={styles.postImage} />
+                  item?.extraData?.type?.startsWith('video') ? (
+                    < View style={styles.postImage}>
+                      <Video
+                        source={{ uri: item.mediaUrl }}
+                        style={{ width: '100%', height: '100%', backgroundColor: '#fff' }}
+                        resizeMode="cover"
+                        paused={true}
+                        muted={true}
+                        repeat={false}
+                        controls={false}
+                      />
+                      <FastImage
+                        source={require('../images/homepage/PlayIcon.png')}
+                        style={styles.playIcon}
+                        resizeMode="contain" />
+                    </View>
+                  ) : (
+                    <Image
+                      source={{ uri: item.mediaUrl }}
+                      style={styles.postImage}
+                      resizeMode="cover"
+                    />
+                  )
                 )}
 
                 {/* BODY */}
@@ -643,8 +623,8 @@ const CompanyHomeScreen = React.memo(() => {
           />
         );
 
-      case "banner3":
-        return <Banner03 />
+      // case "banner3":
+      //   return <Banner03 />
 
       case "products":
         return (
@@ -664,13 +644,13 @@ const CompanyHomeScreen = React.memo(() => {
               >
 
 
-                <Image source={{ uri: item.image }} style={{ width: 100, height: 100, alignSelf:'center' }} />
+                <Image source={{ uri: item.image }} style={{ width: 100, height: 100, alignSelf: 'center' }} />
 
                 <View style={styles.cardContent4}>
-                  <View style={styles.cardTitleRow}>
-                    <Text numberOfLines={1} style={styles.eduTitle}>{item.title || ' '}
-                    </Text>
-                  </View>
+
+                  <Text numberOfLines={1} style={styles.eduTitle}>{item.title || ' '}
+                  </Text>
+
                   <View style={styles.cardTitleRow}>
                     <Description width={dimensions.icon.small} height={dimensions.icon.small} color={colors.gray} />
                     <Text style={styles.rowText} numberOfLines={1}>{item.description || 'Not specified'}</Text>
@@ -713,7 +693,7 @@ const CompanyHomeScreen = React.memo(() => {
               >
 
 
-                <Image source={{ uri: item.image }} style={{ width: 100, height: 100, alignSelf:'center' }} />
+                <Image source={{ uri: item.image }} style={{ width: 100, height: 100, alignSelf: 'center' }} />
                 <View style={styles.cardContent4}>
                   <View style={styles.cardTitleRow}>
                     <Text numberOfLines={1} style={styles.eduTitle}>{item.title || ' '}
@@ -792,48 +772,51 @@ const CompanyHomeScreen = React.memo(() => {
 
   const fetchProfile = async () => {
     try {
-
       const response = await apiClient.post('/getCompanyDetails', {
         command: 'getCompanyDetails',
         company_id: myId,
       });
 
-      if (response.data.status === 'success') {
-        const profileData = response.data.status_message;
+      // ❌ No retry for logical API failures
+      if (response.data.status !== 'success') {
+        console.warn('API returned error:', response.data);
+        return;
+      }
 
-        if (profileData.fileKey?.trim()) {
-          try {
-            const res = await getSignedUrl('profileImage', profileData.fileKey);
+      const profileData = { ...response.data.status_message };
 
-            const signedUrl = res?.profileImage;
-            profileData.imageUrl = signedUrl || null;
-
-          } catch (imageErr) {
-            profileData.imageUrl = null;
-          }
-        } else {
+      // Profile image
+      if (profileData.fileKey?.trim()) {
+        try {
+          const res = await getSignedUrl('profileImage', profileData.fileKey);
+          profileData.imageUrl = res?.profileImage ?? null;
+        } catch {
           profileData.imageUrl = null;
         }
+      } else {
+        profileData.imageUrl = null;
+      }
 
-        if (profileData.brochureKey?.trim()) {
-          try {
-            const brochureRes = await getSignedUrl('brochureFile', profileData.brochureKey);
-            const signedBrochureUrl = brochureRes?.[profileData.brochureKey];
-            profileData.brochureUrl = signedBrochureUrl || null;
-          } catch (brochureErr) {
-            profileData.brochureUrl = null;
-          }
-        } else {
+      // Brochure file
+      if (profileData.brochureKey?.trim()) {
+        try {
+          const brochureRes = await getSignedUrl(
+            'brochureFile',
+            profileData.brochureKey
+          );
+          profileData.brochureUrl =
+            brochureRes?.[profileData.brochureKey] ?? null;
+        } catch {
           profileData.brochureUrl = null;
         }
-
-        dispatch(updateCompanyProfile(profileData));
       } else {
+        profileData.brochureUrl = null;
       }
-    } catch (error) {
-      dispatch(updateCompanyProfile(null));
-    } finally {
 
+      dispatch(updateCompanyProfile(profileData));
+    } catch (err) {
+      // ❌ JS bugs / API bugs should NOT retry endlessly
+      console.error('fetchProfile failed:', err);
     }
   };
 
@@ -842,12 +825,13 @@ const CompanyHomeScreen = React.memo(() => {
     fetchProfile();
   }, [myId]);
 
+
   const handleProfile = () => {
     if (!isConnected) {
 
       return;
     }
-    navigation.navigate("Settings");
+    navigation.navigate("CompanyProfile");
   };
 
 
@@ -881,30 +865,16 @@ const CompanyHomeScreen = React.memo(() => {
 
   // Register fetch functions
   const sections = [
-    { key: "banner1", title: "Banner", },
-    {
-      key: "latest", title: "Latest Posts", fetchFn: fetchLatestPosts,
+    { key: "banner1", title: "Banner" },
+    { key: "trending", title: "Trending", fetchFn: fetchTrendingPosts },
 
-    },
-    { key: "banner2", title: "Banner", },
+    { key: "banner2", title: "Banner" },
+    { key: "jobs", title: "Jobs", fetchFn: fetchJobs },
+    { key: "latest", title: "Latest Posts", fetchFn: fetchLatestPosts },
 
-    {
-      key: "jobs", title: "Jobs", fetchFn: fetchJobs,
-    },
-    {
-      key: "trending", title: "Trending", fetchFn: fetchTrendingPosts,
-
-    },
-    { key: "banner3", title: "Banner", },
-
-    {
-      key: "products", title: "Products", fetchFn: fetchProducts,
-
-    },
-    {
-      key: "services", title: "Services", fetchFn: fetchServices,
-
-    },
+    { key: "banner3", title: "Banner" },
+    { key: "products", title: "Products", fetchFn: fetchProducts },
+    { key: "services", title: "Services", fetchFn: fetchServices },
   ];
 
   const [loadedUpTo, setLoadedUpTo] = useState(0); // Index in sections array
@@ -931,22 +901,22 @@ const CompanyHomeScreen = React.memo(() => {
   const handleRefresh = useCallback(async () => {
     try {
       setRefreshing(true);
-  
+
       // Reset lazy loading
       setLoadedUpTo(0);
-  
+
       // Reset visibility map so that sections load again
       setVisibleMap({});
-  
+
       // OPTIONAL: scroll to top
       flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
-  
+
       // Re-fetch all sections that have fetchFn
       for (let sec of sections) {
         if (sec.fetchFn) {
           try {
             await sec.fetchFn();
-          } catch (e) {}
+          } catch (e) { }
         }
       }
     } catch (e) {
@@ -955,21 +925,16 @@ const CompanyHomeScreen = React.memo(() => {
       setRefreshing(false);
     }
   }, []);
-  
+
 
   return (
     <>
-      <StatusBar translucent backgroundColor="transparent" barStyle={'dark-content'} />
-      <Animated.View style={[styles.toolbar, toolbarBgStyle]}>
+      <Animated.View style={[styles.toolbar, toolbarBgStyle, { paddingTop: insets.top }]}>
         {/* TOP HEADER (menu | username+category | avatar) */}
         <Animated.View style={[styles.topHeader, topHeaderStyle]}>
           {/* Left: menu */}
           <TouchableOpacity style={{ padding: 10 }} onPress={handleMenuPress}>
-            <Menu
-              width={dimensions.icon.minlarge}
-              height={dimensions.icon.minlarge}
-              color={colors.text_primary}
-            />
+            <MaterialIcons name='menu' size={dimensions.icon.large} color={'#000'} />
           </TouchableOpacity>
 
           {/* Center: username + category */}
@@ -982,47 +947,17 @@ const CompanyHomeScreen = React.memo(() => {
 
 
           <TouchableOpacity
+            activeOpacity={0.7}
             style={styles.notificationContainer}
             onPress={() => navigation.navigate('AllNotification', { userId: myId })}
           >
             <Notification width={dimensions.icon.minlarge} height={dimensions.icon.minlarge} color={colors.text_primary} />
-
             {unreadCount > 0 && (
-              <View style={styles.notificationBadge}>
-                <Text style={styles.notificationText}>{unreadCount}</Text>
-              </View>
-            )}
-          </TouchableOpacity>
-
-          {/* Right: avatar */}
-          <TouchableOpacity style={styles.iconTouch} onPress={handleProfile}>
-            {profile?.imageUrl ? (
-              <FastImage
-                source={{ uri: profile?.imageUrl, }}
-                style={styles.detailImage}
-                resizeMode='contain'
-                onError={() => { }}
-              />
-            ) : (
-              <View style={[styles.avatarContainer, { backgroundColor: profile?.companyAvatar?.backgroundColor }]}>
-                <Text style={[styles.avatarText, { color: profile?.companyAvatar?.textColor }]}>
-                  {profile?.companyAvatar?.initials}
-                </Text>
-              </View>
+              <Badge style={{ position: 'absolute' }}>{unreadCount}</Badge>
             )}
           </TouchableOpacity>
 
         </Animated.View>
-
-        {/* <Animated.View style={[styles.searchRow, topHeaderStyle]}>
-          <View style={styles.searchBar}>
-            <TextInput
-              placeholder="Search restaurants, dishes..."
-              style={styles.searchInput}
-              placeholderTextColor="#666"
-            />
-          </View>
-        </Animated.View> */}
 
       </Animated.View>
 
@@ -1042,10 +977,10 @@ const CompanyHomeScreen = React.memo(() => {
             onRefresh={handleRefresh}
             tintColor={colors.text_primary}
             colors={[colors.text_primary]}
-            progressViewOffset={STATUS_BAR_HEIGHT}
+            progressViewOffset={insets?.top}
           />
         }
-        
+
         ListHeaderComponent={
 
           <Animated.View style={[styles.header, { height: HEADER_HEIGHT }]}>
@@ -1066,7 +1001,6 @@ const CompanyHomeScreen = React.memo(() => {
               fetchDataFn={item.fetchFn}
               Icon={item.Icon}
               onVisible={visibleMap[item.key]}
-              placeholderHeight={height} // IMPORTANT
               isLast={isLast}  // NEW: Pass whether this is the last section
               onLoaded={() => {  // NEW: Callback to unlock the next section
                 setLoadedUpTo((prev) => (prev < sections.length - 1 ? prev + 1 : prev));
@@ -1076,10 +1010,9 @@ const CompanyHomeScreen = React.memo(() => {
             />
           );
         }}
-        ListFooterComponent={<View style={{ height: 100 }} />}
       />
 
-      <BottomNavigationBar
+      {/* <BottomNavigationBar
         tabs={tabConfig}
         currentRouteName={currentRouteName}
         navigation={navigation}
@@ -1087,7 +1020,7 @@ const CompanyHomeScreen = React.memo(() => {
         handleRefresh={handleRefresh}
         tabNameMap={tabNameMap}
 
-      />
+      /> */}
 
 
     </>

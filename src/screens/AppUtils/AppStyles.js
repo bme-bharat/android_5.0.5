@@ -1,29 +1,28 @@
-import { Dimensions, Platform, StatusBar, StyleSheet } from 'react-native';
+import { Dimensions, Platform, StyleSheet } from 'react-native';
 import { colors } from '../../assets/theme';
+import { initialWindowMetrics } from 'react-native-safe-area-context';
 
-const headerHeight = 60;
-const bottomHeight = 60;
-
-const HEADER_HEIGHT = 320;
 const { width } = Dimensions.get("window");
 
 const CARD_WIDTH = width * 0.6; // 70% of screen width
 
-
-export const STATUS_BAR_HEIGHT =
-  Platform.OS === "android" ? StatusBar.currentHeight || 24 : 44;
-
-
 export default AppStyle = StyleSheet.create({
 
-  scrollView: {
-    paddingTop: headerHeight,
-    paddingBottom: bottomHeight,
-    
-
+  center: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 24,
   },
-  menuContainer:{
-padding:10
+
+  removedText: {
+    fontSize: 16,
+    color: '#9E9E9E',
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  menuContainer: {
+    padding: 10
   },
   bottom: {
     height: 60,
@@ -42,38 +41,8 @@ padding:10
     alignItems: 'center',
     paddingHorizontal: 15,
   },
-  buttonContainer1: {
-    width: 100,
-    padding: 5,
-    borderRadius: 20,
-    borderColor: '#075cab',
-    borderWidth: 0.5,
-    alignItems: 'center',
-    alignSelf: 'center',
-    backgroundColor: '#ffffff',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-  },
-  cancelBtn: {
-    width: 100,
-    padding: 5,
-    borderRadius: 20,
-    borderColor: '#FF0000',
-    borderWidth: 0.5,
-    alignItems: 'center',
-    alignSelf: 'center',
-    backgroundColor: '#ffffff',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-  },
-  UpdateContainer: {
-    flexDirection: 'row', justifyContent: 'space-around', marginTop: 50
 
-  },
+
   Postbtn: {
     alignSelf: 'center',
     width: 90,
@@ -109,6 +78,7 @@ padding:10
     fontWeight: '500',
     fontSize: 15,
   },
+
   headerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -124,97 +94,12 @@ padding:10
     justifyContent: 'center',
     backgroundColor: 'white',
   },
-  searchContainerForum: {
-    flex: 1,
-    flexDirection: 'row',
-    alignSelf: 'center',
-    padding: 10,
-    borderRadius: 10,
-
-  },
-  inputContainerForum: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    width: '100%',
-  },
-  searchInputForum: {
-    flex: 1,
-    fontSize: 14,
-    backgroundColor: "white",
-    paddingHorizontal: 15,
-    borderRadius: 10,
-    height: 30,
-  },
-  searchIconButtonForum: {
-    padding: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-
-  },
-  iconButtonForum: {
-    padding: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-
-
-  },
-  searchContainer: {
-    flex: 1,
-    flexDirection: 'row',
-    alignSelf: 'center',
-    padding: 10,
-    borderRadius: 10,
-
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    width: '100%',
-    borderRadius: 10,
-    backgroundColor: 'whitesmoke',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-
-
-  searchIconButton: {
-    padding: 8,
-    overflow: 'hidden',
-    backgroundColor: '#e6f0ff',
-    borderTopRightRadius: 10,
-    borderBottomRightRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 1,
-    elevation: 2,
-  },
-  iconButton: {
-    padding: 8,
-    overflow: 'hidden',
-    backgroundColor: '#e6f0ff',
-    borderTopRightRadius: 10,
-    borderBottomRightRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 1,
-    elevation: 2,
-
-  },
   circle: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 4,
-    borderRadius: 8,
+    paddingHorizontal: 2,
+    borderRadius: 4,
 
   },
   shareText: {
@@ -223,11 +108,16 @@ padding:10
     fontWeight: '500',
 
   },
+  backButton: {
+    padding: 10,
+    alignSelf: 'center',
+    borderRadius: 10,
+  },
   dotsContainer: {
     marginTop: 12,
     gap: 8,
     position: 'absolute',
-    bottom:20, // move higher or lower as needed
+    bottom: 20, // move higher or lower as needed
     left: 0,
     right: 0,
     flexDirection: 'row',
@@ -262,59 +152,50 @@ padding:10
     width: '100%',
     height: '100%',
   },
-  avatarContainer: {
-    width: '100%',
-    height: '100%',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: 8
-  },
-  avatarText: {
-    fontSize: 50,
-    fontWeight: 'bold',
-  },
-  avatarContainerDetails: {
-    width: '100%',
-    height: '100%',
-    justifyContent: 'center',
-    alignItems: 'center',
 
-  },
   searchRow: {
     width: "100%",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 12,
-    gap: 10,
-
+    overflow: 'hidden',
+    borderRadius: 4,
+    gap: 8,
   },
-
+  searchInput: {
+    // fontSize: 16,
+    flex: 1,
+    height: 36,
+    includeFontPadding: false,
+  },
   searchBar: {
     flex: 1,
-    backgroundColor: "#f2f2f2",
-    borderRadius: 10,
-    paddingHorizontal: 12,
+    borderColor: '#075cab',
+    borderRadius: 4,
+    overflow: 'hidden',
+    borderWidth: 1,
     flexDirection: "row",
     alignItems: "center",
-
+    paddingHorizontal: 8
   },
   searchIcon: {
-    fontSize: 18,
     marginRight: 8,
     color: "#666",
   },
-  searchInput: {
-    fontSize: 16,
-    flex: 1,
-  },
+
 
   toolbar: {
     position: "absolute",
     top: 0,
     width: "100%",
-    paddingTop: STATUS_BAR_HEIGHT,
     zIndex: 50,
+    backgroundColor: '#FFF'
+    // elevation: 2,
+    // shadowColor: '#000',
+    // shadowOffset: { width: 0, height: 2 },
+    // shadowOpacity: 0.2,
+
   },
 
   topHeader: {
@@ -329,7 +210,30 @@ padding:10
 
 
 export const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
+  },
 
+  playIcon: {
+    position: 'absolute',
+    width: 40,
+    height: 40,
+    top: '50%',
+    left: '50%',
+    transform: [
+      { translateX: -20 }, // half of width
+      { translateY: -20 }, // half of height
+    ],
+  },
+
+  paragraph: {
+    padding: 16,
+    fontSize: 15,
+    textAlign: 'center',
+  },
   // --- Original Styles ---
   card5: {
     flex: 1,
@@ -339,17 +243,6 @@ export const styles = StyleSheet.create({
     marginHorizontal: 4,
     borderWidth: 0.5,
     borderColor: '#ddd',
-  },
-
-  companyImage: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 14,
-  },
-
-  companyImageContainer: {
-    width: '100%',
-    height: 150,
   },
 
   eduCard: {
@@ -392,28 +285,26 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 12,
     justifyContent: 'center',
     minWidth: 0,              // ✅ allows flex children to shrink instead of overflowing
-    // lineHeight:20
+
   },
 
   eduTitle: {
-    fontSize: 14,
+
     fontWeight: '600',
-    color: colors.text_primary,
+
     marginBottom: 5
 
   },
 
   eduSubText: {
-    fontSize: 13,
-    fontWeight: '400',
-    color: colors.text_primary,
-    lineHeight: 20
+
+
+
   },
 
 
   label: {
-    fontSize: 14,
-    fontWeight: '400',
+    fontWeight: '600',
     color: colors.text_primary,
   },
 
@@ -424,50 +315,17 @@ export const styles = StyleSheet.create({
     marginTop: 8,
   },
 
-  // --- Enhancements (Additions Only) ---
   cardTitleRow: {
     flexDirection: 'row',
-    alignItems: 'center',   // ✅ centers icon + text vertically
+    alignItems: 'center',
     marginVertical: 4,
     flexShrink: 1,
   },
 
   rowText: {
-    fontSize: 13,
-    fontWeight:'500',
-    color: colors.text_primary,
     marginLeft: 6,
-    flexShrink: 1,     // allow text to shrink
-    minWidth: 0,          // ✅ space between icon and text
-  },
-
-
-  priceRow: {
-    marginTop: 6,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-
-  modelText: {
-    fontSize: 15,
-    color: '#777',
-    alignItems: 'flex-start'
-  },
-
-  descriptionText: {
-    fontSize: 15,
-    color: '#777'
-  },
-
-  companyNameText: {
-    fontSize: 15,
-    marginTop: 4,
-  },
-
-  price: {
-    fontSize: 15,
-    fontWeight: '500',
-    color: 'black',
+    flexShrink: 1,
+    minWidth: 0,
   },
 
 
@@ -480,141 +338,10 @@ export const styles = StyleSheet.create({
     marginBottom: 5,
   },
 
-  heroCard: {
-    height: 230,
-    borderRadius: 14,
-    overflow: 'hidden',
-    marginBottom: 10,
-    marginHorizontal: 4,
-    elevation: 4,
-    backgroundColor: '#f0f0f0'
-  },
-
-  heroImage: {
-    width: '100%',
-    height: '100%',
-    backgroundColor: '#f0f0f0'
-  },
-
-  overlay: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    padding: 16,
-    backgroundColor: 'rgba(0,0,0,0.55)',
-  },
-
-  overlayHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 6,
-  },
-
-  heroTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#fff',
-    marginBottom: 8,
-  },
-
-  tagRow: {
-    flexDirection: 'row',
-    gap: 10,
-    flexWrap: 'wrap',
-  },
-
-  tag: {
-    paddingVertical: 4,
-    borderRadius: 20,
-  },
-
-  tagText: {
-    fontSize: 13,
-    color: '#fff',
-    fontWeight: '500',
-  },
-
-  metaLine: {
-    fontSize: 14,
-    color: '#fff',
-    fontWeight: '500',
-    flexShrink: 1,
-  },
-
-  metaLabel: {
-    fontWeight: '600',
-    color: '#fff',
-  },
-
-  metaValue: {
-    fontWeight: '500',
-    color: '#fff',
-  },
-
-  metaDate: {
-    fontSize: 12,
-    color: '#fff',
-    marginLeft: 8,
-  },
-
-  bodyText: {
-    fontSize: 13,
-    color: '#fff',
-    fontWeight: '400',
-  },
-
-  bottomNavContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'center',
-    paddingVertical: 12,
-    paddingBottom: 15,
-    backgroundColor: '#ffffff',
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    zIndex: 100,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 5,
-  },
-
-  navItem: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  navText: {
-    fontSize: 12,
-    color: 'black',
-    marginTop: 2,
-  },
-
-  headerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#ffffff',
-    borderBottomWidth: 1,
-    borderColor: '#f0f0f0',
-    paddingHorizontal:10
-  },
-  searchBar: { height: 80, width: '50%' },
-  rightContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
 
   notificationContainer: {
     padding: 8,
-    marginRight:10
+    marginRight: 10
   },
 
   notificationBadge: {
@@ -637,7 +364,7 @@ export const styles = StyleSheet.create({
   },
 
   profileContainer: {
-    
+
     width: 36,
     height: 36,
     borderRadius: 80,
@@ -653,96 +380,6 @@ export const styles = StyleSheet.create({
     borderRadius: 80,
   },
 
-  headingContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-
-  headingWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    
-  },
-  
-  headingText: {
-    fontSize: 15,
-    fontWeight: '500',
-    color: '#075cab',
-    padding: 10,
-  },
-  
-  heading: {
-    fontSize: 15,
-    fontWeight: '500',
-    color: "#075cab",
-    padding: 10,
-    alignItems: 'center',
-  },
-
-  cards: {
-    // marginHorizontal: 2,
-  },
-
-  seeAllText: {
-    fontSize: 14,
-    color: "#075cab",
-    fontWeight: '600',
-    padding: 10,
-  },
-
-  tabScrollWrapper: {
-    backgroundColor: 'whitesmoke',
-    paddingVertical: 10,
-    borderBottomWidth: 0.5,
-    borderColor: '#e0e0e0',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 3,
-    elevation: 4,
-  },
-
-
-  tabListContent: {
-    paddingHorizontal: 12,
-  },
-
-  tabWrapper: {
-    paddingHorizontal: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  tab: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 20,
-    backgroundColor: '#f2f2f2',
-    alignItems: 'center'
-  },
-
-  activeTab: {
-    backgroundColor: '#fff',
-    // shadowColor: '#075cab',
-    // shadowOffset: { width: 0, height: 1 },
-    // shadowOpacity: 0.2,
-    // shadowRadius: 4,
-    // elevation: 4,
-    borderWidth: 1,
-    borderColor: '#075cab'
-  },
-
-  tabText: {
-    fontSize: 14,
-    color: '#555',
-    fontWeight: '500',
-  },
-
-  activeTabText: {
-    color: '#075cab',
-    fontWeight: '700',
-  },
 
   articleCard: {
     padding: 6,
@@ -751,10 +388,7 @@ export const styles = StyleSheet.create({
     borderWidth: 0.5,
     borderColor: '#ddd',
     marginBottom: 5,
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 3 },
+
 
   },
   articleCardHeader: {
@@ -789,8 +423,9 @@ export const styles = StyleSheet.create({
     height: 50,
     borderRadius: 30,
     marginRight: 12,
-    marginTop:5
+    marginTop: 5
   },
+
   authorName: {
     fontSize: 15,
     fontWeight: '500',
@@ -799,51 +434,36 @@ export const styles = StyleSheet.create({
     maxWidth: 150,
   },
   articleMedia: {
-    width: 80,
-    height: 80,
+    width: 70,
+    height: 70,
     borderRadius: 8,
-    marginLeft: 12,
+    marginLeft: 8,
+    flexShrink: 0,   // 🔒 never shrink
+    overflow: 'hidden'
   },
+
   articleTime: {
     fontSize: 11,
     fontWeight: "300",
     color: colors.text_secondary,
-    marginTop:2
+    marginTop: 2
   },
 
-  PostedLabel: {
-    fontSize: 14,
-    fontWeight: '400',
-    color: colors.text_primary,
 
-  },
   cardImage1: {
     width: 140,
     height: 140,
-    borderRadius: 70,
     overflow: 'hidden',
     justifyContent: 'center',
     alignItems: 'center',
     alignSelf: 'center',
-    marginBottom: 20,
-    marginTop: 10,
   },
 
   cardImage: {
     width: '100%',
     height: '100%',
   },
-  avatarContainer: {
-    width: '100%',
-    height: '100%',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: 100,
-  },
-  avatarText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
+
   appHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -857,7 +477,7 @@ export const styles = StyleSheet.create({
   header: {
     width: "100%",
     overflow: "hidden",
-    marginBottom: 10,
+    marginBottom: 5,
   },
   headerImage: {
     width: "100%",
@@ -871,7 +491,6 @@ export const styles = StyleSheet.create({
     position: "absolute",
     top: 0,
     width: "100%",
-    paddingTop: STATUS_BAR_HEIGHT,
     zIndex: 50,
     justifyContent: "flex-start",
   },
@@ -882,26 +501,6 @@ export const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
 
-  },
-
-  iconTouch: {
-    width: 35,
-    height: 35,
-    marginRight:10,
-    overflow: 'hidden',
-    borderRadius: 20,
-    justifyContent: "center",
-    alignItems: "center",
-    
-  },
-  iconImage: {
-    width: 22,
-    height: 22,
-  },
-  avatarImage: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
   },
 
   // center user info (username + category)
@@ -949,6 +548,8 @@ export const styles = StyleSheet.create({
     backgroundColor: "#fff",
     borderRadius: 18,
     padding: 14,
+    borderWidth: 0.5,
+    borderColor: '#ddd',
     // shadowColor: "#000",
     // shadowOpacity: 0.08,
     // shadowRadius: 8,
@@ -963,19 +564,7 @@ export const styles = StyleSheet.create({
     marginBottom: 12,
   },
 
-  postAvatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    justifyContent: "center",
-    alignItems: "center",
-  },
 
-  postAvatarText: {
-    fontSize: 22,
-    color: "#fff",
-    fontWeight: "600",
-  },
 
   postAuthor: {
     fontSize: 15,
@@ -1002,14 +591,9 @@ export const styles = StyleSheet.create({
     borderRadius: 14,
     marginVertical: 12,
     backgroundColor: "#f1f1f1",
+    overflow: 'hidden'
   },
 
-  // Body
-  postBody: {
-    fontSize: 14,
-    color: "#333",
-    lineHeight: 20,
-  },
 });
 
 export const commonStyles = StyleSheet.create({
@@ -1019,7 +603,7 @@ export const commonStyles = StyleSheet.create({
     fontWeight: '600',
     color: colors.text_primary,
     marginBottom: 5,
-    alignSelf:'center'
+    alignSelf: 'center'
   },
 
   labValContainer: {
@@ -1027,7 +611,7 @@ export const commonStyles = StyleSheet.create({
     justifyContent: 'space-between',
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'white',
+    backgroundColor: '#FFF',
     elevation: 3,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -1037,20 +621,18 @@ export const commonStyles = StyleSheet.create({
     padding: 10,
     marginVertical: 5,
   },
-valContainer: {
+  valContainer: {
     flex: 1,
     justifyContent: 'space-between',
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'white',
+
     marginVertical: 5,
     marginHorizontal: 10
   },
   label: {
     flex: 1,
     color: colors.text_primary,
-    fontWeight: '500',
-    fontSize: 14,
     textAlign: 'left',
     alignSelf: 'flex-start',
 
@@ -1058,29 +640,15 @@ valContainer: {
 
   colon: {
     width: 15,
-
+    alignSelf: 'flex-start'
   },
   value: {
     flex: 2, // Take the remaining space
     flexShrink: 1,
     color: colors.text_secondary,
-    fontWeight: '500',
-    fontSize: 14,
     textAlign: 'left', // Align text to the left
     alignSelf: 'flex-start',
     letterSpacing: 0.2
   },
-  avatarContainer: {
-    width: '100%',
-    height: '100%',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: 80,
-    
 
-  },
-  avatarText: {
-    fontSize: 50,
-    fontWeight: 'bold',
-  },
 })

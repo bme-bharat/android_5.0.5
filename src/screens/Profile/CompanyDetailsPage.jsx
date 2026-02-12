@@ -16,7 +16,12 @@ import { openLink } from '../AppUtils/openLinks';
 import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
 
 import { colors, dimensions } from '../../assets/theme.jsx';
-import AppStyles, { commonStyles, STATUS_BAR_HEIGHT } from '../AppUtils/AppStyles.js';
+import AppStyles, { commonStyles } from '../AppUtils/AppStyles.js';
+import Pdf from '../../assets/svgIcons/pdf.svg';
+import Video from 'react-native-video';
+import Play from "../../assets/svgIcons/play.svg";
+import { smartGoBack } from '../../navigation/smartGoBack.jsx';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const defaultImageCompany = Image.resolveAssetSource(defaultImage).uri;
 const defautImage = Image.resolveAssetSource(default_image1).uri;
@@ -29,19 +34,20 @@ const CompanyDetailsPage = () => {
   const route = useRoute()
   const [isModalVisibleImage, setModalVisibleImage] = useState(false);
   const { userId } = route.params;
-
   const [loading, setLoading] = useState(false)
   const [forums, setProducts] = useState([]);
   const [products, setProducts1] = useState([]);
 
   const [services, setServices] = useState([]);
   const [resources, setResorces] = useState([]);
+ 
   const [loadingMore, setLoadingMore] = useState(false);
   const [lastEvaluatedKey, setLastEvaluatedKey] = useState(null);
   const [lastEvaluatedKeyjobs, setLastEvaluatedKeyjobs] = useState(null);
   const [lastEvaluatedKeyResources, setLastEvaluatedKeyResources] = useState(null);
   const [imageUrls, setImageUrls] = useState({});
   const [imageUrlsresources, setImageUrlsResources] = useState({});
+
   const [imageUrlsjobs, setImageUrlsJobs] = useState({});
   const [loading1, setLoading1] = useState(false);
   const { openFile } = useFileOpener();
@@ -314,7 +320,7 @@ const CompanyDetailsPage = () => {
     const handleProductSelect = (item) => {
 
       setShowProductModal(false);
-      navigation.navigate('ProductDetails', {
+      navigation.push('ProductDetails', {
         product_id: item.product_id,
         company_id: userId,
       });
@@ -323,7 +329,7 @@ const CompanyDetailsPage = () => {
 
     const handleServiceSelect = (item) => {
       setShowServiceModal(false);
-      navigation.navigate('ServiceDetails', {
+      navigation.push('ServiceDetails', {
         service_id: item.service_id,
         company_id: userId,
       });
@@ -473,7 +479,7 @@ const CompanyDetailsPage = () => {
       if (response.data.status === 'success') {
         const profileData = response.data.status_message;
         setProfile(profileData);
-
+console.log('profileData',profileData)
         const displayName = profileData.company_name?.trim() || 'Bme';
 
         if (profileData.user_type === 'company') {
@@ -623,7 +629,7 @@ const CompanyDetailsPage = () => {
         ) : null}
         {
           profile?.brochureKey &&
-          (<TouchableOpacity onPress={handleOpenResume} disabled={loading1} style={styles.pdfButton}>
+          (<TouchableOpacity onPress={handleOpenResume} disabled={loading} style={styles.pdfButton}>
             {loading1 ? (
               <ActivityIndicator size="small" color="#075cab" style={styles.pdfButtonText} />
             ) : (
@@ -719,7 +725,7 @@ const CompanyDetailsPage = () => {
 
     // Define video file extensions
     const videoExtensions = ['mp4', 'mov', 'quicktime', 'avi', 'flv', 'wmv', 'mkv', 'webm', 'mpeg'];
-    const isVideo = item.fileKey && videoExtensions.some(ext => item.fileKey.toLowerCase().endsWith(ext));
+    const isVideo = item.extraData?.mimeType?.startsWith("video/");
 
     return (
       <TouchableOpacity
@@ -730,12 +736,29 @@ const CompanyDetailsPage = () => {
 
         <View style={styles.imageContainer}>
           {isVideo ? (
+            <View style={styles.mediaWrapper}>
+              <Video
+                source={{ uri: fileUrl }}
+                style={styles.media}
+                resizeMode="cover"
+                muted
+                paused={true}   // since this is just a preview
+              />
 
-            <FastImage source={{ uri: thumbnail }} style={styles.image} resizeMode="contain" />
+              {/* ▶ Play overlay */}
+              <View pointerEvents="none" style={styles.playOverlay}>
+                <Play
+                  width={dimensions.icon.medium}
+                  height={dimensions.icon.medium}
+                  color={colors.background}
+                />
+              </View>
+            </View>
 
           ) : fileTypeedit && fileIconName[fileTypeedit] ? (
-            <View style={styles.iconContainer}>
-              <Icon name={fileIconName[fileTypeedit]} size={40} color="#075cab" />
+            <View style={styles.imageContainer}>
+              <Pdf width={dimensions.icon.xl} height={dimensions.icon.xl} color={colors.danger} style={{ alignSelf: 'center' }} />
+
             </View>
           ) : (
             <FastImage source={{ uri: fileUrl }} style={styles.image} resizeMode="contain" />
@@ -813,6 +836,8 @@ const CompanyDetailsPage = () => {
     );
   };
 
+  const insets = useSafeAreaInsets();
+  const headerHeight = insets?.top+ 44;
 
   return (
 
@@ -825,13 +850,18 @@ const CompanyDetailsPage = () => {
         ) : (
 
           <View style={styles.container}>
-                  <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
-            
-            <View style={styles.headerContainer}>
-              <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-                <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
+            <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} >
 
-              </TouchableOpacity>
+              <View style={AppStyles.searchRow}>
+                <TouchableOpacity
+                  style={AppStyles.backButton}
+                  onPress={() => { smartGoBack()}} >
+                  <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.background} />
+
+                </TouchableOpacity>
+
+              </View>
+
             </View>
 
             <FlatList
@@ -848,7 +878,7 @@ const CompanyDetailsPage = () => {
                 if (activeTab === 'resources') return `resource-${item.resource_id}`;
                 return `unknown-${Math.random().toString()}`;
               }}
-              contentContainerStyle={{ paddingBottom: '20%', paddingHorizontal:5 }}
+              contentContainerStyle={[AppStyles.scrollViewContainer, { paddingHorizontal: 5 }]}
               ListHeaderComponent={
                 <>
                   <ProfileHeader
@@ -959,7 +989,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: 'white',
-paddingTop: STATUS_BAR_HEIGHT
+
   },
   headerContainer: {
     flexDirection: 'row',
@@ -1100,7 +1130,30 @@ paddingTop: STATUS_BAR_HEIGHT
     alignItems: 'center',
     width: '35%',
   },
-
+  mediaWrapper: {
+    width: '100%',
+    height: '100%',
+    position: 'relative',
+  },
+  
+  media: {
+    width: '100%',
+    height: '100%',
+  },
+  
+  playOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+  
+    // Optional UX polish
+    backgroundColor: 'rgba(0,0,0,0.25)',
+  },
+  
   imageContainer: {
     width: 150,
     height: 150,

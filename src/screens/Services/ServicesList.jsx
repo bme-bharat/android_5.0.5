@@ -6,7 +6,7 @@ import {
 
     TouchableWithoutFeedback,
     ScrollView,
-    StatusBar,
+
     Platform
 } from 'react-native';
 
@@ -21,16 +21,16 @@ import { highlightMatch } from '../helperComponents/signedUrls';
 import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
 import Search from '../../assets/svgIcons/search.svg';
 import Close from '../../assets/svgIcons/close.svg';
-import HomeBanner from '../Banners/homeBanner3.jsx';
+import Company from '../../assets/svgIcons/company.svg';
+
+import ServiceBanner from '../Banners/ServiceBanner.jsx';
 
 import { colors, dimensions } from '../../assets/theme.jsx';
 import Animated from 'react-native-reanimated';
 import scrollAnimations from '../helperComponents/scrollAnimations.jsx';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-const STATUS_BAR_HEIGHT =
-    Platform.OS === "android" ? StatusBar.currentHeight || 24 : 44;
 
-const headerHeight = STATUS_BAR_HEIGHT + 60;
 
 const ServicesList = () => {
     const { isConnected } = useConnection();
@@ -270,16 +270,15 @@ const ServicesList = () => {
                 {/* <Text numberOfLines={1} style={styles.title}>{item.title || ' '}</Text> */}
                 <Text numberOfLines={1} style={styles.title}>{highlightMatch(item?.title || '', searchQuery)}</Text>
                 <Text numberOfLines={1} style={styles.description}>{highlightMatch(item?.description || '', searchQuery)}</Text>
-                <Text numberOfLines={1} style={styles.company}>{highlightMatch(item?.company_name || '', searchQuery)}</Text>
+                <Text style={styles.companyName} numberOfLines={1}>{highlightMatch(item.company_name || '', searchQuery)}</Text>
 
                 {/* <Text numberOfLines={1} style={styles.description}>{item.description || ' '}</Text>
                         <Text numberOfLines={1} style={styles.company}>{item.company_name || ' '}</Text> */}
 
                 <Text numberOfLines={1} style={styles.price}>
-                    ₹ {item.price !== undefined && item.price !== null && item.price !== '' ? item.price : "N/A"}
+                    ₹ {item.price !== undefined && item.price !== null && item.price !== '' ? item.price : "Contact supplier"}
                 </Text>
-
-                <Text numberOfLines={1} style={styles.productDetailsText}>View details</Text>
+          
 
             </View>
 
@@ -290,16 +289,18 @@ const ServicesList = () => {
 
     const renderFooter = () => loadingMore ? <ActivityIndicator size="large" color="#075cab" style={{ marginVertical: 10 }} /> : null;
 
+    const insets = useSafeAreaInsets();
+    const headerHeight = insets?.top+ 44;
+
     return (
 
         <>
-            <StatusBar translucent backgroundColor="transparent" barStyle={"light-content"} />
 
-            <Animated.View style={[AppStyles.toolbar, toolbarBgStyle]}>
+            <Animated.View style={[AppStyles.toolbar, toolbarBgStyle, {paddingTop:insets.top}]}>
 
                 <Animated.View style={[AppStyles.searchRow, headerStyle]}>
-                    <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton} activeOpacity={1}>
-                        <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.text_secondary} />
+                    <TouchableOpacity onPress={() => navigation.goBack()} style={AppStyles.backButton} activeOpacity={1}>
+                        <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} fill={colors.primary} />
 
                     </TouchableOpacity>
                     <View style={AppStyles.searchBar}>
@@ -316,9 +317,6 @@ const ServicesList = () => {
                     </View>
 
                 </Animated.View>
-
-
-
             </Animated.View>
 
             {!loading ? (
@@ -337,7 +335,7 @@ const ServicesList = () => {
                     keyboardShouldPersistTaps="handled"
                     keyExtractor={(item, index) => `${item.service_id}-${index}`}
                     showsVerticalScrollIndicator={false}
-                    contentContainerStyle={{ paddingTop: headerHeight, backgroundColor: colors.app_background }}
+                    contentContainerStyle={{paddingTop:headerHeight}}
                     onEndReached={() => lastEvaluatedKey && fetchservices(lastEvaluatedKey)}
                     onEndReachedThreshold={0.5}
                     ListEmptyComponent={
@@ -348,12 +346,12 @@ const ServicesList = () => {
                         ) : null
                     }
                     refreshControl={
-                        <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} progressViewOffset={headerHeight}/>
+                        <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} progressViewOffset={headerHeight} />
                     }
                     ListHeaderComponent={
                         <Animated.View >
-                            <View style={{ paddingVertical: 5, backgroundColor: colors.app_background }}>
-                                <HomeBanner bannerId="serviceAd01" />
+                            <View style={{ paddingVertical: 5, alignSelf: 'center' }}>
+                                <ServiceBanner />
 
                             </View>
 
@@ -429,13 +427,17 @@ const styles = StyleSheet.create({
         paddingBottom: '20%',
 
     },
-    company: {
-        fontSize: 15,
+    companyName: {
+        color: colors.text_primary,
         fontWeight: '500',
-        color: '#000',
-        textAlign: 'center',
+        fontSize: 14,
+    },
+    headerRow: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
         marginTop: 2,
-        alignSelf: 'flex-start',
+        flex: 1
+
     },
     companyCount: {
         fontSize: 13,
@@ -551,8 +553,10 @@ const styles = StyleSheet.create({
     },
     price: {
         fontSize: 15,
-        fontWeight: '600',
-        color: colors.primary
+        fontWeight: 'bold',
+        color: colors.primary,
+        paddingTop: 5
+
     },
 
     separator: {
@@ -571,7 +575,6 @@ const styles = StyleSheet.create({
     productDetailsText: {
         fontSize: 14,
         color: '#075cab',
-        fontWeight: '400',
         alignSelf: 'flex-end',
 
     },

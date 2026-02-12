@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { View, FlatList, Image, StyleSheet, ToastAndroid, TouchableOpacity, Text, Alert, TextInput, RefreshControl, Share, Keyboard, ActivityIndicator, Linking } from 'react-native';
-
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Toast from 'react-native-toast-message';
 import { useFocusEffect, useRoute } from '@react-navigation/native';
@@ -9,9 +9,10 @@ import { useDispatch, useSelector } from 'react-redux';
 import apiClient from '../ApiClient';
 import { useNetwork } from '../AppUtils/IdProvider';
 import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
+import { colors, dimensions } from '../../assets/theme';
+import AppStyles from '../AppUtils/AppStyles';
+import { AppHeader } from '../AppUtils/AppHeader';
 
-import { colors, dimensions } from '../../assets/theme.jsx';
-import AppStyles, { commonStyles, STATUS_BAR_HEIGHT } from '../AppUtils/AppStyles.js';
 const CompanyGetallEnquiries = ({ navigation }) => {
   const route = useRoute();
 
@@ -126,23 +127,6 @@ const CompanyGetallEnquiries = ({ navigation }) => {
   };
 
 
-  if (noEnquiries && !loading && allForumPost?.length === 0) {
-    return (
-      <View style={styles.container}>
-        <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
-
-        <View style={styles.headerContainer}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-            <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-
-          </TouchableOpacity>
-        </View>
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <Text style={{ fontSize: 16, color: 'gray' }}>No enquiries available</Text>
-        </View>
-      </View>
-    );
-  }
 
 
   const RenderPostItem = ({ item }) => {
@@ -157,27 +141,31 @@ const CompanyGetallEnquiries = ({ navigation }) => {
     return (
       <TouchableOpacity activeOpacity={1} onPress={() => {
         EnquiryDetails(item?.enquiry_id);
-      }} style={styles.postContainer}>
+      }}>
 
-    
-          <View style={commonStyles.valContainer}>
-            <Text style={commonStyles.label}>Enquired by</Text>
-            <Text style={commonStyles.colon}>:</Text>
-            <Text style={commonStyles.value}>{item?.first_name || ""}</Text>
+        <View style={styles.postContainer}>
+          <View style={styles.textContainer}>
+
+            <View style={styles.title1}>
+              <Text style={styles.label}>Enquired by      </Text>
+              <Text style={styles.colon}>:</Text>
+              <Text style={styles.value}>{item?.first_name || ""}</Text>
+            </View>
+
+            <View style={styles.title1}>
+              <Text style={styles.label}>Enquiry description              </Text>
+              <Text style={styles.colon}>:</Text>
+              <Text style={styles.value}>{item?.enquiry_description || ""}</Text>
+            </View>
+
+            <View style={styles.title1}>
+              <Text style={styles.label}>Enquired on   </Text>
+              <Text style={styles.colon}>:</Text>
+              <Text style={styles.value}>{formattedDate || ""}</Text>
+            </View>
+
           </View>
-
-          <View style={commonStyles.valContainer}>
-            <Text style={commonStyles.label}>Enquiry description</Text>
-            <Text style={commonStyles.colon}>:</Text>
-            <Text style={commonStyles.value}>{item?.enquiry_description || ""}</Text>
-          </View>
-
-          <View style={commonStyles.valContainer}>
-            <Text style={commonStyles.label}>Enquired on   </Text>
-            <Text style={commonStyles.colon}>:</Text>
-            <Text style={commonStyles.value}>{formattedDate || ""}</Text>
-          </View>
-
+        </View>
       </TouchableOpacity>
     );
   };
@@ -185,44 +173,52 @@ const CompanyGetallEnquiries = ({ navigation }) => {
   const keyExtractor = (item) =>
     item.id ? item.id.toString() : Math.random().toString();
 
+  const isLoading = !allForumPost
+  const isRemoved = noEnquiries && !loading && allForumPost?.length === 0
+
 
   return (
     <View style={styles.container}>
-      <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
+      <AppHeader
+        title={"Received enquiries"}
 
-      <View style={styles.headerContainer}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-
-        </TouchableOpacity>
-
-      </View>
-
-      {!loading ? (
-        <FlatList
-          data={allForumPost}
-          renderItem={RenderPostItem}
-          onScrollBeginDrag={() => Keyboard.dismiss()}
-          contentContainerStyle={{ paddingBottom: '20%' }}
-          keyExtractor={(item, index) => `${item.forum_id}-${index}`}
-          showsHorizontalScrollIndicator={false}
-          showsVerticalScrollIndicator={false}
-          ref={scrollViewRef}
-          onEndReached={() => hasMorePosts && fetchPosts(lastEvaluatedKey)}
-          onEndReachedThreshold={0.5}
-          ListFooterComponent={() =>
-            loadingMore && (
-              <View style={styles.loaderContainer}>
-                <ActivityIndicator size="small" color="#075cab" />
-              </View>
-            )
-          }
-
-        />
-      ) : (
-        <View style={styles.centeredContainer}>
+      />
+      {isLoading && (
+        <View style={AppStyles.center}>
           <ActivityIndicator size="small" color="#075cab" />
         </View>
+      )}
+
+      {!isLoading && isRemoved && (
+        <View style={AppStyles.center}>
+          <Text style={AppStyles.removedText}>
+          No enquiries received
+          </Text>
+        </View>
+      )}
+
+      {!isLoading && !isRemoved && (
+        <>
+          <FlatList
+            data={allForumPost}
+            renderItem={RenderPostItem}
+            onScrollBeginDrag={() => Keyboard.dismiss()}
+            keyExtractor={(item, index) => `${item.forum_id}-${index}`}
+            showsHorizontalScrollIndicator={false}
+            showsVerticalScrollIndicator={false}
+            ref={scrollViewRef}
+            onEndReached={() => hasMorePosts && fetchPosts(lastEvaluatedKey)}
+            onEndReachedThreshold={0.5}
+            ListFooterComponent={() =>
+              loadingMore && (
+                <View style={styles.loaderContainer}>
+                  <ActivityIndicator size="small" color="#075cab" />
+                </View>
+              )
+            }
+
+          />
+        </>
       )}
 
     </View>
@@ -250,7 +246,8 @@ const styles = StyleSheet.create({
     marginVertical: 10
   },
   postContainer: {
-    marginBottom: 10,
+    flexDirection: 'row',
+    marginBottom: 5,
     marginHorizontal: 5,
     backgroundColor: 'white',
     justifyContent: 'center',
@@ -258,8 +255,7 @@ const styles = StyleSheet.create({
     borderWidth: 0.5,
     borderColor: '#ddd',
     shadowColor: '#000',
-    top: 10,
-    padding: 10
+    top: 5
   },
   noPostsContainer: {
     flex: 1,
@@ -340,7 +336,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: 'white',
-    paddingTop: STATUS_BAR_HEIGHT
   },
   imageContainer: {
     flex: 1,
@@ -371,6 +366,8 @@ const styles = StyleSheet.create({
 
   textContainer: {
     flex: 2,
+    gap: 8,
+    padding: 10
   },
 
   title: {
@@ -394,9 +391,7 @@ const styles = StyleSheet.create({
   },
   label: {
     flex: 1,
-    color: 'black',
-    fontWeight: '500',
-    fontSize: 15,
+    color: colors.text_primary,
     textAlign: 'left',
     alignSelf: 'flex-start',
 
@@ -405,9 +400,8 @@ const styles = StyleSheet.create({
   colon: {
     width: 20, // Fixed width for the colon
     textAlign: 'center', // Center the colon
-    color: 'black',
-    fontWeight: '400',
-    fontSize: 15,
+    color: colors.text_secondary,
+    fontWeight:'500',
     alignSelf: 'flex-start',
   },
 

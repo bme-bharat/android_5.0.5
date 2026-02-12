@@ -1,195 +1,192 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import { getStatusBarHeight } from 'react-native-status-bar-height';
-import { Platform, StatusBar, Text, View } from 'react-native';
-import { CompanyJobNav, CompanyStackNav, CompanyForumNav, CompanyProfileNav, CompanyListNav, CompanyProducts, EventsDrawer, CompanyServices, CompanyResources } from './CompanyStackNav';
-import { Dimensions, StyleSheet } from 'react-native';
-import { useNavigationState } from '@react-navigation/native';
-import { createDrawerNavigator } from '@react-navigation/drawer';
-import HelpCenter from '../../screens/Bme_content/HelpCenter';
-import CustomDrawerContent from '../DrawerContent';
-import { NetworkProvider } from '../../screens/AppUtils/IdProvider';
+import { Platform, Dimensions, View, StyleSheet, Image } from 'react-native';
+import { colors } from '../../assets/theme';
+import SCREENS from '../screens';
+import IMAGES from '../images';
+import DIMENSION from '../dimensions';
+import UserHomeScreen from '../../screens/UserHomeScreen';
+import JobListScreen from '../../screens/Job/JobListScreen';
+import AllPosts from '../../screens/Forum/Feed';
+import UserSettingScreen from '../../screens/Profile/UserSettingScreen';
+import ProductsList from '../../screens/Products/ProductsList';
+import { useSelector } from 'react-redux';
+import FastImage from '@d11/react-native-fast-image';
+import CompanyHomeScreen from '../../screens/CompanyHomeScreen';
+import CompanySettingScreen from '../../screens/Profile/CompanySettingScreen';
+import Avatar from '../../screens/helperComponents/Avatar';
 
-import HomeIcon from '../../assets/svgIcons/home.svg';
-import Company from '../../assets/svgIcons/company.svg';
-import Event from '../../assets/svgIcons/event.svg';
-import Resource from '../../assets/svgIcons/resources.svg';
-import Service from '../../assets/svgIcons/services.svg';
-import Help from '../../assets/svgIcons/customer.svg';
+const { height: screenHeight } = Dimensions.get('window');
 
-
-import HomeIconFill from '../../assets/svgIcons/home-fill.svg';
-import JobsIconFill from '../../assets/svgIcons/jobs-fill.svg';
-import FeedIconFill from '../../assets/svgIcons/feed-fill.svg';
-import ProductsIconFill from '../../assets/svgIcons/products-fill.svg';
-import SettingsIconFill from '../../assets/svgIcons/settings-fill.svg';
-import { colors, dimensions } from '../../assets/theme';
-
+const tabBarHeight = Platform.OS === 'ios'
+  ? screenHeight * 0.09  // ~9% of screen height
+  : screenHeight * 0.08;
 const Tab = createBottomTabNavigator();
-const Drawer = createDrawerNavigator();
-const { width: screenWidth } = Dimensions.get('window');
 
-const statusBarHeight = Platform.OS === 'android' ? StatusBar.currentHeight : getStatusBarHeight();
+const CompanyBottomTabNav = () => {
+  const profile = useSelector(state => state.CompanyProfile.profile);
 
-const tabConfig = [
-  { name: "Home", component: CompanyStackNav, focusedIcon: 'home', unfocusedIcon: 'home-outline', iconComponent: Icon },
-  { name: "Jobs", component: CompanyJobNav, focusedIcon: 'bag-suitcase', unfocusedIcon: 'bag-suitcase-outline', iconComponent: Icon },
-  { name: "Feed", component: CompanyForumNav, focusedIcon: 'forum', unfocusedIcon: 'forum-outline', iconComponent: Icon },
-  { name: "Products", component: CompanyProducts, focusedIcon: 'shopping', unfocusedIcon: 'shopping-outline', iconComponent: Icon },
-  { name: "Settings", component: CompanyProfileNav, focusedIcon: 'account-circle', unfocusedIcon: 'account-circle-outline', iconComponent: Icon },
-];
+  const iconStyle = focused => ({
+    width: DIMENSION.WIDTH,
+    height: DIMENSION.HEIGHT,
+    alignSelf: 'center',
+    // transform: [{ scale: focused ? 1.25 : 1 }],
+    tintColor: focused ? colors.primary : colors.secondary,
+  });
 
-const screenOptionStyle = ({ route }) => {
-  const routeConfig = tabConfig.find(config => config.name === route.name);
-  const { height, width } = Dimensions.get('window');
-  if (!routeConfig) return {};
-  const tabBarHeight = height > 700 ? 85 : 55; // Example thresholds for taller/shorter devices
-  const { focusedIcon, unfocusedIcon, iconComponent: IconComponent } = routeConfig;
-
-  return {
-    tabBarIcon: ({ focused, color, size }) => (
-      <IconComponent name={focused ? focusedIcon : unfocusedIcon} size={size} color={focused ? '#075CAB' : 'black'} />
-    ),
-    headerShown: false,
-    tabBarActiveTintColor: '#075cab',
-    tabBarInactiveTintColor: 'black',
-    tabBarLabelStyle: {
-      fontSize: 10,
-      paddingBottom: 10,
-      overflow: 'hidden',
-      fontWeight: '600',
-    },
-    tabBarStyle: {
-      height: tabBarHeight,
-      paddingTop: 0,
-      backgroundColor: 'white', // Ensuring the background is white
-      borderTopWidth: 0,
-      display: 'none'
-    },
-
+  const TabIcon = ({ focused, children }) => {
+    return (
+      <View style={styles.iconWrapper}>
+        {focused && <View style={styles.topLine} />}
+        {children}
+      </View>
+    );
   };
-};
+  
 
-
-const CompanyBottomTab = () => (
-
-    <NetworkProvider>
-
-      <Tab.Navigator screenOptions={screenOptionStyle}>
-        {tabConfig.map(routeConfig => (
-          <Tab.Screen
-            key={routeConfig.name}
-            name={routeConfig.name}
-            component={routeConfig.component}
-            options={({ route }) => ({
-              ...screenOptionStyle({ route }),
-
-
-            })}
-          />
-        ))}
-
-      </Tab.Navigator>
-    </NetworkProvider>
-
-);
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: 'white',
-  },
-
-  navigatorContainer: {
-    flex: 1,
-    backgroundColor: 'white',
-  },
-});
-
-
-
-
-const UserDrawerNav = () => {
   return (
+    <Tab.Navigator
+      initialRouteName={SCREENS.HOME}
 
-    <NetworkProvider>
-      <Drawer.Navigator
-        drawerContent={(props) => <CustomDrawerContent {...props} />}
-        screenOptions={({ route }) => ({
-          headerShown: false,
-          gestureEnabled: route.name !== "Home", // Disable drawer swipe inside bottom tabs
-          drawerActiveTintColor: '#075cab', // Active drawer item color
-          drawerInactiveTintColor: 'black', // Inactive drawer item color
-          drawerLabelStyle: {
-            fontSize: 14, // Optional: Adjust label font size if needed
-            fontWeight: '400', // Make sure the font weight isn't bold by default
-          },
-          drawerType: 'front',
-          drawerStyle: {
-            width: screenWidth * 0.60,
-            borderRadius: 0,         // remove rounding
-            borderTopRightRadius: 0, // just to be extra safe
-            borderBottomRightRadius: 0,
-       
-          },
-          swipeEnabled: false
+      screenOptions={{
+        headerShown: false,
+        tabBarStyle: {
+          // paddingTop: 4,
+          height:44,
+          // backgroundColor:'red'
+          
+        },
+        contentStyle: { backgroundColor: '#F7F8FA' },
 
-        })}
-      >
-        <Drawer.Screen
-          name="Home "
-          component={CompanyBottomTab}
-          options={{
-            drawerIcon: () => <HomeIconFill width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
 
-          }}
-        />
-        <Drawer.Screen
-          name="Companies"
-          component={CompanyListNav}
-          options={{
-            drawerIcon: () => <Company width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.secondary} />,
-            unmountOnBlur: true,
-          }}
-        />
-        <Drawer.Screen
-          name="Events"
-          component={EventsDrawer}
-          options={{
-            drawerIcon: () => <Event width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.secondary} />,
-            unmountOnBlur: true,
-          }}
-        />
-        <Drawer.Screen
-          name="Resources"
-          component={CompanyResources}
-          options={{
-            drawerIcon: () => <Resource width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.secondary} />,
-            unmountOnBlur: true,
-          }}
-        />
-        <Drawer.Screen
-          name="Services"
-          component={CompanyServices}
-          options={{
-            drawerIcon: () => <Service width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.secondary} />,
-            unmountOnBlur: true,
-          }}
-        />
-        <Drawer.Screen
-          name="Help"
-          component={HelpCenter}
-          options={{
-            drawerIcon: () => <Help width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.secondary} />,
-            unmountOnBlur: true,
-          }}
-        />
+        tabBarItemStyle: {
+          // paddingVertical: 6,  
+        },
 
-      </Drawer.Navigator>
-    </NetworkProvider>
 
+        tabBarLabelPosition: 'below-icon',
+
+        tabBarLabelStyle: {
+     
+          fontFamily: 'Georgia',
+          includeFontPadding:false
+
+        },
+        tabBarActiveTintColor: '#075CAB',
+        tabBarInactiveTintColor: colors.secondary,
+      }}
+    >
+
+      <Tab.Screen
+        name={SCREENS.HOME}
+        component={CompanyHomeScreen}
+        options={{
+          title: 'Home',
+          tabBarIcon: ({ focused }) => (
+            <TabIcon focused={focused}>
+
+              <Image
+                source={IMAGES.HOME}
+                style={iconStyle(focused)}
+                resizeMode="contain"
+              />
+            </TabIcon>
+          ),
+        }}
+      />
+
+      <Tab.Screen
+        name={SCREENS.JOB}
+        component={JobListScreen}
+        options={{
+          title: 'Jobs',
+          tabBarIcon: ({ focused }) => (
+            <TabIcon focused={focused}>
+
+              <Image
+                source={IMAGES.JOBS}
+                style={iconStyle(focused)}
+                resizeMode="contain"
+              />
+            </TabIcon>
+          ),
+        }}
+      />
+
+      <Tab.Screen
+        name={SCREENS.FEED}
+        component={AllPosts}
+        options={{
+          title: 'Feed',
+          tabBarIcon: ({ focused }) => (
+            <TabIcon focused={focused}>
+
+              <Image
+                source={IMAGES.FORUM}
+                style={iconStyle(focused)}
+                resizeMode="contain"
+              />
+            </TabIcon>
+          ),
+        }}
+      />
+
+      <Tab.Screen
+        name={SCREENS.PRODUCTS}
+        component={ProductsList}
+        options={{
+          title: 'Products',
+          tabBarIcon: ({ focused }) => (
+            <TabIcon focused={focused}>
+
+              <Image
+                source={IMAGES.PRODUCTS}
+                style={iconStyle(focused)}
+                resizeMode="contain"
+              />
+            </TabIcon>
+          ),
+        }}
+      />
+
+      <Tab.Screen
+        name={SCREENS.ACCOUNT}
+        component={CompanySettingScreen}
+        options={{
+          title: 'More',
+          tabBarIcon: ({ focused }) => (
+            <TabIcon focused={focused}>
+              <Image
+                source={IMAGES.MORE}
+                style={iconStyle(focused)}
+                resizeMode="contain"
+              />
+            </TabIcon>
+
+          ),
+        }}
+      />
+    </Tab.Navigator>
   );
 };
 
-export default UserDrawerNav;
+
+export default CompanyBottomTabNav;
+const styles = StyleSheet.create({
+  iconWrapper: {
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
+
+  topLine: {
+    position: 'absolute',
+    top: -6,          // adjust based on tab height
+    width: 30,       // indicator width
+    height: 2,       // thickness
+    borderBottomLeftRadius: 14,
+    borderBottomRightRadius:14,
+    backgroundColor: '#075cab',
+  },
+});

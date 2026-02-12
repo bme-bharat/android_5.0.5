@@ -1,37 +1,51 @@
-import React from 'react';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import UserStackNav from './UserNav/UserStackNav';
-
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import { useNetwork } from "../screens/AppUtils/IdProvider";
+import { LoginStack } from "./UsersRegister";
+import { UserNavigator } from "./UserNav/UserNavigator";
+import { CompanyNavigator } from "./CompanyNav/CompanyNavigator";
+import SplashScreen from "../screens/SplashScreen";
+import Subscription from "../screens/subscription/Subscription";
+import SubscriptionWatcher from "../screens/AppUtils/SubscriptionWatcher";
 
 const RootStack = createNativeStackNavigator();
 
-const AppNavigator = ({ userType }) => {
-  return (
-    <RootStack.Navigator
-      screenOptions={{
-        headerShown: false,
-        animation: 'none', // Disable animations at root level
-      }}
-    >
-      {userType === 'users' ? (
-        <RootStack.Screen 
-          name="UserStack" 
-          component={UserStackNav} 
-        />
-      ) : userType === 'company' ? (
-        <RootStack.Screen 
-          name="CompanyStack" 
-          component={CompanyBottomTab} 
-        />
-      ) : (
-        <RootStack.Screen 
-          name="AuthStack" 
-          component={LoginStack} 
-          options={{ gestureEnabled: false }} // Disable back gesture for auth stack
-        />
-      )}
-    </RootStack.Navigator>
-  );
-};
+export function RootNavigator() {
+  const {
+    isLoggedIn,
+    bootstrapped,
+    myData,
+    needsSubscription,
+    pendingUser
+  } = useNetwork();
 
-export default AppNavigator;
+  if (!bootstrapped) {
+    return <SplashScreen />; // ✅ app frozen until ready
+  }
+
+  return (
+    <>
+      <SubscriptionWatcher />
+
+      <RootStack.Navigator 
+      screenOptions={{  
+        headerShown: false,      // 🔥 Show the header bar
+        headerTitle: '',   
+      
+        }}>
+        {needsSubscription ? (
+          <RootStack.Screen
+            name="Subscription"
+            component={Subscription}
+          />
+        ) : !isLoggedIn ? (
+          <RootStack.Screen name="Auth" component={LoginStack} />
+        ) : myData?.user_type === 'users' ? (
+          <RootStack.Screen name="User" component={UserNavigator} />
+        ) : (
+          <RootStack.Screen name="Company" component={CompanyNavigator} />
+        )}
+
+      </RootStack.Navigator>
+    </>
+  );
+}

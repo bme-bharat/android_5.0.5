@@ -5,7 +5,6 @@ import {
   View, Text, TextInput, TouchableOpacity,
   StyleSheet, Alert, ScrollView, Keyboard,
   Platform,
-  StatusBar,
   ActivityIndicator
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -22,13 +21,13 @@ import ArrowRight from '../../assets/svgIcons/arrow-right-circle.svg';
 
 import { colors, dimensions } from '../../assets/theme.jsx';
 import { addSmsListener, startSmsListener, useOtpRetriever } from '../SmsRetriever.js';
-import AppStyles, { STATUS_BAR_HEIGHT } from '../AppUtils/AppStyles.js';
+import { useNetwork } from '../AppUtils/IdProvider.jsx';
+import { AppHeader } from '../AppUtils/AppHeader.jsx';
 
 const LoginVerifyOTPScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const { fullPhoneNumber, userid, phone } = route.params;
-
   const [OTP, setOTP] = useState('');
   const [timer, setTimer] = useState(30);
   const [isResendEnabled, setIsResendEnabled] = useState(false);
@@ -44,11 +43,11 @@ const LoginVerifyOTPScreen = () => {
         otpInputRef.current?.blur();
       }
     });
-  
+
     return () => hide.remove();
   }, [otpMode]);
-  
-  
+
+
   useEffect(() => {
     if (timer > 0) {
       const countdown = setTimeout(() => setTimer((prev) => prev - 1), 1000);
@@ -174,10 +173,10 @@ const LoginVerifyOTPScreen = () => {
         await AsyncStorage.setItem("userSession", JSON.stringify({ sessionId }));
         return true;
       } else {
-        return false; 
+        return false;
       }
     } catch (error) {
-      return false; 
+      return false;
     }
   };
 
@@ -185,39 +184,16 @@ const LoginVerifyOTPScreen = () => {
 
   const handleLoginSuccess = async (userid) => {
     try {
-      const userResponse = await axios.post(
-        'https://h7l1568kga.execute-api.ap-south-1.amazonaws.com/dev/getUserDetails',
-        { command: "getUserDetails", user_id: userid },
-        { headers: { 'x-api-key': 'k1xuty5IpZ2oHOEOjgMz57wHfdFT8UQ16DxCFkzk' } }
+      const userResponse = await apiClient.post('/getUserDetails',
+        {
+          command: 'getUserDetails',
+          user_id: userid,
+        }
       );
 
       const fetchedUserData = userResponse.data.status_message;
 
       const currentTime = Math.floor(Date.now() / 1000);
-
-      if (fetchedUserData.subscription_expires_on < currentTime) {
-        // Get the formatted expiration date
-        const formattedExpirationDate = formatTimestamp(fetchedUserData.subscription_expires_on);
-
-        // Show alert before navigation
-        Alert.alert(
-          "Your subscription has expired!",
-          `Your subscription expired on ${formattedExpirationDate}. Please renew your subscription.`,
-          [
-            {
-              text: "OK",
-              onPress: () => {
-                if (fetchedUserData.user_type === "company") {
-                  navigation.navigate('CompanySubscriptionLogin', { userId: userid, userDetails: fetchedUserData });
-                } else {
-                  navigation.navigate('UserSubscriptionLogin', { userId: userid, userDetails: fetchedUserData });
-                }
-              }
-            }
-          ]
-        );
-        return;
-      }
 
       switch (fetchedUserData.user_type) {
         case 'users':
@@ -226,19 +202,13 @@ const LoginVerifyOTPScreen = () => {
         case 'company':
           await handleCompanyUser(userid);
           break;
-        case 'BME_ADMIN':
-        case 'BME_EDITOR':
-          await AsyncStorage.setItem('AdminUserData', JSON.stringify(fetchedUserData));
-          // navigation.navigate('AdminBottom');
-          navigation.reset({
-            index: 0,
-            routes: [{ name: 'AdminBottom' }],
-          });
-
-          break;
-        default:
-
       }
+
+      if (fetchedUserData.subscription_expires_on < currentTime) {
+        requireSubscription(fetchedUserData);
+        return;
+      }
+
     } catch (error) {
 
     }
@@ -254,54 +224,45 @@ const LoginVerifyOTPScreen = () => {
   };
 
 
+  const { login, requireSubscription } = useNetwork();
+
   const handleNormalUser = async (userData) => {
-    try {
-      await AsyncStorage.setItem('normalUserData', JSON.stringify(userData));
-      // navigation.navigate('UserBottom');
-      navigation.reset({
-        index: 0,
-        routes: [{ name: 'UserBottom' }],
-      });
+    await AsyncStorage.setItem(
+      'normalUserData',
+      JSON.stringify(userData)
+    );
 
-    } catch (error) {
-
-      showToast("You don't have an internet connection", 'error');
-    }
+    login(userData.user_id); // 🔥 REQUIRED
   };
+
 
   const handleCompanyUser = async (userid) => {
     try {
-      const companyResponse = await axios.post(
-        'https://h7l1568kga.execute-api.ap-south-1.amazonaws.com/dev/getCompanyDetails',
-        { command: "getCompanyDetails", company_id: userid },
-        { headers: { 'x-api-key': 'k1xuty5IpZ2oHOEOjgMz57wHfdFT8UQ16DxCFkzk' } }
-      );
-
+      const companyResponse = await apiClient.post('/getCompanyDetails', {
+        command: 'getCompanyDetails',
+        company_id: userid,
+      });
       const companyData = companyResponse.data.status_message;
-
       const currentTime = Math.floor(Date.now() / 1000);
+      // 🔒 Subscription expired → subscription flow
       if (companyData.subscription_expires_on < currentTime) {
-
-        Alert.alert(
-          "Your subscription has expired!",
-          " renew your subscription."
-        );
-        navigation.navigate('CompanySubscriptionLogin', { userId: userid, companyDetails: companyData });
+        requireSubscription(companyData);
         return;
       }
 
-      const adminApproval = companyData.admin_approval;
-      if (adminApproval === "Pending") {
-        Alert.alert("Please wait for admin approval");
-      } else if (adminApproval === 'Approved') {
-        await handleCompanyApproval(companyData);
-      } else if (adminApproval === "Rejected") {
-        Alert.alert("Your company has been rejected. Press OK to Delete Account");
-      }
-    } catch (error) {
+      // ✅ Valid company → login (NO navigation)
+      await AsyncStorage.setItem(
+        'CompanyUserData',
+        JSON.stringify(companyData)
+      );
 
+      login(companyData.company_id); // 🔥 RootNavigator will switch to CompanyNavigator
+
+    } catch (error) {
+      console.log('Company login error:', error);
     }
   };
+
 
   const handleCompanyApproval = async (companyData) => {
     try {
@@ -362,25 +323,18 @@ const LoginVerifyOTPScreen = () => {
 
   return (
     <View style={styles.container}>
-        <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
-  
-      <View style={styles.headerContainer}>
-
-        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-
-        </TouchableOpacity>
-
-      </View>
-      <View style={styles.content}>
-        <Text style={styles.title}>OTP Verification</Text>
+   <AppHeader
+         title="OTP Verification"
+ 
+       />
+      <View >
 
         <Text style={styles.infoText}>
           Enter OTP sent to <Text style={styles.phoneNumber}>{fullPhoneNumber || phone}</Text>
         </Text>
 
         <OtpInput
-        ref={otpInputRef} 
+          ref={otpInputRef}
           numberOfDigits={6}
           focusColor="#075cab"
           placeholder="•"
@@ -448,8 +402,6 @@ const LoginVerifyOTPScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'whitesmoke',
-    paddingTop:STATUS_BAR_HEIGHT
   },
 
   backButton: {
@@ -464,7 +416,6 @@ const styles = StyleSheet.create({
   // ===== Main Content =====
   content: {
     flex: 1,
-    paddingVertical: 60,
 
   },
   title: {
@@ -473,16 +424,14 @@ const styles = StyleSheet.create({
     color: colors.primary,
     // textAlign: 'center',
     paddingHorizontal: 15,
-
   },
 
   infoText: {
     fontSize: 16,
     // textAlign: 'center',
     color: '#555',
-    marginBottom: 24,
-    marginTop: 10,
     paddingHorizontal: 15,
+    marginVertical:16
 
   },
   resendRow: {
@@ -510,7 +459,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     width: '90%',
-    marginVertical: 40,
+    marginVertical: 26,
     alignSelf: 'center',
   },
   pinCodeContainer: {

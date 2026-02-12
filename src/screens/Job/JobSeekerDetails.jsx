@@ -8,207 +8,266 @@ import ResumeModal from '../helperComponents/resumeModal';
 import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
 
 import { colors, dimensions } from '../../assets/theme.jsx';
-import AppStyles, { commonStyles, STATUS_BAR_HEIGHT } from '../AppUtils/AppStyles.js';
+import AppStyles from '../AppUtils/AppStyles.js';
+import Avatar from '../helperComponents/Avatar.jsx';
+import apiClient from '../ApiClient.jsx';
+import { smartGoBack } from '../../navigation/smartGoBack.jsx';
+import { AppHeader } from '../AppUtils/AppHeader.jsx';
+import MaterialIcons from '@react-native-vector-icons/material-icons';
 
 const CompanyGetJobCandidatesScreen = () => {
   const route = useRoute();
-  const { posts, imageUrl } = route.params;
+  const {
+    posts: routePosts,
+    imageUrl,
+    userId,
+  } = route.params || {};
+
   const navigation = useNavigation()
   const scrollViewRef = useRef(null)
-  const [modalVisible1, setModalVisible1] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
+  const contactSheetRef = useRef(null);
+  const [profile, setPosts] = useState(routePosts || {});
+  console.log('profile',profile)
+  const [loading, setLoading] = useState(!routePosts);
+  const [error, setError] = useState(null);
+  const [imageUrls, setImageUrls] = useState(imageUrl || {});
+
+  useEffect(() => {
+    if (routePosts) return;
+    if (!userId) return;
+
+    const fetchPosts = async () => {
+      try {
+        const response = await apiClient.post('/getJobProfiles', {
+          command: 'getJobProfiles',
+          user_id: userId,
+        });
+
+        if (response.data.status === 'success') {
+          const postsData = response.data.response;
+          if (Array.isArray(postsData) && postsData.length > 0) {
+            setPosts(postsData[0]); // ✅ FIX
+          }
+
+          const imageUrlsObject = {};
+
+          await Promise.all(
+            postsData.map(async (post) => {
+              if (post.fileKey) {
+                try {
+                  const res = await apiClient.post('/getObjectSignedUrl', {
+                    command: 'getObjectSignedUrl',
+                    key: post.fileKey,
+                  });
+                  const img_url = res.data;
+                  if (img_url) {
+                    imageUrlsObject[post.seeker_id] = img_url;
+                  }
+                } catch (e) {
+                  console.warn('Error fetching image URL for', post.seeker_id, e);
+                }
+              }
+            })
+          );
+
+          setImageUrls(imageUrlsObject);
+        } else {
+          console.warn('API Error:', response.data.status_message);
+        }
+      } catch (err) {
+        console.error('Error fetching posts:', err);
+        setError(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPosts();
+  }, [userId]);
+
+
+  const Row = ({ icon, label, value }) => (
+    <TouchableOpacity activeOpacity={0.7} style={styles.row}>
+      <View style={styles.left}>
+        <View style={styles.iconWrap}>
+          <MaterialIcons name={icon} size={20} color="#000" />
+        </View>
+        <View style={styles.textWrap}>
+          <Text style={styles.value}>{value}</Text>
+          <Text style={styles.label}>{label}</Text>
+        </View>
+      </View>
+
+      {/* <MaterialIcons name="chevron-right" size={24} color="#777" /> */}
+    </TouchableOpacity>
+  );
+
+  const isLoading = !profile
+  const isRemoved = error
+  const hasProfile = profile?.first_name
 
   return (
 
     <View style={styles.container}>
-      <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
-
-      <View style={styles.headerContainer}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-
-        </TouchableOpacity>
-
-      </View>
-
-      <ScrollView showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 5, paddingBottom: '20%' }}
-        showsVerticalScrollIndicator={false} ref={scrollViewRef} >
-        <TouchableOpacity
-          onPress={() => {
-            if (typeof imageUrl === 'string') {
-              openMediaViewer([{ type: 'image', url: imageUrl }])
-            }
-          }}
-          activeOpacity={0.8}
-          style={styles.imageContainer}
-        >
-          {typeof imageUrl === 'string' ? (
-            <Image
-              source={{ uri: imageUrl }}
-              style={styles.image}
-              resizeMode="cover"
-              onError={(e) =>
-                console.error('Image load error:', e.nativeEvent.error)
-              }
-            />
-          ) : (
-            <View
-              style={[
-                styles.image,
-                { backgroundColor: imageUrl?.backgroundColor || '#ccc' },
-              ]}
-            >
-              <Text
-                style={[
-                  commonStyles.avatarText,
-                  { color: imageUrl?.textColor || '#000' },
-                ]}
-              >
-                {imageUrl?.initials || 'U'}
-              </Text>
-            </View>
-          )}
-        </TouchableOpacity>
 
 
+      <AppHeader
+        title={"Candidate details"}
 
-        <View style={styles.textContainer}>
-          <Text style={commonStyles.title}>{`${posts.first_name || ""} ${posts.last_name || ""}`}
-          </Text>
-          <View style={commonStyles.labValContainer}>
-            <Text style={commonStyles.label}>Gender</Text>
-            <Text style={commonStyles.colon}>:</Text>
-
-            <Text style={commonStyles.value}>{posts.gender || ""}</Text>
-          </View>
-          <View style={commonStyles.labValContainer}>
-            <Text style={commonStyles.label}>Work experience</Text>
-            <Text style={commonStyles.colon}>:</Text>
-
-            <Text style={commonStyles.value}>{(posts.work_experience || "").trimStart().trimEnd()}</Text>
-          </View>
-          {posts.college?.trim() ? (
-            <View style={commonStyles.labValContainer}>
-              <Text style={commonStyles.label}>College</Text>
-              <Text style={commonStyles.colon}>:</Text>
-              <Text style={commonStyles.value}>{posts.college.trim()}</Text>
-            </View>
-          ) : null}
-
-          {posts.education_qualifications?.trim() && (
-            <View style={commonStyles.labValContainer}>
-              <Text style={commonStyles.label}>Educational qualification</Text>
-              <Text style={commonStyles.colon}>:</Text>
-              <Text style={commonStyles.value}>{posts.education_qualifications.trim()}</Text>
-            </View>
-          )}
-
-          <View style={commonStyles.labValContainer}>
-            <Text style={commonStyles.label}>Expert in</Text>
-            <Text style={commonStyles.colon}>:</Text>
-
-            <View style={{ flexDirection: "column", flex: 2 }}>
-              {posts.expert_in
-                .split(",")
-                .map((language, index) => (
-                  <Text key={index} style={commonStyles.value}>
-                    {language.trim()},
-                  </Text>
-                ))}
-            </View>
-          </View>
-          <View style={commonStyles.labValContainer}>
-            <Text style={commonStyles.label}>City</Text>
-            <Text style={commonStyles.colon}>:</Text>
-
-            <Text style={commonStyles.value}>{posts.city || ""}</Text>
-          </View>
-          <View style={commonStyles.labValContainer}>
-            <Text style={commonStyles.label}>State</Text>
-            <Text style={commonStyles.colon}>:</Text>
-
-            <Text style={commonStyles.value}>{posts.state || ""}</Text>
-          </View>
-
-          <View style={commonStyles.labValContainer}>
-            <Text style={commonStyles.label}>Domain strength</Text>
-            <Text style={commonStyles.colon}>:</Text>
-
-            <Text style={commonStyles.value}>{posts.domain_strength || ""}</Text>
-          </View>
-          {posts?.industry_type?.trim() && (
-            <View style={commonStyles.labValContainer}>
-              <Text style={commonStyles.label}>Industry type</Text>
-              <Text style={commonStyles.colon}>:</Text>
-
-              <Text style={commonStyles.value}>{posts.industry_type || ""}</Text>
-            </View>
-          )}
-
-          {posts.languages?.trim() && (
-            <View style={commonStyles.labValContainer}>
-              <Text style={commonStyles.label}>Languages known</Text>
-              <Text style={commonStyles.colon}>:</Text>
-
-              <View style={{ flexDirection: "column", flex: 2 }}>
-                {posts.languages
-                  .split(",")
-                  .map((language, index) => (
-                    <Text key={index} style={commonStyles.value}>
-                      {language.trim()}
-                    </Text>
-                  ))}
-              </View>
-            </View>
-          )}
-
-          {posts.preferred_cities?.trim() && (
-            <View style={commonStyles.labValContainer}>
-              <Text style={commonStyles.label}>Preferred cities</Text>
-              <Text style={commonStyles.colon}>:</Text>
-
-              <View style={{ flexDirection: "column", flex: 2 }}>
-                {posts.preferred_cities
-                  .split(",")
-                  .map((city, index) => (
-                    <Text key={index} style={commonStyles.value}>
-                      {city.trim()}
-                    </Text>
-                  ))}
-              </View>
-            </View>
-          )}
-
-          {posts.expected_salary?.trim() && (
-            <View style={commonStyles.labValContainer}>
-              <Text style={commonStyles.label}>Expected salary</Text>
-              <Text style={commonStyles.colon}>:</Text>
-              <Text style={commonStyles.value}>{posts.expected_salary.trim()}</Text>
-            </View>
-          )}
-
+      />
+      {isLoading && (
+        <View style={AppStyles.center}>
+          <ActivityIndicator size="small" color="#075cab" />
         </View>
+      )}
+
+      {!isLoading && isRemoved && (
+        <View style={AppStyles.center}>
+          <Text style={AppStyles.removedText}>
+            Create job profile
+          </Text>
+        </View>
+      )}
+      {!isLoading && !isRemoved && hasProfile && (
+        <>
+          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16 }}
+            showsHorizontalScrollIndicator={false} ref={scrollViewRef}>
+            <TouchableOpacity
+              onPress={() => {
+                if (typeof imageUrl === 'string') {
+                  openMediaViewer([{ type: 'image', url: imageUrl }])
+                }
+              }}
+              activeOpacity={0.8}
+              style={styles.imageContainer}
+            >
+
+              <Avatar
+                imageUrl={imageUrls}
+                name={profile?.first_name}
+                size={100}
+              />
+            </TouchableOpacity>
+
+            <Row
+              icon="person"
+              value= {`${(profile?.first_name || '').trim()} ${(profile?.last_name || '').trim()}`}
+              label="candidate"
+            />
+
+            <Row
+              icon="transgender"
+              value={profile?.gender}
+              label="Gender"
+            />
+
+            <Row
+              icon="work"
+              value={profile?.work_experience}
+              label="Work experience"
+            />
+            {profile?.college && (
+              <Row
+                icon="school"
+                value={profile?.college}
+                label="College"
+              />
+            )}
 
 
-        <TouchableOpacity onPress={() => setModalVisible1(true)} >
-          <Text style={styles.contact}>Contact details</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => setModalVisible(true)} >
-          <Text style={styles.contact}>View resume</Text>
-        </TouchableOpacity>
-        <ContactSupplierModal
-          visible={modalVisible1}
-          onClose={() => setModalVisible1(false)}
-          company_id={posts.user_id}
-        />
-        <ResumeModal
-          visible={modalVisible}
-          onClose={() => setModalVisible(false)}
-          company_id={posts.user_id}
-        />
+            <Row
+              icon="school"
+              value={profile?.education_qualifications}
+              label="Educational qualification"
+            />
 
-      </ScrollView>
 
+            <Row
+              icon="engineering"
+              value={profile?.expert_in}
+              label="Expert in"
+            />
+
+
+            <Row
+              icon="location-on"
+              value={`${profile?.city || ''}, ${profile?.state || ''}`.trim()}
+              label="Address"
+            />
+
+            <Row
+              icon="domain"
+              value={profile?.domain_strength}
+              label="Domain strength"
+            />
+
+            <Row
+              icon="category"
+              value={profile?.industry_type}
+              label="Industry type"
+            />
+
+            {profile?.languages && (
+              <Row
+                icon="school"
+                value={profile?.languages}
+                label="Languages known"
+              />
+            )}
+            <Row
+              icon="laptop"
+              value={profile?.preferred_cities}
+              label="Preferred cities"
+            />
+
+            <Row
+              icon="attach-money"
+              value={profile?.expected_salary}
+              label="Expected salary"
+            />
+
+
+
+
+          </ScrollView>
+          <View style={styles.actionRow}>
+
+            <TouchableOpacity
+              onPress={() => {
+                contactSheetRef.current?.present();
+              }}
+              style={styles.halfButtonPrimary}
+            >
+              <View style={styles.rowCenter}>
+                {/* <MaterialIcons
+                  name="phone"
+                  size={20}
+                  color={colors.primary}
+                  style={styles.icon}
+                /> */}
+                <Text style={styles.buttonTextPrimary}>Contact details</Text>
+              </View>
+            </TouchableOpacity>
+            {/* <View style={styles.centerDivider} /> */}
+
+            <TouchableOpacity onPress={() => setModalVisible(true)}
+              style={styles.halfButtonDelete} >
+              <Text style={styles.buttonTextPrimary}>View resume</Text>
+            </TouchableOpacity>
+          </View>
+        </>
+      )}
+      <ContactSupplierModal
+        ref={contactSheetRef}
+        company_id={profile?.user_id}
+      />
+
+      <ResumeModal
+        visible={modalVisible}
+        onClose={() => setModalVisible(false)}
+        company_id={profile?.user_id}
+      />
     </View>
   );
 };
@@ -217,8 +276,7 @@ const CompanyGetJobCandidatesScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'white',
-    paddingTop: STATUS_BAR_HEIGHT
+
   },
 
   headerContainer: {
@@ -231,11 +289,10 @@ const styles = StyleSheet.create({
 
   },
   imageContainer: {
-    width: 140,
-    height: 140,
-    alignSelf: 'center',
-    marginBottom: 20,
-    marginTop: 10
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: 10,
+    marginBottom: 20
   },
   image: {
     width: '100%',
@@ -254,67 +311,9 @@ const styles = StyleSheet.create({
     // borderColor: '#ccc',
     borderRadius: 10,
     // padding: 15,
-    backgroundColor: 'white',
 
   },
-  name: {
-    fontSize: 20,
-    fontWeight: '400',
-    marginBottom: 15,
-    textAlign: 'center',
-    color: 'black',
 
-  },
-  detail: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 5,
-    elevation: 3, // Android shadow
-    backgroundColor: 'white',
-    shadowColor: '#000', // iOS shadow color
-    shadowOffset: { width: 0, height: 2 }, // iOS shadow offset
-    shadowOpacity: 0.2, // iOS shadow opacity
-    shadowRadius: 3, // iOS shadow radius
-    borderRadius: 10,
-    padding: 10
-  },
-  colon: {
-    width: 20, // Fixed width for the colon
-    textAlign: 'center', // Center the colon
-    color: 'black',
-    fontWeight: '500',
-    fontSize: 15,
-    alignSelf: 'flex-start',
-
-  },
-  label: {
-    flex: 1, // Take up available space
-    color: 'black',
-    fontWeight: '500',
-    fontSize: 15,
-    textAlign: 'left', // Align text to the left
-    alignSelf: 'flex-start',
-
-  },
-  value: {
-    flex: 2, // Take the remaining space
-    flexShrink: 1,
-    color: 'black',
-    fontWeight: '400',
-    fontSize: 15,
-    textAlign: 'left', // Align text to the left
-    alignSelf: 'flex-start',
-  },
-  labelText: {
-    flex: 7,  // 70% of the width
-    fontSize: 16,
-    color: '#333',
-  },
-  backButton: {
-    alignSelf: 'flex-start',
-    padding: 10,
-
-  },
   contact: {
     fontSize: 16,
     color: '#075cab',
@@ -388,14 +387,117 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
 
-  icon: {
-    marginRight: 10,
-  },
 
   dropdownText: {
     fontSize: 16,
     color: '#075cab',
   },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderColor: '#e2e2e2',
+  },
+
+  left: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+
+  iconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#e2e2e2',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  textWrap: {
+    flexShrink: 1
+  },
+  value: {
+    fontSize: 15,
+    fontWeight: '400',
+    color: colors.text_primary,
+
+  },
+
+  label: {
+    fontSize: 13,
+    color: '#888',
+    marginTop: 2,
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: '500',
+    color: colors.text_primary,
+
+  },
+  category: {
+    fontSize: 14,
+    fontWeight: '400',
+    color: colors.text_secondary,
+  },
+  textContainer: {
+    marginLeft: 10,
+    flex: 1
+  },
+  actionRow: {
+    flexDirection: 'row',
+    marginHorizontal: 10,
+    paddingVertical: 6,
+    // borderTopWidth: 1,
+    // borderColor: '#e0e0e0',
+    overflow: 'hidden',
+    // backgroundColor: 'red'
+  },
+  centerDivider: {
+    width: 1,
+    backgroundColor: '#e0e0e0',   // 👈 vertical center line
+  },
+  halfButtonDelete: {
+    flex: 1,               // 👈 takes half
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    borderRadius: 8,
+    // borderWidth: 1,
+    // borderColor: colors.danger,
+    marginHorizontal: 6,
+    backgroundColor: '#E7F0FA',
+  },
+
+  halfButtonPrimary: {
+    flex: 1,               // 👈 takes half
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    borderRadius: 8,
+    // borderWidth: 1,
+    // borderColor: colors.primary,
+    backgroundColor: '#E7F0FA',
+    marginHorizontal: 6,
+
+  },
+
+  buttonTextPrimary: {
+    fontWeight: '500',
+    color: colors.primary,
+  },
+  rowCenter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+
+  icon: {
+    marginRight: 6,
+  },
+
 });
 
 export default CompanyGetJobCandidatesScreen;

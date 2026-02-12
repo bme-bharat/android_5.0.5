@@ -19,18 +19,73 @@ import {
 } from '@react-native-firebase/messaging';
 import notifee, { EventType } from '@notifee/react-native';
 import { navigationRef } from './../../App';
-import LinearGradient from 'react-native-linear-gradient';
-import { STATUS_BAR_HEIGHT } from './AppUtils/AppStyles';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { CommonActions } from '@react-navigation/native';
+import { useNetwork } from './AppUtils/IdProvider';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const NotificationHandler = () => {
   const notificationListener = useRef(null);
+  const insets = useSafeAreaInsets();
+
   const [appState, setAppState] = useState(AppState.currentState);
   const [inAppNotification, setInAppNotification] = useState(null);
   const slideAnim = useRef(new Animated.Value(-100)).current;
   const fadeAnim = useRef(new Animated.Value(1)).current;
 
   const timeoutRef = useRef(null);
+
+  const getStoredUserTypeAndId = async () => {
+    const keys = ['CompanyUserData', 'normalUserData', 'AdminUserData'];
+
+    for (const key of keys) {
+      const stored = await AsyncStorage.getItem(key);
+      if (stored) {
+        const userData = JSON.parse(stored);
+
+        const userType =
+          userData.user_type ||
+          (userData.company_id ? 'company' : 'users');
+
+        const userId = userData.company_id || userData.user_id;
+
+        return { userType, userId };
+      }
+    }
+
+    return null;
+  };
+
+
+  const resetToMainStackWithScreen = async (screen, params) => {
+    const session = await getStoredUserTypeAndId();
+
+    if (!session?.userType) {
+      console.warn('❌ No session found for navigation reset');
+      return;
+    }
+
+    const rootName = session.userType === 'company' ? 'Company' : 'User';
+
+    navigationRef.current?.dispatch(
+      CommonActions.reset({
+        index: 0,
+        routes: [
+          {
+            name: rootName,     // User or Company (from RootNavigator)
+            state: {
+              index: 1,
+              routes: [
+                { name: 'AppDrawer' },        // UX base inside that role
+                { name: screen, params },     // Target from link/notification
+              ],
+            },
+          },
+        ],
+      })
+    );
+
+  };
 
   useEffect(() => {
     const appStateListener = AppState.addEventListener("change", (nextAppState) => {
@@ -166,42 +221,47 @@ const NotificationHandler = () => {
     } else if (notificationType === "contact_alert") {
       waitForNavigation(() => navigateToContactViewed(parsedData));
     } else if (notificationType === "job_suggestion") {
-      waitForNavigation(() => {
+      waitForNavigation(async () => {
+
         const params = {
           ...parsedData,
           post_id: parsedData.job_post_id, // ✅ map job_post_id → post_id
         };
-        navigationRef.navigate("JobDetail", params);
+        await resetToMainStackWithScreen("JobDetail", params);
+
       });
 
     } else if (notificationType === "service_enquiry") {
-      waitForNavigation(() => {
+      waitForNavigation(async () => {
+
         const params = {
           ...parsedData,
           enquiryID: parsedData.enquiry_id,
         };
-        navigationRef.navigate("EnquiryDetails", params);
+        await resetToMainStackWithScreen("EnquiryDetails", params);
       });
 
     } else {
-      waitForNavigation(() => {
+      waitForNavigation(async () => {
+
         const screen = data?.screen || "Home";
         const params = parsedData || {};
-        navigationRef.navigate(screen, params);
+        await resetToMainStackWithScreen(screen, params);
       });
     }
   };
 
   const waitForNavigation = (callback) => {
-    const checkNavigationReady = setInterval(() => {
+    const checkNavigationReady = setInterval(async () => {
       if (navigationRef.isReady()) {
         clearInterval(checkNavigationReady);
-        callback();
+        await callback();
       }
     }, 100);
   };
 
-  const navigateToContactViewed = (data) => {
+
+  const navigateToContactViewed = async (data) => {
     const userType = data?.enquirer_user_type;
     const enquiredUserId = data?.enquirer_id;
 
@@ -211,8 +271,8 @@ const NotificationHandler = () => {
     }
 
     const targetRoute =
-      userType === "users" ? "UserDetailsPage" :
-        userType === "company" ? "CompanyDetailsPage" : null;
+      userType === "users" ? "UserDetails" :
+        userType === "company" ? "CompanyDetails" : null;
 
     if (!targetRoute) {
       console.warn("❌ Unknown user type:", userType);
@@ -228,12 +288,13 @@ const NotificationHandler = () => {
       return;
     }
 
-    navigationRef.navigate(targetRoute, { userId: enquiredUserId });
+    await resetToMainStackWithScreen(targetRoute, { userId: enquiredUserId });
   };
 
 
 
-  const navigateToForumComment = (data) => {
+  const navigateToForumComment = async (data) => {
+
     const forumId = data?.forum_id;
     const commentId = data?.comment_id;
     const reactId = data?.reaction_id;
@@ -244,14 +305,16 @@ const NotificationHandler = () => {
 
     if (
       currentRoute?.name === 'Comment' &&
-      currentRoute?.params?.forum_id === forumId &&
-      (!commentId || currentRoute?.params?.highlightId === commentId) &&
-      (!reactId || currentRoute?.params?.highlightReactId === reactId)
+      currentRoute?.params?.forum_id === forumId
     ) {
+      navigationRef.setParams({
+        ...(commentId ? { highlightId: commentId } : {}),
+        ...(reactId ? { highlightReactId: reactId } : {}),
+      });
       return;
     }
 
-    navigationRef.navigate('Comment', {
+    await resetToMainStackWithScreen('Comment', {
       forum_id: forumId,
       ...(commentId ? { highlightId: commentId } : {}),
       ...(reactId ? { highlightReactId: reactId } : {}),
@@ -260,7 +323,8 @@ const NotificationHandler = () => {
 
 
 
-  const navigateToAppliedJobs = (data) => {
+
+  const navigateToAppliedJobs = async (data) => {
     const seekerId = data?.seeker_id;
 
     if (!seekerId) {
@@ -269,14 +333,14 @@ const NotificationHandler = () => {
     }
 
     if (
-      navigationRef.getCurrentRoute()?.name === 'CompanyGetAppliedJobs' &&
+      navigationRef.getCurrentRoute()?.name === 'CompanyGetJobCandidates' &&
       navigationRef.getCurrentRoute()?.params?.seeker_id === seekerId
     ) {
 
       return;
     }
 
-    navigationRef.navigate('CompanyGetAppliedJobs', {
+    await resetToMainStackWithScreen('CompanyGetJobCandidates', {
       userId: seekerId
     });
   };
@@ -296,31 +360,31 @@ const NotificationHandler = () => {
   return (
     <>
       {inAppNotification && (
-     
 
-          <View style={styles.safeArea}>
-            <Animated.View
-              style={[
-                styles.bannerContainer,
-                {
-                  transform: [{ translateY: slideAnim }],
-                  opacity: fadeAnim,
-                },
-              ]}
-            >
-              <TouchableOpacity onPress={handleBannerPress} activeOpacity={0.95}>
-                <View style={styles.banner}>
-                  <View style={styles.iconContainer}>
-                    <Text style={styles.icon}>🔔</Text>
-                  </View>
-                  <View style={styles.textContainer}>
-                    <Text style={styles.title}>{inAppNotification.title}</Text>
-                    <Text style={styles.body}>{inAppNotification.body}</Text>
-                  </View>
+
+        <View style={[styles.safeArea, { top: insets?.top }]}>
+          <Animated.View
+            style={[
+              styles.bannerContainer,
+              {
+                transform: [{ translateY: slideAnim }],
+                opacity: fadeAnim,
+              },
+            ]}
+          >
+            <TouchableOpacity onPress={handleBannerPress} activeOpacity={0.95}>
+              <View style={styles.banner}>
+                <View style={styles.iconContainer}>
+                  <Text style={styles.icon}>🔔</Text>
                 </View>
-              </TouchableOpacity>
-            </Animated.View>
-          </View>
+                <View style={styles.textContainer}>
+                  <Text style={styles.title}>{inAppNotification.title}</Text>
+                  <Text style={styles.body}>{inAppNotification.body}</Text>
+                </View>
+              </View>
+            </TouchableOpacity>
+          </Animated.View>
+        </View>
 
       )}
     </>
@@ -332,7 +396,7 @@ const NotificationHandler = () => {
 const styles = StyleSheet.create({
   safeArea: {
     position: 'absolute',
-    top: STATUS_BAR_HEIGHT +60,
+
     left: 0,
     right: 0,
     zIndex: 9999,

@@ -3,23 +3,19 @@ import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-nati
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
 import { colors, dimensions } from '../../assets/theme.jsx';
-import AppStyles, { STATUS_BAR_HEIGHT } from '../AppUtils/AppStyles.js';
+import { AppHeader } from '../AppUtils/AppHeader.jsx';
 
 const TermsAndConditionsScreen = () => {
   const navigation = useNavigation();
 
   return (
     < >
-      <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
+      <AppHeader
+        title="Terms and conditions"
 
-      <View style={styles.headerContainer}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
+      />
 
-        </TouchableOpacity>
-      </View>
-
-      <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[{ paddingHorizontal: 10, marginTop: 10 }]} showsVerticalScrollIndicator={false}>
         <Text style={styles.title}>Welcome to BME Bharat App</Text>
         <Text style={styles.subValue}>
           By accessing or using the App, you agree to be bound by these Terms and Conditions. If you do not agree to these Terms, please do not use the App.
@@ -91,12 +87,11 @@ const TermsAndConditionsScreen = () => {
 
         <Text style={styles.sectionHeading}>Contact Us</Text>
         <Text style={styles.subValue}>
-          If you have questions or concerns about our legal compliance specific to Bharat or require assistance related to legal matters, please contact us at:
-        </Text>
-        <Text style={styles.subValue}>
+          If you have questions or concerns about our legal compliance specific to Bharat or require assistance related to legal matters, please contact us at: {'\n'}
           • Email: admin@bmebharat.com{'\n'}
           • Phone Number: +91 8310491223
         </Text>
+
       </ScrollView>
     </>
   );
@@ -109,7 +104,7 @@ const styles = StyleSheet.create({
 
   },
   sectionHeading: {
-    fontSize: 13,
+
     fontWeight: '500',
     color: colors.text_primary,
     marginBottom: 5,
@@ -118,80 +113,40 @@ const styles = StyleSheet.create({
     flex: 2, // Take the remaining space
     flexShrink: 1,
     color: colors.text_primary,
-    fontWeight: '400',
-    fontSize: 13,
     textAlign: 'left', // Align text to the left
     alignSelf: 'flex-start',
-    marginBottom: 5
 
   },
   subValue: {
     flex: 2, // Take the remaining space
     flexShrink: 1,
-    color: colors.text_secondary,
-    fontWeight: '300',
     fontSize: 13,
+    color: colors.text_secondary,
     textAlign: 'left', // Align text to the left
     alignSelf: 'flex-start',
     marginBottom: 10,
   },
-  headerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: 'white',
-    borderBottomWidth: 1,
-    borderColor: '#f0f0f0',
-    paddingTop: STATUS_BAR_HEIGHT
-  },
-  container1: {
-    flex: 1,
-
-    backgroundColor: '#fff',
-    paddingTop: STATUS_BAR_HEIGHT
-  },
+  
   container: {
     padding: 10,
     backgroundColor: "white"
 
   },
   title: {
-    fontSize: 14,
     fontWeight: '500',
     marginBottom: 10,
-    color: "black",
     textAlign: 'justify',
   },
   heading: {
-    fontSize: 14,
     fontWeight: '500',
     marginVertical: 5,
-    color: "black",
   },
   subHeading: {
-    fontSize: 14,
-    fontWeight: '400',
     marginTop: 5,
     marginBottom: 3,
-    color: "black",
-  },
-  paragraph: {
-    fontSize: 14,
-    lineHeight: 20,
-    marginBottom: 10,
-    // textAlign: 'justify',
-    color: "black",
-    fontWeight: '300',
-  },
-  list: {
-    fontSize: 14,
-    lineHeight: 20,
-    marginBottom: 10,
-    paddingLeft: 10,
-    color: "black",
-    fontWeight: '300',
 
   },
+
 });
 
 export default TermsAndConditionsScreen;

@@ -16,11 +16,12 @@ import { updateJobPost } from '../Redux/Job_Actions';
 import { showToast } from '../AppUtils/CustomToast';
 import apiClient from '../ApiClient';
 import { useNetwork } from '../AppUtils/IdProvider';
-import AppStyles, { STATUS_BAR_HEIGHT } from '../AppUtils/AppStyles';
+import AppStyles from '../AppUtils/AppStyles';
 import { EventRegister } from 'react-native-event-listeners';
 import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
 
 import { colors, dimensions } from '../../assets/theme.jsx';
+import { AppHeader } from '../AppUtils/AppHeader.jsx';
 const CompanyJobEditScreen = ({ route }) => {
   const { myId, myData } = useNetwork();
 
@@ -265,15 +266,13 @@ const CompanyJobEditScreen = ({ route }) => {
 
   return (
     <View style={styles.container5}>
-      <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
-
-      <TouchableOpacity style={styles.backButton} activeOpacity={0.8} onPress={() => navigation.goBack()}>
-        <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-
-      </TouchableOpacity>
+      <AppHeader
+             title={"Edit job"}
+     
+           />
 
       <KeyboardAwareScrollView
-        contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 5, paddingBottom: '30%' }}
+        contentContainerStyle={[{ paddingHorizontal: 5, paddingBottom: '30%', top:10 }]}
         keyboardShouldPersistTaps="handled"
         extraScrollHeight={20}  // Adjust for better visibility when keyboard opens
         showsVerticalScrollIndicator={false}
@@ -449,7 +448,6 @@ const styles = StyleSheet.create({
 
   container5: {
     backgroundColor: 'white',
-    paddingTop: STATUS_BAR_HEIGHT
   },
 
   container: {

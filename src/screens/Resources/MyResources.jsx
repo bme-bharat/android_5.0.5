@@ -5,7 +5,7 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Toast from 'react-native-toast-message';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import Video from 'react-native-video';
 import { Image as FastImage } from 'react-native';
 import Message from '../../components/Message';
@@ -30,14 +30,16 @@ import File from '../../assets/svgIcons/file.svg';
 import Add from '../../assets/svgIcons/add.svg';
 
 import { colors, dimensions } from '../../assets/theme.jsx';
-import AppStyles, { STATUS_BAR_HEIGHT } from '../AppUtils/AppStyles.js';
 const defaultLogo = Image.resolveAssetSource(defaultImage).uri;
 
-const YourResourcesList = ({ navigation, route }) => {
+const YourResourcesList = ({ userId, onScroll }) => {
+  const route = useRoute();
   const { myId, myData } = useNetwork();
+  const profileUserId = route.params?.userId ?? myId
 
+  const isMyProfile = profileUserId === myId
+  const navigation = useNavigation()
   const [allForumPost, setAllForumPost] = useState([]);
-  console.log('allForumPost', allForumPost)
   const [imageUrls, setImageUrls] = useState({});
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [postToDelete, setPostToDelete] = useState(null);
@@ -122,12 +124,12 @@ const YourResourcesList = ({ navigation, route }) => {
   }, [])
 
   const fetchResources = async (loadMore = false) => {
-    if (!myId) return;
+    if (!profileUserId ) return;
     setLoading(true);
     try {
       const response = await apiClient.post("/getUsersAllResourcePosts", {
         command: "getUsersAllResourcePosts",
-        user_id: myId,
+        user_id: profileUserId,
         limit: 10,
         lastEvaluatedKey: loadMore ? lastEvaluatedKey : null,
       });
@@ -310,58 +312,59 @@ const YourResourcesList = ({ navigation, route }) => {
         onPress={() =>
           navigation.navigate("ResourceDetails", { resourceID: item.resource_id })
         }
+        style={styles.postContainer}
       >
-        <View style={styles.postContainer}>
-          <View style={styles.imageContainer}>
-            {item?.extraData?.type?.startsWith("image/") ? (
-              <Image
-                source={{ uri: fileUrl }}
-                style={styles.image}
-                resizeMode="contain"
-              />
-            ) : item?.extraData?.type?.startsWith("video/") ? (
-              <Video
-                source={{ uri: fileUrl }}
-                style={styles.video}
-                resizeMode="contain"
-                paused
-              />
-            ) : item?.fileKey ? (
-              <View style={styles.documentContainer}>
-                <Icon width={dimensions.icon.xl} height={dimensions.icon.xl} color={color} />
-                <Text style={[styles.docText, { color }]}>
-                  {item?.extraData?.name?.split(".")?.pop()?.toUpperCase() || "DOC"}
-                </Text>
-              </View>
-            ) : (
-              // Fallback to image if nothing matches
-              <Image
-                source={{ uri: fileUrl }}
-                style={styles.image}
-                resizeMode="contain"
-              />
-            )}
+
+        <View style={styles.imageContainer}>
+          {item?.extraData?.type?.startsWith("image/") ? (
+            <Image
+              source={{ uri: fileUrl }}
+              style={styles.image}
+              resizeMode="contain"
+            />
+          ) : item?.extraData?.type?.startsWith("video/") ? (
+            <Video
+              source={{ uri: fileUrl }}
+              style={styles.video}
+              resizeMode="contain"
+              paused
+            />
+          ) : item?.fileKey ? (
+            <View style={styles.documentContainer}>
+              <Icon width={dimensions.icon.xl} height={dimensions.icon.xl} color={color} />
+              <Text style={[styles.docText, { color }]}>
+                {item?.extraData?.name?.split(".")?.pop()?.toUpperCase() || "DOC"}
+              </Text>
+            </View>
+          ) : (
+            // Fallback to image if nothing matches
+            <Image
+              source={{ uri: fileUrl }}
+              style={styles.image}
+              resizeMode="contain"
+            />
+          )}
+        </View>
+
+
+        <View style={styles.textContainer}>
+          <View style={styles.productDetails}>
+            <Text numberOfLines={1} style={styles.value}>
+              {item.title || ""}
+            </Text>
+
+            <MyPostBody
+              html={item.resource_body}
+              forumId={item.resource_id}
+              numberOfLines={2}
+            />
           </View>
 
+          {item.posted_on && (
+            <Text style={styles.value}>{formattedDate || ""}</Text>
+          )}
 
-          <View style={styles.textContainer}>
-            <View style={styles.productDetails}>
-              <Text numberOfLines={1} style={styles.value}>
-                {item.title || ""}
-              </Text>
-
-              <MyPostBody
-                html={item.resource_body}
-                forumId={item.resource_id}
-                numberOfLines={2}
-              />
-            </View>
-
-            {item.posted_on && (
-              <Text style={styles.value}>{formattedDate || ""}</Text>
-            )}
-
-
+          {isMyProfile &&
             <View style={styles.buttonContainer}>
               <TouchableOpacity
                 style={[styles.editButton, { marginRight: 10 }]}
@@ -380,8 +383,9 @@ const YourResourcesList = ({ navigation, route }) => {
                 <Text style={styles.deleteButtonText}>Delete</Text>
               </TouchableOpacity>
             </View>
-          </View>
+          }
         </View>
+
       </TouchableOpacity>
     );
   };
@@ -398,36 +402,7 @@ const YourResourcesList = ({ navigation, route }) => {
     allForumPost?.removed_by_author
   ) {
     return (
-      <View style={styles.container}>
-        <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
-
-        <View style={styles.headerContainer}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => {
-              if (navigation.canGoBack()) {
-                navigation.goBack();
-              } else {
-                navigation.navigate('Home3');
-              }
-            }}
-          >
-            <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-
-          </TouchableOpacity>
-
-          {!loading && (
-            <TouchableOpacity
-              style={styles.circle}
-              onPress={() => navigation.navigate('ResourcesPost')}
-            >
-              <Add width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-
-              <Text style={styles.shareText}>Contribute</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-
+      <>
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
           {loading ? (
             <ActivityIndicator size="small" color="#075cab" />
@@ -435,34 +410,19 @@ const YourResourcesList = ({ navigation, route }) => {
             <Text style={{ fontSize: 16, color: 'gray' }}>No resources available</Text>
           )}
         </View>
-      </View>
+      </>
     );
   }
 
 
   return (
     <View style={styles.container}>
-      <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
-
-      <View style={styles.headerContainer}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.circle}
-          onPress={() => navigation.navigate('ResourcesPost')}>
-          <Add width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-
-          <Text style={styles.shareText}>Contribute</Text>
-        </TouchableOpacity>
-      </View>
-
 
       <FlatList
         data={allForumPost}
         renderItem={RenderPostItem}
-        contentContainerStyle={{ paddingBottom: '20%' }}
+        onScroll={onScroll}
+        // contentContainerStyle={AppStyles.scrollViewContainer}
         keyExtractor={keyExtractor}
         showsHorizontalScrollIndicator={false}
         showsVerticalScrollIndicator={false}
@@ -513,12 +473,9 @@ const styles = StyleSheet.create({
     marginBottom: 5,
     marginHorizontal: 5,
     backgroundColor: 'white',
-    justifyContent: 'center',
     borderRadius: 10,
-    borderWidth: 0.5,
-    borderColor: '#ddd',
-    shadowColor: '#000',
-    top: 5
+    // borderWidth: 0.5,
+    // borderColor: '#ddd',
   },
   imageContainer: {
     flex: 1,
@@ -573,21 +530,8 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    backgroundColor: 'white',
-    paddingTop: STATUS_BAR_HEIGHT
-  },
-  createPostButton: {
-    position: 'absolute',
-    bottom: 40,
-    right: 10,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: "#075cab"
-  },
 
+  },
 
   image: {
     width: 100,

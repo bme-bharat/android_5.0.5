@@ -1,17 +1,15 @@
 // BottomSheetProvider.js
 import React, { createContext, useContext, useRef, useState, useCallback, useEffect } from 'react';
 import BottomSheet from './BottomSheet';
-import { BackHandler, Dimensions, Keyboard,LogBox } from 'react-native';
+import { BackHandler, Dimensions, Keyboard, LogBox } from 'react-native';
 
 const screenHeight = Dimensions.get('window').height;
-
-const {  } = require('react-native').Dimensions.get('window');
-const MAX_TRANSLATE_Y = -screenHeight *0.80 ;
+const OPEN_HEIGHT = screenHeight * 0.8;
 
 const BottomSheetContext = createContext({
-    openSheet: (content, snapPoint) => {},
-    closeSheet: () => {},
-    isOpen: false,
+  openSheet: (content) => {},
+  closeSheet: () => {},
+  isOpen: false,
 });
 
 LogBox.ignoreLogs([
@@ -21,7 +19,6 @@ LogBox.ignoreLogs([
 export const BottomSheetProvider = ({ children }) => {
   const ref = useRef(null);
   const [sheetContent, setSheetContent] = useState(null);
-  const [snapPoint, setSnapPoint] = useState(MAX_TRANSLATE_Y);
   const [isOpen, setIsOpen] = useState(false);
   const requestInputBarClose = useRef(null);
 
@@ -29,29 +26,25 @@ export const BottomSheetProvider = ({ children }) => {
     requestInputBarClose.current = fn;
   }, []);
 
-  // ⬇⬇ ADD THIS ⬇⬇
   useEffect(() => {
     const backHandler = BackHandler.addEventListener(
-      "hardwareBackPress",
+      'hardwareBackPress',
       () => {
         if (isOpen) {
-          ref.current?.scrollTo(0);   // close the sheet
-          return true;                // BLOCK back navigation
+          ref.current?.scrollTo(OPEN_HEIGHT); // ✅ CLOSE
+          return true;
         }
-        return false;                 // allow normal back
+        return false;
       }
     );
-  
+
     return () => backHandler.remove();
   }, [isOpen]);
-  
-  // ⬆⬆ END ADDITION ⬆⬆
 
-  const openSheet = useCallback((content, point = MAX_TRANSLATE_Y) => {
-      setSheetContent(content);
-      setSnapPoint(point);
-      setIsOpen(true);
-      setTimeout(() => ref.current?.scrollTo(point), 50);
+  const openSheet = useCallback((content) => {
+    setSheetContent(content);
+    setIsOpen(true);
+    setTimeout(() => ref.current?.scrollTo(0), 50); // ✅ OPEN
   }, []);
 
   const closeSheet = useCallback(() => {
@@ -59,26 +52,28 @@ export const BottomSheetProvider = ({ children }) => {
       requestInputBarClose.current();
     }
     Keyboard.dismiss();
-    ref.current?.scrollTo(0);
+    ref.current?.scrollTo(OPEN_HEIGHT); // ✅ CLOSE
   }, []);
 
   return (
-     <BottomSheetContext.Provider value={{ openSheet, closeSheet, isOpen, setOnRequestInputBarClose }}>
-          {children}
-          {isOpen && (
-              <BottomSheet
-                ref={ref}
-                onClose={() => {
-                  setIsOpen(false);
-                  setSheetContent(null);
-                }}
-              >
-                  {sheetContent}
-              </BottomSheet>
-          )}
-      </BottomSheetContext.Provider>
+    <BottomSheetContext.Provider
+      value={{ openSheet, closeSheet, isOpen, setOnRequestInputBarClose }}
+    >
+      {children}
+
+      {isOpen && (
+        <BottomSheet
+          ref={ref}
+          onClose={() => {
+            setIsOpen(false);
+            setSheetContent(null);
+          }}
+        >
+          {sheetContent}
+        </BottomSheet>
+      )}
+    </BottomSheetContext.Provider>
   );
 };
-
 
 export const useBottomSheet = () => useContext(BottomSheetContext);

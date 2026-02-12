@@ -21,30 +21,32 @@ import femaleImage from '../../images/homepage/female.jpg';
 import companyImage from '../../images/homepage/buliding.jpg'
 import { useSelector } from 'react-redux';
 import { useNavigation } from '@react-navigation/native';
-import { generateAvatarFromName } from '../helperComponents/useInitialsAvatar';
 import { useKeyboardInput } from './KeyboardAvoidingContainer';
 import Send from '../../assets/svgIcons/send-fill.svg';
 
 import { colors, dimensions } from '../../assets/theme.jsx';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Avatar from '../helperComponents/Avatar.jsx';
+import { useNetwork } from './IdProvider.jsx';
 const COLOR_PLACEHOLDER = '#888';
 
 const CommentInputBar = ({
-  storedUserId,
+  
   forum_id,
   onCommentAdded,
   onEditComplete,
   item
 }) => {
 
-  const navigation = useNavigation();
+    const { myId, myData } = useNetwork();
   const { setOnRequestInputBarClose, closeSheet } = useBottomSheet();
   const inputRef = useRef(null);
+  const safeAreaInsets = useSafeAreaInsets();
+
   const [text, setText] = useState('');
   const [loading, setLoading] = useState(false);
   const [selectedComment, setSelectedComment] = useState(null);
   const profile = useSelector(state => state.CompanyProfile.profile);
-  const safeAreaInsets = useSafeAreaInsets();
 
   useEffect(() => {
     const editListener = EventRegister.addEventListener('onEditComment', (comment) => {
@@ -93,7 +95,7 @@ const CommentInputBar = ({
 
         const updatePayload = {
           command: 'updateComment',
-          user_id: storedUserId,
+          user_id: myId,
           comment_id: selectedComment.comment_id,
           text: trimmedText,
         };
@@ -123,7 +125,7 @@ const CommentInputBar = ({
 
         const payload = {
           command: 'addComments',
-          user_id: storedUserId,
+          user_id: myId,
           forum_id,
           text: trimmedText,
         };
@@ -160,29 +162,23 @@ const CommentInputBar = ({
 
 
   const getSignedUrlForComment = async (comment) => {
-    if (!comment.fileKey) {
-      const name = comment.author || 'Unknown';
-      const avatarProps = generateAvatarFromName(name);
-
-      return {
-        ...comment,
-        avatarProps, // fallback to initials-based avatar
-      };
+    if (!comment?.fileKey) {
+      return comment;   // ✅ RETURN COMMENT
     }
-
+  
     try {
       const res = await apiClient.post('/getObjectSignedUrl', {
         command: 'getObjectSignedUrl',
         key: comment.fileKey,
       });
-
+  
       if (typeof res.data === 'string' && res.data.startsWith('http')) {
         return {
           ...comment,
           signedUrl: res.data,
         };
       }
-
+  
       if (res?.data?.status === 'success' && res.data.response?.signedUrl) {
         return {
           ...comment,
@@ -190,50 +186,34 @@ const CommentInputBar = ({
         };
       }
     } catch (e) {
-      // Optional: add logging if needed
+      console.error('Signed URL error:', e);
     }
-
-    return comment;
+  
+    return comment; // ✅ ALWAYS return comment
   };
+  
 
   const { inputTranslateY } = useKeyboardInput();
-
   return (
 
     <Animated.View
-      style={[styles.inputContainer, { transform: [{ translateY: inputTranslateY }], bottom: safeAreaInsets.bottom  }]}
+      style={[
+        styles.inputContainer,
+        {
+          transform: [{ translateY: inputTranslateY }],
+          bottom: 0,
+          paddingBottom: safeAreaInsets.bottom,
+        }
+      ]}
     >
 
-      {profile?.fileKey ? (
-        <Image
-          source={{ uri: profile?.imageUrl }}
-          style={{
-            width: 35,
-            height: 35,
-            borderRadius: 20,
-            marginRight: 10,
-          }}
+      <View style={{ marginRight: 10 }}>
+        <Avatar
+          imageUrl={profile?.imageUrl}
+          name={item?.author}
+          size={40}
         />
-      ) : (
-        <View
-          style={{
-            width: 35,
-            height: 35,
-            borderRadius: 20,
-            marginRight: 10,
-            backgroundColor: profile?.companyAvatar?.backgroundColor || '#ccc',
-            justifyContent: 'center',
-            alignItems: 'center',
-          }}
-        >
-          <Text style={{ color: profile?.companyAvatar?.textColor || '#000', fontWeight: 'bold' }}>
-            {profile?.companyAvatar?.initials || '?'}
-          </Text>
-        </View>
-      )}
-
-
-
+      </View>
       <TextInput
         ref={inputRef}
         style={styles.input}
@@ -290,21 +270,20 @@ const styles = StyleSheet.create({
 
   inputContainer: {
     position: "absolute",
-    bottom: 0,
+    left: 0,
+    right: 0,          // 🔥 important
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 10,
-    paddingVertical: 8,
+    justifyContent: 'center',
+    padding: 10,
     borderTopWidth: 1,
     borderTopColor: "#ddd",
     backgroundColor: "#fff",
-    paddingBottom:60
+
   },
 
   input: {
     flex: 1,
-    fontSize: 14,
-    fontWeight:'500',
     paddingRight: 6, // Space between text and icon
     color: '#000',
     maxHeight: 120,

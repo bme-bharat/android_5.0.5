@@ -3,8 +3,61 @@ import { Alert, Linking } from 'react-native';
 import { CommonActions } from '@react-navigation/native';
 import { navigationRef } from '../../App';
 import { EventRegister } from 'react-native-event-listeners';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const DeepLinkHandler = () => {
+
+  const getStoredUserTypeAndId = async () => {
+    const keys = ['CompanyUserData', 'normalUserData', 'AdminUserData'];
+
+    for (const key of keys) {
+      const stored = await AsyncStorage.getItem(key);
+      if (stored) {
+        const userData = JSON.parse(stored);
+        const userType =
+          userData.user_type ||
+          (userData.company_id ? 'company' : 'users');
+
+        const userId = userData.company_id || userData.user_id;
+
+        return { userType, userId };
+      }
+    }
+
+    return null;
+  };
+
+  const resetToMainStackWithScreen = async (screen, params) => {
+    const session = await getStoredUserTypeAndId();
+
+    if (!session?.userType) {
+      console.warn('❌ No session found for navigation reset');
+      return;
+    }
+
+    const rootName = session.userType === 'company' ? 'Company' : 'User';
+
+    navigationRef.current?.dispatch(
+      CommonActions.reset({
+        index: 0,
+        routes: [
+          {
+            name: rootName,     // User or Company (from RootNavigator)
+            state: {
+              index: 1,
+              routes: [
+                { name: 'AppDrawer' },        // UX base inside that role
+                { name: screen, params },     // Target from link/notification
+              ],
+            },
+          },
+        ],
+      })
+    );
+
+  };
+
+
   useEffect(() => {
     const handleDeepLink = async (event) => {
       try {
@@ -20,7 +73,7 @@ const DeepLinkHandler = () => {
           .replace(/^bmebharat:\/\//, '');
 
         if (url === "https://bmebharat.com" || url === "https://bmebharat.com/" || path.trim() === "") {
-          
+
           EventRegister.emit("deepLinkDone");
           return;
         }
@@ -29,7 +82,7 @@ const DeepLinkHandler = () => {
         const id = pathParts[pathParts.length - 1];
 
         if (!id) {
-          Alert.alert('Error', 'Invalid link format');
+          // Alert.alert('Error', 'Invalid link format');
           EventRegister.emit('deepLinkDone');
           return;
         }
@@ -73,20 +126,11 @@ const DeepLinkHandler = () => {
           try {
             if (navigationRef.current) {
               const currentRoutes = navigationRef.current.getRootState()?.routes || [];
-              console.log('🧭 Current routes:', currentRoutes);
 
-              if (currentRoutes.length > 1) {
-                console.log(`📍 Navigating to existing stack screen: ${routeName}`, params);
-                navigationRef.current.navigate(routeName, params);
-              } else {
-                console.log(`🔄 Resetting navigation to: ${routeName}`, params);
-                navigationRef.current.dispatch(
-                  CommonActions.reset({
-                    index: 0,
-                    routes: [{ name: routeName, params }],
-                  })
-                );
-              }
+              console.log(`🔄 Resetting to User stack with: ${routeName}`, params);
+
+              resetToMainStackWithScreen(routeName, params);
+
             } else {
               console.warn('⚠️ navigationRef.current is null');
             }

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef, Profiler, useMemo } from "react";
-import { View, Text, FlatList, Image, TouchableOpacity, TextInput, Dimensions, StyleSheet, TouchableWithoutFeedback, Keyboard, ActivityIndicator, RefreshControl, Share, StatusBar, Platform } from "react-native";
+import { View, Text, FlatList, Image, TouchableOpacity, TextInput, Dimensions, StyleSheet, TouchableWithoutFeedback, Keyboard, ActivityIndicator, RefreshControl, Share, Platform } from "react-native";
 import Video from "react-native-video";
 import { useIsFocused } from "@react-navigation/native";
 import apiClient from "../ApiClient";
@@ -31,6 +31,8 @@ import BMEVideoPlayer from "../BMEVideoPlayer";
 import { colors, dimensions } from '../../assets/theme.jsx';
 import scrollAnimations from "../helperComponents/scrollAnimations.jsx";
 import Animated from "react-native-reanimated";
+import Avatar from "../helperComponents/Avatar.jsx";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 
 const videoExtensions = [
@@ -41,10 +43,6 @@ const videoExtensions = [
 
 const { width: deviceWidth, height: deviceHeight } = Dimensions.get('window');
 const maxAllowedHeight = Math.round(deviceHeight * 0.6);
-const STATUS_BAR_HEIGHT =
-  Platform.OS === "android" ? StatusBar.currentHeight || 24 : 44;
-
-const headerHeight = STATUS_BAR_HEIGHT + 60;
 
 const ResourcesList = ({ navigation, route }) => {
 
@@ -98,8 +96,6 @@ const ResourcesList = ({ navigation, route }) => {
                 let authorSignedUrl;
                 if (authorFileKey) {
                     authorSignedUrl = await getSignedUrl(resourceId, authorFileKey);
-                } else {
-                    authorSignedUrl = generateAvatarFromName(name);
                 }
 
                 // Construct new post with all required fields
@@ -193,8 +189,6 @@ const ResourcesList = ({ navigation, route }) => {
                     let authorSignedUrl;
                     if (authorFileKey) {
                         authorSignedUrl = await getSignedUrl(resourceId, authorFileKey);
-                    } else {
-                        authorSignedUrl = generateAvatarFromName(name);
                     }
 
                     return {
@@ -326,9 +320,9 @@ const ResourcesList = ({ navigation, route }) => {
         }
 
         if (item.user_type === "company") {
-            navigation.navigate('CompanyDetailsPage', { userId: item.user_id });
+            navigation.navigate('CompanyDetails', { userId: item.user_id });
         } else if (item.user_type === "users") {
-            navigation.navigate('UserDetailsPage', { userId: item.user_id });
+            navigation.navigate('UserDetails', { userId: item.user_id });
         }
     };
 
@@ -391,7 +385,15 @@ const ResourcesList = ({ navigation, route }) => {
         const mimeType = item.extraData?.mimeType || item.extraData?.type || '';
         const mediaCategory = getMediaCategory(mimeType);
         const aspectRatio = item.extraData?.aspectRatio || 1;
-        const height = Math.min(Math.round(deviceWidth / aspectRatio), maxAllowedHeight);
+        let height;
+        if (item.extraData?.aspectRatio) {
+            const aspectRatioHeight = Math.round(deviceWidth / item.extraData?.aspectRatio);
+
+            height = aspectRatioHeight > maxAllowedHeight ? maxAllowedHeight : aspectRatioHeight;
+        } else {
+
+            height = deviceWidth;
+        }
         const fileUrl = item.fileKeySignedUrl?.[item.resource_id] || '';
 
         if (!item.fileKey) return
@@ -405,10 +407,7 @@ const ResourcesList = ({ navigation, route }) => {
                     >
                         <Image
                             source={{ uri: fileUrl }}
-                            style={{
-                                width: '100%',
-                                aspectRatio: aspectRatio,
-                            }}
+                            style={{ width: "100%", height: height }}
                         />
                     </TouchableOpacity>
                 ) : item?.extraData?.type?.startsWith("video/") ? (
@@ -428,12 +427,12 @@ const ResourcesList = ({ navigation, route }) => {
                             source={{ uri: fileUrl }}
                             style={{
                                 width: '100%',
-                                height: '100%',
+                                height: height
                             }}
                             controls
                             paused={!isFocused || activeVideo !== item.resource_id}
                             repeat
-
+                            resizeMode="cover"
                         />
                     </TouchableOpacity>
                 ) : (
@@ -468,9 +467,11 @@ const ResourcesList = ({ navigation, route }) => {
     const renderItem = useCallback(({ item }) => {
         let height;
         if (item.extraData?.aspectRatio) {
-            const aspectRatioHeight = Math.round(deviceWidth / item.extraData.aspectRatio);
+            const aspectRatioHeight = Math.round(deviceWidth / item.extraData?.aspectRatio);
+
             height = aspectRatioHeight > maxAllowedHeight ? maxAllowedHeight : aspectRatioHeight;
         } else {
+
             height = deviceWidth;
         }
         const { Icon, color } = getFileIconData(item?.extraData?.name);
@@ -481,30 +482,12 @@ const ResourcesList = ({ navigation, route }) => {
             <TouchableOpacity style={styles.comments} activeOpacity={1}>
                 <View style={styles.dpContainer}>
                     <TouchableOpacity style={styles.dpContainer1} onPress={() => handleNavigate(item)} activeOpacity={1}>
-                        {item.author_fileKey ? (
-                            <Image
-                                source={{
-                                    uri: item.authorSignedUrl?.[item.resource_id] || '', // safely extract signed URL
-                                }}
-                                style={styles.image1}
-                            />
-                        ) : (
-                            <View
-                                style={[
-                                    styles.image1,
-                                    {
-                                        backgroundColor: item.authorSignedUrl?.backgroundColor || '#ccc',
-                                        justifyContent: 'center',
-                                        alignItems: 'center',
-                                    },
-                                ]}
-                            >
-                                <Text style={{ color: item.authorSignedUrl?.textColor || '#000', fontWeight: 'bold' }}>
-                                    {item.authorSignedUrl?.initials || ''}
-                                </Text>
-                            </View>
-                        )}
 
+                        <Avatar
+                            imageUrl={item?.authorSignedUrl?.[item.resource_id]}
+                            name={item?.author}
+                            size={40}
+                        />
 
                     </TouchableOpacity>
                     <View style={styles.textContainer}>
@@ -536,7 +519,7 @@ const ResourcesList = ({ navigation, route }) => {
                     item={item}
                     openMediaViewer={openMediaViewer}
 
-                    maxAllowedHeight={maxAllowedHeight}
+                    maxAllowedHeight={height}
                 />
 
                 {/* <View style={styles.mediaContainer}>
@@ -691,14 +674,17 @@ const ResourcesList = ({ navigation, route }) => {
         // console.log(`Component: ${id}, Phase: ${phase}, Actual Duration: ${actualDuration}ms`);
     };
 
+    const insets = useSafeAreaInsets();
+    const headerHeight = insets?.top+ 44;
+
     return (
 
         <>
-            <Animated.View style={[AppStyles.toolbar, toolbarBgStyle]}>
+            <Animated.View style={[AppStyles.toolbar, toolbarBgStyle,{paddingTop:insets.top}]}>
 
                 <Animated.View style={[AppStyles.searchRow, headerStyle]}>
-                    <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton} activeOpacity={1}>
-                        <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.text_secondary} />
+                    <TouchableOpacity onPress={() => navigation.goBack()} style={AppStyles.backButton} activeOpacity={1}>
+                        <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} fill={colors.primary} />
 
                     </TouchableOpacity>
                     <View style={AppStyles.searchBar}>
@@ -715,9 +701,9 @@ const ResourcesList = ({ navigation, route }) => {
                     </View>
                     <TouchableOpacity style={AppStyles.circle}
                         onPress={() => navigation.navigate("ResourcesPost")} activeOpacity={0.8}>
-                        <Add width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.background} />
+                        <Add width={dimensions.icon.xl} height={dimensions.icon.xl} color={colors.primary} />
 
-                        <Text style={AppStyles.shareText}> Contribute</Text>
+                        {/* <Text style={AppStyles.shareText}> Contribute</Text> */}
                     </TouchableOpacity>
                 </Animated.View>
 
@@ -770,7 +756,7 @@ const ResourcesList = ({ navigation, route }) => {
                                 ) : null
                             }
                             refreshControl={
-                                <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} progressViewOffset={headerHeight}/>
+                                <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} progressViewOffset={headerHeight} />
                             }
                             onEndReached={() => {
                                 if (hasMorePosts) {
@@ -778,7 +764,7 @@ const ResourcesList = ({ navigation, route }) => {
                                 }
                             }}
                             onEndReachedThreshold={0.5}
-                            contentContainerStyle={{ paddingTop: headerHeight, backgroundColor: colors.app_background, }}
+                            contentContainerStyle={{paddingTop:headerHeight}}
 
                         />
                     ) : (

@@ -5,7 +5,8 @@ import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/nativ
 import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
 
 import { colors, dimensions } from '../../assets/theme.jsx';
-import AppStyles, { STATUS_BAR_HEIGHT } from '../AppUtils/AppStyles.js';
+import AppStyles from '../AppUtils/AppStyles.js';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 const UserAppliedJobDetailsScreen = () => {
   const route = useRoute();
   const { jobDetails } = route.params; // Get the job details from params
@@ -17,28 +18,22 @@ const UserAppliedJobDetailsScreen = () => {
       <ActivityIndicator size="large" color="#075cab" />
     </Text>;
   }
-
-  useFocusEffect(
-    useCallback(() => {
-
-      if (scrollViewRef.current) {
-
-        scrollViewRef.current.scrollTo({ x: 0, y: 0, animated: false });
-      }
-    }, [])
-  );
+  const insets = useSafeAreaInsets();
+  const headerHeight = insets?.top+ 44;
 
   return (
     <View style={styles.container1} >
-      <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
+      <View style={[AppStyles.toolbar, { paddingTop:insets.top}]} >
 
-      <View style={styles.headerContainer}>
-        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
+        <View style={AppStyles.headerContainer}>
+          <TouchableOpacity style={AppStyles.backButton} onPress={() => navigation.goBack()}>
+            <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
 
-        </TouchableOpacity>
+          </TouchableOpacity>
+        </View>
       </View>
-      <ScrollView contentContainerStyle={styles.container} showsHorizontalScrollIndicator={false} showsVerticalScrollIndicator={false} ref={scrollViewRef}>
+
+      <ScrollView contentContainerStyle={[{paddingHorizontal:5, paddingTop:headerHeight}]} showsHorizontalScrollIndicator={false} showsVerticalScrollIndicator={false} ref={scrollViewRef}>
 
         <Text style={styles.title}>{jobDetails.job_title}</Text>
 
@@ -124,9 +119,8 @@ const UserAppliedJobDetailsScreen = () => {
 const styles = StyleSheet.create({
   container1: {
     flexGrow: 1,
-    padding: 15,
     backgroundColor: 'white',
-    paddingTop: STATUS_BAR_HEIGHT
+    
   },
   container: {
     flexGrow: 1,

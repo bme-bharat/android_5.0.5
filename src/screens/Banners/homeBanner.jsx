@@ -5,27 +5,53 @@ import {
   Dimensions,
   ActivityIndicator,
   TouchableOpacity,
+  StyleSheet,
 } from 'react-native';
 import { useFocusEffect, useIsFocused, useNavigation } from '@react-navigation/native';
 import apiClient from '../ApiClient';
 import BMEVideoPlayer from '../BMEVideoPlayer';
+import Carousel from 'react-native-reanimated-carousel';
 
 const { width } = Dimensions.get('window');
 
-const HomeBanner = ({onStatusChange}) => {
+const HomeBanner = () => {
   const [banners, setBanners] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const videoRefs = useRef([]);
   const flatListRef = useRef(null);
   const navigation = useNavigation();
   const [videoLoading, setVideoLoading] = useState({});
-  const timerRef = useRef(null); // ⏱️ fallback timer
+
   const isFocused = useIsFocused();
+  const endedRef = useRef({});
+  const isUserDraggingRef = useRef(false);
+  const isAutoScrollingRef = useRef(false);
+  const hasAutoAdvancedRef = useRef({});
+
 
   useEffect(() => {
-    // notify parent whether banners exist
-    onStatusChange?.(banners.length === 0);
-  }, [banners]);
+    if (banners.length > 0) {
+      hasAutoAdvancedRef.current[currentIndex] = false;
+    }
+  }, [currentIndex, banners.length]);
+  
+
+  useEffect(() => {
+    hasAutoAdvancedRef.current = {};
+    endedRef.current = {};
+    setCurrentIndex(0);
+  }, [banners.length]);
+  
+  useEffect(() => {
+    videoRefs.current.forEach((ref, i) => {
+      if (ref && i !== currentIndex) {
+        try {
+          ref.seekTo?.(0);     // 👈 reset to beginning
+        } catch (e) {}
+      }
+    });
+  }, [currentIndex]);
+  
 
   // 🔹 Fetch video banners
   const fetchBanners = useCallback(async () => {
@@ -104,125 +130,179 @@ const HomeBanner = ({onStatusChange}) => {
     [navigation]
   );
 
-
-  // 🔹 Move to next video manually or after video ends
-  const moveToNext = useCallback(() => {
+  const scrollToNext = () => {
     if (!banners.length) return;
-    const next = (currentIndex + 1) % banners.length;
-    flatListRef.current?.scrollToIndex({ index: next, animated: true });
-    setCurrentIndex(next);
-  }, [currentIndex, banners.length]);
-
-  const handleVideoEnd = useCallback(() => {
-    moveToNext();
-  }, [moveToNext]);
-
-  // 🔹 Handle view changes (manual scroll)
-  const onViewableItemsChanged = useRef(({ viewableItems }) => {
-    if (viewableItems.length > 0) {
-      const index = viewableItems[0].index;
-      if (index !== null && index !== undefined) {
-        setCurrentIndex(index);
-      }
-    }
-  }).current;
-
-  const viewConfigRef = useRef({ viewAreaCoveragePercentThreshold: 80 });
-
-  useEffect(() => {
-    if (!isFocused) {
-      // If screen not focused → stop timers + pause all videos
-      if (timerRef.current) clearTimeout(timerRef.current);
-
-      videoRefs.current.forEach((v) => v?.pause?.());
-      return;
-    }
-
-    // Screen IS focused → normal autoplay
-    if (timerRef.current) clearTimeout(timerRef.current);
-
-    const ref = videoRefs.current[currentIndex];
-    if (ref && ref.play) {
-      ref.seekTo?.(0);
-    }
-
-    videoRefs.current.forEach((v, i) => {
-      if (i !== currentIndex && v?.pause) v.pause();
+  
+    const nextIndex = (currentIndex + 1) % banners.length;
+  
+    isAutoScrollingRef.current = true;
+  
+    flatListRef.current?.scrollToIndex({
+      index: nextIndex,
+      animated: true,
     });
+  };
+  
+  
 
-    timerRef.current = setTimeout(() => {
-      moveToNext();
-    }, 15000);
 
-    return () => clearTimeout(timerRef.current);
-  }, [currentIndex, moveToNext, isFocused]);
+
 
 
   return (
 
-    <FlatList
-      ref={flatListRef}
-      data={banners}
-      keyExtractor={(_, i) => i.toString()}
-      horizontal
-      pagingEnabled
-      snapToInterval={width} // 👈 account for margin
-      decelerationRate="fast"
-      showsHorizontalScrollIndicator={false}
-      onViewableItemsChanged={onViewableItemsChanged}
-      viewabilityConfig={viewConfigRef.current}
-      renderItem={({ item, index }) => (
-        <TouchableOpacity
-          activeOpacity={1}
-          onPress={() => onPressBanner(item)}
-          style={{
-            width,
-            aspectRatio: 16 / 10,
-            overflow: 'hidden',
-            borderBottomLeftRadius: 18,
-            borderBottomRightRadius: 18
-          }} >
-          <BMEVideoPlayer
-            ref={(ref) => (videoRefs.current[index] = ref)}
-            source={item.url}
-            paused={!isFocused || currentIndex !== index}
-            muted={true}
-            // showProgressBar={true}  
-            resizeMode="cover"
-            style={{ width: '100%', height: '100%' }}
-            repeat={false}
-            onEndReached={handleVideoEnd}
-            onPlaybackStatus={(status) => {
-              switch (status.status) {
-                case 'loading':
-                case 'buffering':
-                  setVideoLoading((prev) => ({ ...prev, [index]: true }));
-                  break;
-                case 'loaded':
-                case 'playing':
-                case 'ended':
-                  setVideoLoading((prev) => ({ ...prev, [index]: false }));
-                  break;
-              }
-            }}
-          />
+    <View style={styles.wrapper}>
+      <FlatList
+        ref={flatListRef}
+        data={banners}
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        keyExtractor={(_, index) => index.toString()}
+        removeClippedSubviews={false}
+        initialNumToRender={1}
+        windowSize={3}
+        maxToRenderPerBatch={2}
+        onScrollBeginDrag={() => {
+          isUserDraggingRef.current = true;
+        }}
 
-          {videoLoading[index] && (
-            <ActivityIndicator
-              size="small"
-              color="#fff"
-              style={{
-                position: 'absolute',
-                top: '45%',
-                left: '45%',
+
+        onMomentumScrollEnd={(e) => {
+          isUserDraggingRef.current = false;
+          isAutoScrollingRef.current = false;
+        
+          const index = Math.round(e.nativeEvent.contentOffset.x / width);
+          setCurrentIndex(index);
+        
+          // ❌ DO NOT set lastAutoAdvanceIndexRef anymore
+        }}
+        
+        
+
+
+        onScrollToIndexFailed={(info) => {
+          flatListRef.current?.scrollToOffset({
+            offset: info.averageItemLength * info.index,
+            animated: true,
+          });
+        }}
+
+
+        renderItem={({ item, index }) => (
+          <TouchableOpacity
+            activeOpacity={1}
+            onPress={() => onPressBanner(item)}
+            style={{
+              width,
+              height: width * (10 / 16),
+              overflow: 'hidden',
+            }}
+          >
+            <BMEVideoPlayer
+              ref={(ref) => (videoRefs.current[index] = ref)}
+              source={item.url}
+              paused={!isFocused || currentIndex !== index}
+              muted
+              resizeMode="cover"
+              repeat={false}
+              style={{ width: '100%', height: '100%' }}
+
+              onPlaybackStatus={(status) => {
+                // Loader handling
+                setVideoLoading((prev) => ({
+                  ...prev,
+                  [index]:
+                    status.status === 'loading' ||
+                    status.status === 'buffering',
+                }));
+
+                if (
+                  status.status === 'progress' &&
+                  status.duration &&
+                  status.position &&
+                  index === currentIndex
+                ) {
+                  const remaining = status.duration - status.position;
+
+                  // Only trigger ONCE per slide
+                  if (
+                    remaining < 0.5 &&
+                    index === currentIndex &&
+                    !hasAutoAdvancedRef.current[index] &&
+                    !isUserDraggingRef.current &&
+                    !isAutoScrollingRef.current
+                  ) {
+                  
+                    hasAutoAdvancedRef.current[index] = true; 
+                    isAutoScrollingRef.current = true;
+                    scrollToNext();
+                  }
+
+                }
               }}
+
             />
-          )}
-        </TouchableOpacity>
+
+            {videoLoading[index] && (
+              <ActivityIndicator
+                size="small"
+                color="#fff"
+                style={{
+                  position: 'absolute',
+                  top: '45%',
+                  left: '45%',
+                }}
+              />
+            )}
+          </TouchableOpacity>
+        )}
+      />
+
+      {banners.length > 1 && (
+        <View style={styles.dotsWrapper}>
+          {banners.map((_, index) => (
+            <View
+              key={index}
+              style={[
+                styles.dot,
+                index === currentIndex && styles.activeDot,
+              ]}
+            />
+          ))}
+        </View>
       )}
-    />
+    </View>
 
   );
 };
 
 export default HomeBanner;
+
+const styles = StyleSheet.create({
+  wrapper: {
+    width: "100%",
+  },
+
+  dotsWrapper: {
+    position: "absolute",
+    bottom: 10,
+    flexDirection: "row",
+    alignSelf: "center",
+  },
+
+  dot: {
+    width: 4,
+    height: 4,
+    borderRadius: 4,
+    borderWidth: 0.5,
+    borderColor: "#000",
+    backgroundColor: "#fff",
+    marginHorizontal: 4,
+  },
+
+  activeDot: {
+    backgroundColor: "#000",
+
+  },
+})

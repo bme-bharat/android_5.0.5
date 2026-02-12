@@ -15,106 +15,79 @@ import School from '../../assets/svgIcons/school.svg';
 
 import { colors, dimensions } from '../../assets/theme.jsx';
 import { commonStyles } from '../AppUtils/AppStyles.js';
+import Avatar from '../helperComponents/Avatar.jsx';
+import MaterialIcons from '@react-native-vector-icons/material-icons';
+import LinearGradient from 'react-native-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 
 const UserProfileCard = ({ profile, onEdit, onNavigate }) => {
   const isCompany = profile?.user_type === 'company';
+    const insets = useSafeAreaInsets();
 
   return (
-    <TouchableOpacity activeOpacity={1} onPress={onNavigate} style={styles.profileContainer}>
-      <TouchableOpacity style={styles.editProfileButton} onPress={onEdit}>
-        <Text style={styles.editProfileText}>Edit Profile</Text>
-      </TouchableOpacity>
+    <TouchableOpacity activeOpacity={1} onPress={onNavigate} >
+      <LinearGradient
+        colors={
+          ['#239eab', '#74deee']
+        }
 
-      <TouchableOpacity activeOpacity={1} onPress={onNavigate} style={styles.imageContainer}>
-        {profile?.imageUrl ? (
-          <FastImage
-            source={{ uri: profile?.imageUrl, }}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={[styles.profileContainer,{paddingTop:insets?.top + 24}]}
+      >
+        <View
+          style={{
+            backgroundColor: '#fff',
+            borderRadius: 12,
+            flexDirection: 'row',
+            alignItems: 'center',
+            padding: 12,
+          }}
+        >
+          <Avatar
+            imageUrl={profile?.imageUrl}
+            name={profile?.first_name || profile?.company_name}
+            size={50}
 
-            style={styles.detailImage}
-            resizeMode="contain"
-            onError={() => { }}
           />
-        ) : (
-          <View style={[commonStyles.avatarContainer, { backgroundColor: profile?.companyAvatar?.backgroundColor }]}>
-            <Text style={[commonStyles.avatarText, { color: profile?.companyAvatar?.textColor }]}>
-              {profile?.companyAvatar?.initials}
-            </Text>
-          </View>
-        )}
-      </TouchableOpacity>
+        </View>
+        <View style={styles.profileDetails}>
+          {isCompany ? (
+            <>
 
-      <View style={styles.profileDetails}>
-        {isCompany ? (
-          <>
-            <View style={styles.title1}>
-              <Company width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
+              <Text style={styles.fName} numberOfLines={1} ellipsizeMode='tail'>{profile?.company_name?.trim()}</Text>
 
-              <Text style={styles.colon}>|</Text>
-              <Text style={styles.value}>{profile?.company_name?.trim()}</Text>
-            </View>
+              {/* <Text style={styles.value}>{(profile?.company_contact_number || '').trim()}</Text> */}
 
-            <View style={styles.title1}>
-              <Phone width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-
-              <Text style={styles.colon}>|</Text>
-              <Text style={styles.value}>{(profile?.company_contact_number || '').trim()}</Text>
-            </View>
-
-            <View style={styles.title1}>
-              <Email width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-
-              <Text style={styles.colon}>|</Text>
               <Text style={styles.value}>{profile?.company_email_id || ''}</Text>
-            </View>
 
-            <View style={styles.title1}>
-              <Register width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
+              {/* <Text style={styles.value}>{(profile?.business_registration_number || '').trim()}  </Text> */}
 
-              <Text style={styles.colon}>|</Text>
-              <Text style={styles.value}>
-                {(profile?.business_registration_number || '').trim()}
-              </Text>
-            </View>
 
-          </>
-        ) : (
-          <>
-            <View style={styles.title1}>
-              <User width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
+            </>
+          ) : (
+            <>
 
-              <Text style={styles.colon}>|</Text>
-              <Text style={styles.value}>
+              <Text style={styles.fName} numberOfLines={1} ellipsizeMode='tail'>
                 {(profile?.first_name || '').trim()} {(profile?.last_name || '').trim()}
               </Text>
-            </View>
 
-            <View style={styles.title1}>
-              <Phone width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
+              {/* <Text style={styles.value}>{(profile?.user_phone_number || '').trim()}</Text> */}
 
-              <Text style={styles.colon}>|</Text>
-              <Text style={styles.value}>{(profile?.user_phone_number || '').trim()}</Text>
-            </View>
-
-            <View style={styles.title1}>
-              <Email width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-
-              <Text style={styles.colon}>|</Text>
               <Text style={styles.value}>{profile?.user_email_id || ''}</Text>
-            </View>
-
+              {/* 
             {!!profile?.college?.trim() && (
-              <View style={styles.title1}>
-                <School width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
 
-                <Text style={styles.colon}>|</Text>
-                <Text style={styles.value}>{profile.college.trim()}</Text>
-              </View>
-            )}
-          </>
-        )}
-      </View>
+              <Text style={styles.value}>{profile.college.trim()}</Text>
 
+            )} */}
+            </>
+          )}
+        </View>
+
+        <MaterialIcons name='chevron-right' size={26} color={colors.text_primary} />
+      </LinearGradient>
 
     </TouchableOpacity>
   );

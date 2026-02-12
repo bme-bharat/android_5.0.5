@@ -18,7 +18,7 @@ import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
 import Close from '../../assets/svgIcons/close-large.svg';
 
 import { colors, dimensions } from '../../assets/theme.jsx';
-import AppStyles, { STATUS_BAR_HEIGHT } from '../AppUtils/AppStyles.js';
+import AppStyles from '../AppUtils/AppStyles.js';
 
 const UserSubscriptionScreen = () => {
   const { myId, myData } = useNetwork();
@@ -130,7 +130,7 @@ const UserSubscriptionScreen = () => {
           amount: order.amount,
           currency: order.currency,
           name: 'BME BHARAT',
-          description: 'BME BHARAT Transaction',
+          description: 'Plan Subscription Payment',
           image: 'https://bmebharat.com/assets/images/logo.png',
           order_id: order.id,
           prefill: {
@@ -302,18 +302,21 @@ const UserSubscriptionScreen = () => {
 
   return (
     <>
-      <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
+      <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} >
 
-      <View style={styles.headerContainer}>
+        <View style={AppStyles.searchRow}>
+          <TouchableOpacity
+            style={AppStyles.backButton}
+            onPress={() => { navigation.goBack() }} >
+            <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.background} />
 
+          </TouchableOpacity>
 
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
+        </View>
 
-        </TouchableOpacity>
       </View>
       <ScrollView
-        contentContainerStyle={styles.scrollViewContent}
+        contentContainerStyle={[AppStyles.scrollViewContainer,{paddingHorizontal:5}]}
         showsVerticalScrollIndicator={false}
       >
         <SubscriptionCard
@@ -757,21 +760,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
 
   },
-  headerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: 'white',
-    borderBottomWidth: 1,
-    borderColor: '#f0f0f0',
-    paddingTop: STATUS_BAR_HEIGHT
-  },
-  container: {
-    backgroundColor: 'white',
-    flex: 1,
-    paddingTop: STATUS_BAR_HEIGHT
-  },
-
+  
   scrollViewContent: {
     paddingBottom: '20%',
     paddingHorizontal: 10,

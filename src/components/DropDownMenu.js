@@ -85,7 +85,7 @@ const CustomDropDownMenu = ({
 
       </TouchableOpacity>
 
-      <Modal transparent animationType="slide" visible={visible} onRequestClose={toggleDropdown}>
+      <Modal transparent animationType="fade" visible={visible} onRequestClose={toggleDropdown}>
         <Pressable style={styles.modalOverlay} onPress={toggleDropdown}>
           <Pressable style={styles.dropdownSheet}>
             <CustomDropdownList items={items} onSelect={handleSelect} itemTextStyle={itemTextStyle} />

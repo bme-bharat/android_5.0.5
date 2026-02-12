@@ -1,0 +1,25 @@
+const SCREENS = {
+    ABOUT: 'ABOUT',
+    INTRO: 'INTRO',
+    LOGIN: 'LOGIN',
+    SIGNUP: 'SIGNUP',
+
+    COMPANIES: 'COMPANIES',
+    EVENTS: 'EVENTS',
+    RESOURCES: 'RESOURCES',
+    SERVICES: 'SERVICES',
+    HELP: 'HELP',
+
+    HOME: 'HOME',
+    JOB: 'JOB',
+    FEED: 'FEED',
+    PRODUCTS: 'PRODUCTS',
+    SETTINGS: 'SETTINGS',
+    ACCOUNT: 'ACCOUNT',
+    LANGUAGE: 'LANGUAGE',
+    ORDERS: 'ORDERS',
+    WISHLIST: 'WISHLIST',
+    PROFILE: 'PROFILE',
+};
+
+export default SCREENS;

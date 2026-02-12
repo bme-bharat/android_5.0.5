@@ -1,5 +1,6 @@
 import React from 'react';
 import { Modal, Text, TouchableOpacity, View, StyleSheet, Dimensions } from 'react-native';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import Sucess from '../assets/svgIcons/success.svg';
 import Warning from '../assets/svgIcons/warning.svg';
@@ -10,12 +11,12 @@ import ArrowLeftIcon from '../assets/svgIcons/back.svg';
 import { colors, dimensions } from '../assets/theme.jsx';
 const { width } = Dimensions.get('window');
 
-const Message1 = ({ visible, onClose, onOk, title, message, iconType }) => {
+const Message1 = ({ visible, onClose, onOk, title, message, iconType, showOkButton = true }) => {
   const getIcon = () => {
 
     switch (iconType) {
       case 'success':
-        return <Sucess width={dimensions.icon.small} height={dimensions.icon.small} color={colors.success} />
+        return <Sucess width={dimensions.icon.xl} height={dimensions.icon.xl} color={colors.success} />
       case 'warning':
         return <Warning width={dimensions.icon.xl} height={dimensions.icon.xl} color={colors.warning} />
       case 'info':
@@ -48,15 +49,18 @@ const Message1 = ({ visible, onClose, onOk, title, message, iconType }) => {
           <Text style={styles.message}>{message}</Text>
 
           {/* Button Container */}
-          <View style={styles.buttonContainer}>
-            <TouchableOpacity
-              onPress={onOk}
-              style={[styles.button, styles.okButton]}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.buttonText}>OK</Text>
-            </TouchableOpacity>
-          </View>
+          {showOkButton && (
+            <View style={styles.buttonContainer}>
+              <TouchableOpacity
+                onPress={onOk}
+                style={[styles.button, styles.okButton]}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.buttonText}>OK</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
         </View>
       </View>
     </Modal>
@@ -104,11 +108,9 @@ const styles = StyleSheet.create({
     lineHeight: 24
   },
   message: {
-    fontSize: 14,
-    color: '#555',
+    color: colors.text_secondary,
     marginBottom: 20,
-    textAlign: 'center',
-    fontWeight: '600',
+    textAlign: 'justify',
     lineHeight: 22
   },
   buttonContainer: {

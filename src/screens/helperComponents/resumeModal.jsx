@@ -211,9 +211,6 @@ const styles = StyleSheet.create({
 
     successMessageRow: {
         flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginTop: 12,
     },
 
     warningIcon: {

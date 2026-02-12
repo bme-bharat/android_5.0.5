@@ -4,7 +4,8 @@ import React, { useCallback, useRef } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, StatusBar } from 'react-native';
 import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
 import { colors, dimensions } from '../../assets/theme.jsx';
-import AppStyles, { commonStyles, STATUS_BAR_HEIGHT } from '../AppUtils/AppStyles.js';
+import AppStyles, { commonStyles } from '../AppUtils/AppStyles.js';
+import { AppHeader } from '../AppUtils/AppHeader.jsx';
 
 const AboutUs = () => {
 
@@ -13,16 +14,11 @@ const AboutUs = () => {
   return (
 
     <>
-      <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
+      <AppHeader
+        title="About us"
+      />
 
-      <View style={styles.headerContainer}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-
-        </TouchableOpacity>
-      </View>
-
-      <ScrollView contentContainerStyle={styles.scrollViewContainer} showsVerticalScrollIndicator={false} >
+      <ScrollView contentContainerStyle={[ { paddingHorizontal: 10, }]} showsVerticalScrollIndicator={false} >
 
         <View style={styles.container}>
           <Text style={styles.sectionHeading}>About Us</Text>
@@ -92,27 +88,13 @@ const AboutUs = () => {
 };
 const styles = StyleSheet.create({
 
-  container1: {
-    flex: 1,
-    backgroundColor: '#fff',
-    paddingTop: STATUS_BAR_HEIGHT
-  },
-
   scrollViewContainer: {
     paddingHorizontal: 10,
     paddingBottom: '20%',
 
   },
 
-  headerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: 'white',
-    borderBottomWidth: 1,
-    borderColor: '#f0f0f0',
-    paddingTop: STATUS_BAR_HEIGHT
-  },
+
 
   backButton: {
     alignSelf: 'flex-start',
@@ -128,7 +110,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   sectionHeading: {
-    fontSize: 13,
     fontWeight: '500',
     color: colors.text_primary,
     marginBottom: 5,
@@ -137,23 +118,18 @@ const styles = StyleSheet.create({
     flex: 2, // Take the remaining space
     flexShrink: 1,
     color: colors.text_primary,
-    fontWeight: '400',
-    fontSize: 13,
     textAlign: 'left', // Align text to the left
     alignSelf: 'flex-start',
-    marginBottom: 10,
 
   },
   subValue: {
     flex: 2, // Take the remaining space
     flexShrink: 1,
-    color: colors.text_secondary,
-    fontWeight: '300',
     fontSize: 13,
+    color: colors.text_secondary,
     textAlign: 'left', // Align text to the left
     alignSelf: 'flex-start',
     marginBottom: 10,
-
   },
   container: {
     width: '100%',

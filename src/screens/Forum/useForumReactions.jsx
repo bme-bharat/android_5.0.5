@@ -2,7 +2,6 @@ import { EventRegister } from 'react-native-event-listeners';
 import apiClient from '../ApiClient';
 import { useState, useCallback } from 'react';
 import { getSignedUrl } from '../helperComponents/signedUrls';
-import { generateAvatarFromName } from '../helperComponents/useInitialsAvatar';
 
 
 export const useForumReactionUsers = (forumId) => {
@@ -19,7 +18,6 @@ export const useForumReactionUsers = (forumId) => {
         if (!user.fileKey) {
           return {
             ...user,
-            userAvatar: generateAvatarFromName(user.author),
           };
         }
 
@@ -39,7 +37,6 @@ export const useForumReactionUsers = (forumId) => {
 
         return {
           ...user,
-          userAvatar: generateAvatarFromName(user.author),
         };
       })
     );

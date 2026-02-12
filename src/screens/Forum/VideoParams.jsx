@@ -2,7 +2,7 @@
 
 import { Alert } from 'react-native';
 import RNFS from 'react-native-fs';
-import ImageResizer from 'react-native-image-resizer';
+
 import { createThumbnail } from 'react-native-create-thumbnail';
 import Compressor, { getVideoMetaData, Video } from 'react-native-compressor';
 import { launchImageLibrary } from 'react-native-image-picker';

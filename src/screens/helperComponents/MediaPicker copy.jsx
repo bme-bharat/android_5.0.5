@@ -1,7 +1,8 @@
 import React, { useState, useRef } from 'react';
 import { Alert, Platform, ActionSheetIOS, NativeModules } from 'react-native';
 import RNFS from 'react-native-fs';
-import ImageResizer from 'react-native-image-resizer';
+import ImageResizer from '@bam.tech/react-native-image-resizer';
+
 import { launchImageLibrary, launchCamera } from 'react-native-image-picker';
 
 import { addPlayIconToThumbnail, compressVideo, generateVideoThumbnail } from '../Forum/VideoParams';

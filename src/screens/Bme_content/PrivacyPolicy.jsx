@@ -5,7 +5,7 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { Linking } from 'react-native';
 import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
 import { colors, dimensions } from '../../assets/theme.jsx';
-import AppStyles, { STATUS_BAR_HEIGHT } from '../AppUtils/AppStyles.js';
+import { AppHeader } from '../AppUtils/AppHeader.jsx';
 
 
 const PrivacyPolicyScreen = () => {
@@ -20,16 +20,12 @@ const PrivacyPolicyScreen = () => {
 
   return (
     < >
-      <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
+     <AppHeader
+             title="Privacy policy"
+     
+           />
 
-      <View style={styles.headerContainer}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-
-        </TouchableOpacity>
-      </View>
-
-      <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[ { paddingHorizontal: 10,marginTop:10 }]} showsVerticalScrollIndicator={false}>
 
         <Text style={styles.sectionHeading}>Privacy Policy</Text>
         <Text style={styles.subValue}>
@@ -63,7 +59,7 @@ const PrivacyPolicyScreen = () => {
         <Text style={styles.subValue}>
           We use the collected information for the following purposes:
         </Text>
-        <Text style={styles.list}>
+        <Text style={styles.subValue}>
           • To provide and maintain the App.{'\n'}
           • To personalize and improve your experience with the App.{'\n'}
           • To communicate with you, including sending notifications, updates, and important communications about your account and our services. This includes push notifications, which may be used to share updates, reminders, or critical alerts. You can manage your
@@ -77,7 +73,7 @@ const PrivacyPolicyScreen = () => {
         <Text style={styles.subValue}>
           We do not sell, trade, or rent your personal information to third parties. However, we may share your information with:
         </Text>
-        <Text style={styles.list}>
+        <Text style={styles.subValue}>
           • Service providers and third-party vendors who assist us in operating and maintaining the App.{'\n'}
           • Legal authorities or other entities when required to comply with the law or protect our rights and interests.
         </Text>
@@ -86,20 +82,20 @@ const PrivacyPolicyScreen = () => {
         <Text style={styles.subValue}>
           You have certain rights and choices regarding your personal information:
         </Text>
-        <Text style={styles.list}>
+        <Text style={styles.subValue}>
           • You can review and update your account information at any time.{'\n'}
           • You may opt out of receiving marketing communications from us.{'\n'}
           • You can disable location services through your device settings.{'\n'}
         </Text>
         <Text style={styles.sectionHeading}>Opt-Out Procedure:</Text>
-        <Text style={styles.list}>
+        <Text style={styles.subValue}>
           • If you wish to withdraw your consent for the use and disclosure of your personal information as outlined in this policy, or if you want your data to be deleted, please write to us at admin@bmebharat.com or bmebharat@gmail.com. We will process your request promptly.{'\n'}
           <Text style={styles.subValue}> Please note:</Text>{'\n'}
           • Your request shall take effect no later than Five (5) business days from the receipt of your request.{'\n'}
           • After processing, we will no longer use your personal data for any processing activities unless it is required to comply with our legal obligations.{'\n'}
           • Upon withdrawing your consent, some or all of our services may no longer be available to you.{'\n'}
           • We value your privacy and will ensure your request is handled with care.{'\n'}
-          •Also, you can request the deletion of your account and associated data by clicking on the  <Text style={styles.link} onPress={handleDeleteAccount}> Delete Account </Text>
+          •Also, you can request the deletion of your account and associated data by clicking on the  <Text style={styles.link}  onPress={() => navigation.navigate('DeleteAccountFlow')}> Delete Account </Text>
           {' '}link.
 
         </Text>
@@ -143,90 +139,39 @@ const styles = StyleSheet.create({
     padding: 10
 
   },
-  container1: {
-    flex: 1,
 
-    backgroundColor: '#fff',
-    paddingTop: STATUS_BAR_HEIGHT
-  },
   container: {
     padding: 10,
     backgroundColor: "white"
 
   },
-  headerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: 'white',
-    borderBottomWidth: 1,
-    borderColor: '#f0f0f0',
-    paddingTop: STATUS_BAR_HEIGHT,
-  },
-  list1: {
-    color: 'gray'
-  },
-  title: {
-    fontSize: 14,
-    fontWeight: '500',
-    marginBottom: 10,
-    color: "black",
-    textAlign: 'justify',
-  },
+  
   link: {
     color: '#075cab',
     textDecorationLine: 'underline'
   },
   sectionHeading: {
-    fontSize: 13,
+  
     fontWeight: '500',
     color: colors.text_primary,
     marginBottom: 5,
   },
-  value: {
-    flex: 2, // Take the remaining space
-    flexShrink: 1,
-    color: colors.text_secondary,
-    fontWeight: '400',
-    fontSize: 13,
-    textAlign: 'left', // Align text to the left
-    alignSelf: 'flex-start',
-    marginBottom: 20,
 
-  },
   subValue: {
     flex: 2, // Take the remaining space
     flexShrink: 1,
+    fontSize:13,
     color: colors.text_secondary,
-    fontWeight: '300',
-    fontSize: 13,
     textAlign: 'left', // Align text to the left
     alignSelf: 'flex-start',
     marginBottom: 10,
 
   },
-  subHeading: {
-    fontSize: 14,
-    fontWeight: '400',
-    marginTop: 5,
-    marginBottom: 3,
-    color: "black",
-  },
-  paragraph: {
-    fontSize: 14,
-    lineHeight: 20,
-    marginBottom: 10,
-    // textAlign: 'justify',
-    color: "black",
-    fontWeight: '300',
-  },
+
   list: {
-    fontSize: 14,
-    lineHeight: 20,
+
     marginBottom: 10,
     paddingLeft: 10,
-    color: "black",
-    fontWeight: '300',
 
   },
 });

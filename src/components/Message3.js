@@ -11,6 +11,7 @@ const Message3 = ({ visible, onClose, onCancel, onOk, title, message, iconType }
       visible={visible}
       animationType="fade"
       onRequestClose={onClose}
+      statusBarTranslucent
     >
       <View style={styles.overlay}>
         <View style={styles.alertBox}>

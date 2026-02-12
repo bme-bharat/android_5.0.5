@@ -1,16 +1,15 @@
-import React, { useEffect, useRef, useState, Suspense, lazy } from 'react';
+import React, { useEffect, useRef, useState, Suspense } from 'react';
 import { createNavigationContainerRef, NavigationContainer } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LoginStack } from './src/navigation/UsersRegister';
-const UserBottomTabNav = lazy(() => import('./src/navigation/UserNav/UserBottomTabNav'));
-const CompanyBottomTab = lazy(() => import('./src/navigation/CompanyNav/CompanyBottomTabNav'));
-import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import 'react-native-gesture-handler';
 import RNRestart from 'react-native-restart';
 import axios from 'axios';
 import RNFS from 'react-native-fs';
 import SplashScreen from "./src/screens/SplashScreen"
-import { Alert, Linking, Modal, StyleSheet, TouchableOpacity, View, Text, Platform, StatusBar, useColorScheme } from 'react-native';
+import { Alert, Linking, Modal, StyleSheet, TouchableOpacity, View, Text, Platform, StatusBar, useColorScheme, BackHandler } from 'react-native';
 
 import DeviceInfo from 'react-native-device-info';
 
@@ -24,18 +23,17 @@ import NotificationHandler from './src/screens/NotificationHandler';
 import DeepLinkHandler from './src/screens/DeepLinkHandler';
 import { ConnectionProvider } from './src/screens/AppUtils/ConnectionProvider';
 import { BottomSheetProvider } from './src/screens/AppUtils/SheetProvider';
-import { NetworkProvider } from './src/screens/AppUtils/IdProvider';
-
-import useReviewPrompt from './src/screens/AppUtils/appReview';
-import { cleanupQuickActions, handleNavigationReady, onNavigationContainerReady, setupQuickActions, setupQuickActionsInternal } from './src/screens/quickActions';
+import { NetworkProvider, useNetwork } from './src/screens/AppUtils/IdProvider';
 
 import { enableScreens } from 'react-native-screens';
 import MediaViewer from './src/screens/helperComponents/mediaViewer';
 import { KeyboardInputProvider } from "./src/screens/AppUtils/KeyboardAvoidingContainer"
 import Message1 from './src/components/Message1';
 import useLastActivityTracker from './src/screens/AppUtils/LastSeenProvider';
-import LinearGradient from 'react-native-linear-gradient';
-import InAppUpdateChecker from './src/screens/InAppUpdateChecker';
+import { RootNavigator } from './src/navigation/RootNavigator';
+import { useLogoutManager } from './src/screens/AppUtils/useLogoutManager';
+import { PaperProvider } from 'react-native-paper';
+import { smartGoBack } from './src/navigation/smartGoBack';
 
 enableScreens();
 export const navigationRef = createNavigationContainerRef();
@@ -44,33 +42,37 @@ function App() {
 
   return (
     <SafeAreaProvider>
-      <StatusBar
+      <NetworkProvider>
 
-        barStyle='dark-content'
-        backgroundColor="#075cab"
-      />
-      <AppContent />
+        <StatusBar
+          translucent
+          barStyle='dark-content'
+          // backgroundColor="#FFFFFFB3"
+          // backgroundColor="rgba(255, 255, 255, 0 )" 
+          backgroundColor={"transparent"}
+
+        />
+
+        <AppContent />
+      </NetworkProvider>
     </SafeAreaProvider>
   );
 }
 
 const AppContent = () => {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [userType, setUserType] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [splashVisible, setSplashVisible] = useState(false)
+  const { myId, myData } = useNetwork();
+  const userId = myId
+
   const [currentVersion, setCurrentVersion] = useState(null);
-  const [updateVersion, setUpdateVersion] = useState(null);
-  const [subscriptionExpiresOn, setSubscriptionExpiresOn] = useState(null);
-  const [actionType, setActionType] = useState('');
-  const [userId, setUserId] = useState('')
-  const errorCheckIntervalRef = useRef(null);
+
   const [modalVisible, setModalVisible] = useState(false);
   const [visible, setVisible] = useState(false);
+  const [deleteVisible, setDeleteVisible] = useState(false);
+
   const [alertTitle, setAlertTitle] = useState('');
   const [alertMessage, setAlertMessage] = useState('');
   const [alertIconType, setAlertIconType] = useState('');
-  const sessionCheckIntervalRef = useRef(null);
+
   const [updateDismissedCount, setUpdateDismissedCount] = useState(0);
   const [forceUpdate, setForceUpdate] = useState(false);
 
@@ -80,56 +82,15 @@ const AppContent = () => {
   // useReviewPrompt();
   // const { saveCurrentScreen } = useLastScreenTracker();
 
-  const safeAreaInsets = useSafeAreaInsets();
+  const { startSessionWatcher } = useLogoutManager();
+  const insets = useSafeAreaInsets();
 
   useEffect(() => {
-    const getData = async () => {
-      try {
-        const companyUserData = await AsyncStorage.getItem("CompanyUserData");
-        const normalUserData = await AsyncStorage.getItem("normalUserData");
+    startSessionWatcher(() => {
+      setVisible(true);
+    });
+  }, []);
 
-        if (!companyUserData && !normalUserData) {
-
-          return;
-        }
-        const forumPostUser = JSON.parse(normalUserData || companyUserData);
-        if (forumPostUser && (forumPostUser.user_id || forumPostUser.company_id)) {
-          setUserId(forumPostUser.user_id || forumPostUser.company_id);
-          setSubscriptionExpiresOn(forumPostUser.subscription_expires_on)
-          // console.log('forumPostUser.subscription_expires_on',forumPostUser.subscription_expires_on)
-        } else {
-
-        }
-      } catch (error) {
-
-      }
-    };
-
-    getData();
-
-    userCheckIntervalRef.current = setInterval(() => {
-
-      if (userId) {
-
-        clearInterval(userCheckIntervalRef.current);
-      } else {
-        getData();
-      }
-    }, 1000);
-
-    return () => {
-      if (userCheckIntervalRef.current) {
-        clearInterval(userCheckIntervalRef.current);
-      }
-    };
-  }, [userId, isLoggedIn]);
-
-
-  useEffect(() => {
-    if (userId) {
-
-    }
-  }, [userId]);
   const getCurrentVersion = async () => {
     const version = await DeviceInfo.getVersion();
 
@@ -164,7 +125,6 @@ const AppContent = () => {
 
       if (response.status === 200 && response.data.status === 'success') {
         const newVersion = response.data.android_version_number;
-        setUpdateVersion(newVersion);
 
         const isUpdateAvailable = compareVersions(currentVersion, newVersion);
 
@@ -211,261 +171,81 @@ const AppContent = () => {
     }
   }, [userId, updateDismissedCount, forceUpdate]);
 
-  useEffect(() => {
-    sessionCheckIntervalRef.current = setInterval(() => {
-      checkUserSession();
-    }, 5000);
-
-    return () => {
-      if (sessionCheckIntervalRef.current) {
-        clearInterval(sessionCheckIntervalRef.current);
-        sessionCheckIntervalRef.current = null;
-      }
-    };
-  }, []);
-
-
-  const checkUserSession = async () => {
-
-    try {
-      const sessionData = await AsyncStorage.getItem('userSession');
-      if (!sessionData) return;
-
-      const { sessionId } = JSON.parse(sessionData);
-      if (!sessionId) return;
-
-      const response = await apiClient.post('/checkUserSession', {
-        command: 'checkUserSession',
-        session_id: sessionId,
-      });
-
-      if (response.data?.statusCode === 200 && !response.data.data?.isActive) {
-        setAlertTitle('Session Expired');
-        setAlertMessage('Your session is inactive. logging out');
-        setAlertIconType('warning');
-        setVisible(true);
-        setActionType('logout');
-
-        setTimeout(() => {
-          handleLogout();
-        }, 5000);
-      }
-    } catch (error) {
-
-    }
-  };
-
-
-  const handleLogout = async () => {
-    try {
-      // Retrieve session data from AsyncStorage
-      const sessionData = await AsyncStorage.getItem('userSession');
-
-      if (!sessionData) {
-
-        return;
-      }
-
-      // Parse session data to get sessionId
-      const { sessionId } = JSON.parse(sessionData);
-      if (!sessionId) {
-
-        return;
-      }
-
-      // Make an API call to logout the session
-      const response = await apiClient.post(
-        "/logoutUserSession",
-        { command: "logoutUserSession", session_id: sessionId }
-      );
-
-      if (response.data.statusCode === 200) {
-
-        await AsyncStorage.multiRemove([
-          'userSession',
-          'normalUserData',
-          'CompanyUserData',
-          'AdminUserData',
-        ]);
-
-        setTimeout(() => {
-          RNRestart.restart();
-        }, 100);
-      } else {
-
-      }
-    } catch (error) {
-
-    }
-  };
-
-
-  const handleOnOk = () => {
-    if (actionType === 'logout') {
-      handleLogout();
-    } else if (actionType === 'delete') {
-      handleAccountDeletion();
-    }
-
-    setTimeout(() => {
-      setVisible(false);
-    }, 500);
-  };
-
+  const forceExitRef = useRef(false);
+  const [stopPolling, setStopPolling] = useState(false);
 
   const handleAccountDeletion = async () => {
     try {
-      await AsyncStorage.multiRemove([
-        'userSession',
-        'normalUserData',
-        'CompanyUserData',
-        'AdminUserData',
-        'CompanyUserlogintimeData',
-        'NormalUserlogintimeData',
-      ]);
+      if (forceExitRef.current !== true) {
+        forceExitRef.current = true;
+      }
 
-      setIsLoggedIn(false);
-      setUserType(null);
-      setUserId(null);
+      await AsyncStorage.clear();
 
-      setTimeout(() => restartApp(), 1000);
-    } catch (error) {
+      setVisible(false);
 
+      setTimeout(() => {
+        RNRestart.restart();
+      }, 500);
+    } catch (e) {
+      console.log('Account deletion cleanup failed:', e);
+      RNRestart.restart();
     }
   };
 
 
+  const triggerDeleteFlow = () => {
+    if (forceExitRef.current) return;
+    forceExitRef.current = true;
+
+    setAlertTitle('Account Deleted');
+    setAlertMessage('Your account no longer exists. Logging out…');
+    setAlertIconType('warning');
+    setDeleteVisible(true);
+
+    setTimeout(() => {
+      handleAccountDeletion();
+    }, 2000);
+  };
+
 
   const fetchProfile1 = async () => {
-    if (!userId) return false;
+    if (!userId || forceExitRef.current || stopPolling) return false;
 
     try {
       const response = await apiClient.post('/getUserDetails', {
         command: 'getUserDetails',
         user_id: userId,
-        timestamp: new Date().getTime(),
+        timestamp: Date.now(),
       });
 
-
-      if (response.data.errorType === 'Error') {
-
-        if (response.data.errorMessage === "Oops! User not found! please sign up!") {
-          setAlertTitle('Account Deleted');
-          setAlertMessage('Please sign up again.');
-          setAlertIconType('warning');
-          setActionType('delete');
-          setVisible(true);
-
-          setTimeout(() => {
-            handleAccountDeletion();
-          }, 5000);
-
-          return false;
-        }
+      if (
+        response.data?.errorType === 'Error' &&
+        response.data?.errorMessage === 'Oops! User not found! please sign up!'
+      ) {
+        console.log('response.data', response.data)
+        triggerDeleteFlow(); // your delete logic
+        setStopPolling(true); // stop further polling
+        return false;
       }
 
       return true;
-    } catch (error) {
-
+    } catch (err) {
+      console.error('Fetch profile error:', err);
       return false;
     }
   };
 
-
-
   useEffect(() => {
-    if (errorCheckIntervalRef.current) {
-      clearInterval(errorCheckIntervalRef.current);
-    }
+    if (!userId) return;
 
-    if (!userId) {
+    const interval = setInterval(() => {
+      fetchProfile1();
+    }, 5000); // every 5 seconds
 
-      return;
-    }
+    return () => clearInterval(interval); // cleanup on unmount
+  }, [userId, stopPolling]);
 
-    errorCheckIntervalRef.current = setInterval(async () => {
-      const success = await fetchProfile1();
-
-      if (!success) {
-
-        clearInterval(errorCheckIntervalRef.current);
-      }
-    }, 1000);
-
-    return () => {
-      clearInterval(errorCheckIntervalRef.current);
-    };
-  }, [userId]);
-
-
-  const restartApp = () => {
-
-    if (errorCheckIntervalRef.current) {
-      clearInterval(errorCheckIntervalRef.current);
-    }
-
-    setTimeout(() => {
-      RNRestart.restart();
-    }, 1000);
-  };
-
-  const formatTimestamp = (timestamp) => {
-    const date = new Date(timestamp * 1000);
-    const day = date.getDate();
-    const month = date.getMonth() + 1;
-    const year = date.getFullYear();
-
-    return `${day}/${month}/${year}`;
-  };
-
-
-  useEffect(() => {
-    if (!subscriptionExpiresOn) return;
-
-    const intervalId = setInterval(() => {
-      const currentTime = Math.floor(Date.now() / 1000);
-
-      if (currentTime > subscriptionExpiresOn) {
-        const formattedExpirationDate = formatTimestamp(subscriptionExpiresOn);
-        Alert.alert('Subscription Expired',
-          `Your subscription expired on ${formattedExpirationDate}. You have been logged out due to subscription expiration.`, [
-          {
-            text: 'OK',
-            onPress: async () => {
-              await AsyncStorage.clear();
-              RNRestart.restart();
-            },
-          },
-        ]);
-        clearInterval(intervalId);
-      }
-    }, 1000);
-
-
-    return () => clearInterval(intervalId);
-  }, [subscriptionExpiresOn]);
-
-
-  // useEffect(() => {
-  //   const getFcmToken = async () => {
-  //     try {
-  //       const app = getApp();
-  //       const messagingInstance = getMessaging(app);
-  //       const token = await getToken(messagingInstance);
-  //       setFcmToken(token);
-  //       console.log("🔹 FCM Token:", token);
-
-  //       if (Platform.OS === "ios") {
-  //         const apnsToken = await messaging().getAPNSToken();
-  //         console.log("🍎 APNS Token:", apnsToken);
-  //       }
-  //     } catch (error) {
-  //       console.error("❌ Error fetching FCM token:", error);
-  //     }
-  //   };
-
-  //   getFcmToken();
-  // }, []);
 
   const getDirectorySize = async (dirPath) => {
     let totalSize = 0;
@@ -539,31 +319,7 @@ const AppContent = () => {
   // }, []);
 
 
-  const checkAuthStatus = async () => {
 
-    try {
-      const normalUserData = await AsyncStorage.getItem('normalUserData');
-      const companyUserData = await AsyncStorage.getItem('CompanyUserData');
-      const adminUserData = await AsyncStorage.getItem('AdminUserData');
-
-      if (normalUserData || companyUserData || adminUserData) {
-        setIsLoggedIn(true);
-        setUserType(
-          normalUserData ? 'users' : companyUserData ? 'company' : 'BME_ADMIN'
-        );
-
-
-      } else {
-        setIsLoggedIn(false);
-        setUserType(null);
-      }
-    } catch (error) {
-
-    } finally {
-      await new Promise(resolve => setTimeout(resolve, 3000));
-      setIsLoading(false);
-    }
-  };
 
   // useEffect(() => {
   //   setupQuickActions();
@@ -573,49 +329,45 @@ const AppContent = () => {
   //   };
   // }, []);
 
+
+
   useEffect(() => {
-    checkAuthStatus();
+    const subscription = BackHandler.addEventListener(
+      'hardwareBackPress',
+      () => smartGoBack()
+    );
+
+    return () => subscription.remove();
   }, []);
-
-
-
-  if (isLoading) {
-    return <SplashScreen />;
-  }
 
 
   return (
 
     <Provider store={store}>
       <Suspense fallback={<SplashScreen />}>
-        <GestureHandlerRootView style={{ flex: 1 }}>
+        <GestureHandlerRootView style={{ flex: 1, paddingBottom: insets?.bottom, }}>
           <ToastProvider>
-            <NavigationContainer
-              ref={navigationRef} >
-              <ConnectionProvider>
-              <InAppUpdateChecker />
+            <PaperProvider>
 
-                <BottomSheetProvider>
-                  <NetworkProvider>
+              <NavigationContainer
+                ref={navigationRef} >
+                <ConnectionProvider>
+
+                  <BottomSheetProvider>
+
                     <MediaViewer />
                     <NotificationHandler />
                     <DeepLinkHandler />
-                    {isLoggedIn ? (
-                      userType === 'users' ? (
-                        <UserBottomTabNav />
-                      ) : (
-                        <CompanyBottomTab />
-                      )
-                    ) : (
-                      <LoginStack />
-                    )}
+                    <RootNavigator />
 
-                  </NetworkProvider>
-                </BottomSheetProvider>
+                  </BottomSheetProvider>
 
-              </ConnectionProvider>
+                </ConnectionProvider>
 
-            </NavigationContainer>
+              </NavigationContainer>
+            </PaperProvider>
+
+
 
           </ToastProvider>
 
@@ -632,8 +384,15 @@ const AppContent = () => {
 
       <Message1
         visible={visible}
-        onClose={() => setVisible(false)}
-        onOk={handleOnOk}
+        showOkButton={false}
+        title="Session Expired"
+        message="Your account is logged in on another device. Logging out …"
+        iconType="warning"
+      />
+
+      <Message1
+        visible={deleteVisible}
+        showOkButton={false}
         title={alertTitle}
         message={alertMessage}
         iconType={alertIconType}
@@ -645,34 +404,30 @@ const AppContent = () => {
 
 const UpdateModal = ({ modalVisible, onClose, onUpdate, handleUpdateDismiss, forceUpdate }) => {
   return (
-
-    <Modal transparent visible={modalVisible} animationType="fade" onRequestClose={onClose} >
+    <Modal statusBarTranslucent transparent visible={modalVisible} animationType="fade" onRequestClose={onClose}>
       <View style={styles.modalBackground}>
         <View style={styles.modalContainer}>
-          <View style={styles.headerContainer}>
-            <Text style={styles.modalTitle}>Update Available</Text>
+          <Text style={styles.modalTitle}>Update Available</Text>
+          <Text style={styles.modalMessage}>
+            A new version is available. Please update to the latest version for the best experience.
+          </Text>
 
-            <Text style={styles.modalMessage}>
-              A new version is available. Please update to the latest version for the best experience.
-            </Text>
+          <View style={forceUpdate ? styles.buttonContainerSingle : styles.buttonContainer}>
+            <TouchableOpacity style={styles.button} onPress={onUpdate}>
+              <Text style={styles.buttonText}>Update</Text>
+            </TouchableOpacity>
 
-            <View style={forceUpdate ? styles.buttonContainerSingle : styles.buttonContainer}>
-              <TouchableOpacity style={styles.button} onPress={onUpdate}>
-                <Text style={styles.buttonText}>Update</Text>
+            {!forceUpdate && handleUpdateDismiss && (
+              <TouchableOpacity
+                style={[styles.button, styles.leaveButton]}
+                onPress={() => {
+                  onClose();
+                  handleUpdateDismiss();
+                }}
+              >
+                <Text style={styles.buttonText1}>Leave</Text>
               </TouchableOpacity>
-
-              {!forceUpdate && handleUpdateDismiss && (
-                <TouchableOpacity
-                  style={[styles.button, styles.leaveButton]}
-                  onPress={() => {
-                    onClose();
-                    handleUpdateDismiss();
-                  }}
-                >
-                  <Text style={styles.buttonText1}>Leave</Text>
-                </TouchableOpacity>
-              )}
-            </View>
+            )}
           </View>
         </View>
       </View>
@@ -685,37 +440,23 @@ export default App;
 const styles = StyleSheet.create({
   modalBackground: {
     flex: 1,
-    justifyContent: 'flex-end',   // Move to bottom
-
-  },
-
-  modalContainer: {
-    width: '100%',
-    padding: 20,
-    backgroundColor: 'white',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    elevation: 10,
-    
-  },
-  headerContainer: {
-    width: '98%',
-    // <-- EXTRA SPACE ABOVE TITLE
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#075cab'
+    backgroundColor: 'rgba(0, 0, 0, 0.6)', // Darker background for better contrast
   },
-
+  modalContainer: {
+    width: 320,
+    padding: 30,
+    backgroundColor: '#fff',
+    borderRadius: 15,
+    alignItems: 'center',
+    elevation: 5, // Add shadow for modern look
+  },
   modalTitle: {
     fontSize: 20,
     fontWeight: 'bold',
     marginBottom: 12,
-    color: '#075cab',
-    textAlign: 'center',
-    paddingTop:10
+    color: '#333',
   },
   modalMessage: {
     fontSize: 15,
@@ -726,7 +467,6 @@ const styles = StyleSheet.create({
   buttonContainer: {
     width: '100%',
     flexDirection: 'row',
-    justifyContent: 'space-evenly'
   },
   buttonContainerSingle: {
     width: '100%',

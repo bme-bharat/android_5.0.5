@@ -13,7 +13,8 @@ import apiClient from '../ApiClient';
 import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
 
 import { colors, dimensions } from '../../assets/theme.jsx';
-import AppStyles, { commonStyles, STATUS_BAR_HEIGHT } from '../AppUtils/AppStyles.js';
+import AppStyles, { commonStyles } from '../AppUtils/AppStyles.js';
+import { AppHeader } from '../AppUtils/AppHeader.jsx';
 const CompanyGetAppliedJobsScreen = () => {
   const route = useRoute();
   const { userId } = route.params;
@@ -108,12 +109,10 @@ const CompanyGetAppliedJobsScreen = () => {
   return (
 
     <View style={styles.container} >
-      <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
+      <AppHeader
+        title={"Applicant details"}
 
-      <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-        <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-
-      </TouchableOpacity>
+      />
 
       {loading ? (
         <View style={styles.loadingContainer}>
@@ -124,7 +123,7 @@ const CompanyGetAppliedJobsScreen = () => {
           data={posts}
           ref={scrollViewRef}
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: "20%" }}
+          contentContainerStyle={[ { paddingBottom: "10%" }]}
           keyExtractor={(item) => item.user_id}
           bounces={false}
           renderItem={({ item }) => {
@@ -285,7 +284,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'space-between',
     backgroundColor: 'white',
-    paddingTop: STATUS_BAR_HEIGHT
+
   },
   backButton: {
     alignSelf: 'flex-start',

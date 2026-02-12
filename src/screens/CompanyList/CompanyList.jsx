@@ -26,11 +26,8 @@ import Location from '../../assets/svgIcons/location.svg';
 import { colors, dimensions } from '../../assets/theme.jsx';
 import scrollAnimations from '../helperComponents/scrollAnimations.jsx';
 import Animated from "react-native-reanimated";
+import Avatar from '../helperComponents/Avatar.jsx';
 
-const STATUS_BAR_HEIGHT =
-  Platform.OS === "android" ? StatusBar.currentHeight || 24 : 44;
-
-const headerHeight = STATUS_BAR_HEIGHT + 60;
 const defaultImage = Image.resolveAssetSource(default_image).uri;
 const CompanyListScreen = () => {
   const navigation = useNavigation();
@@ -87,22 +84,20 @@ const CompanyListScreen = () => {
         return;
       }
 
-      // Only add avatar data to companies that don't have a fileKey
-      const companiesWithAvatars = companies.map(company => {
-        // If fileKey exists, return the company as-is
-        if (company.fileKey) {
-          return company;
-        }
-        // Otherwise, add generated avatar
-        return {
-          ...company,
-          companyAvatar: generateAvatarFromName(company.company_name)
-        };
-      });
 
+        const CompaniesWithImg = await Promise.all(
+          companies.map(async (company) => {
+            if (company.fileKey) {
+              const imageObj = await getSignedUrl(company.company_id, company.fileKey);
+              company.imageUrl = imageObj[company.company_id];
+            }
+            return company;
+          })
+        );
+ 
       setCompanies(prev => {
         const existingIds = new Set(prev.map(c => c.company_id));
-        const newUniqueCompanies = companiesWithAvatars.filter(c => !existingIds.has(c.company_id));
+        const newUniqueCompanies = CompaniesWithImg.filter(c => !existingIds.has(c.company_id));
         return [...prev, ...newUniqueCompanies];
       });
 
@@ -116,19 +111,6 @@ const CompanyListScreen = () => {
       setLoadingMore(false);
     }
   };
-
-
-
-
-  const {
-    getUrlFor,
-    onViewableItemsChanged,
-    viewabilityConfig
-  } = useLazySignedUrls(companies, getSignedUrl, 5, {
-    idField: 'company_id',
-    fileKeyField: 'fileKey',
-  });
-
 
 
   useEffect(() => {
@@ -212,7 +194,6 @@ const CompanyListScreen = () => {
       const signedUrlsArray = await Promise.all(urlPromises);
       const signedUrlMap = Object.assign({}, ...signedUrlsArray);
 
-      // Process companies with conditional avatar generation
       const companiesWithImage = companies.map(company => {
         const baseCompany = {
           ...company,
@@ -220,10 +201,9 @@ const CompanyListScreen = () => {
           imageUrl: company.fileKey ? (signedUrlMap[company.company_id] || defaultImage) : null,
         };
 
-        // Only add avatar if no fileKey exists
         return company.fileKey ? baseCompany : {
           ...baseCompany,
-          companyAvatar: generateAvatarFromName(company.company_name)
+
         };
       });
 
@@ -277,31 +257,19 @@ const CompanyListScreen = () => {
   const renderCompanyItem = ({ item, index }) => {
     if (!item) return
 
-    const imageUrl = getUrlFor(item.company_id);
-    const resizeMode = imageUrl?.includes('buliding.jpg') ? 'cover' : 'contain';
-
+  
     return (
 
       <TouchableOpacity style={styles.card} activeOpacity={1} onPress={() => navigateToDetails(item)} >
 
         <View style={AppStyles.cardImage1} >
 
-          {imageUrl ? (
-            <FastImage
-              source={{ uri: imageUrl, }}
 
-              style={AppStyles.cardImage}
-              resizeMode={resizeMode}
-              onError={() => { }}
-            />
-          ) : (
-            <View style={[AppStyles.avatarContainer, { backgroundColor: item.companyAvatar?.backgroundColor }]}>
-              <Text style={[commonStyles.avatarText, { color: item.companyAvatar?.textColor }]}>
-                {item.companyAvatar?.initials}
-              </Text>
-            </View>
-          )}
-
+          <Avatar
+            imageUrl={item?.imageUrl}
+            name={item?.company_name}
+            size={100}
+          />
         </View>
         <View style={styles.textContainer}>
 
@@ -373,13 +341,11 @@ const CompanyListScreen = () => {
 
   return (
     <>
-      <StatusBar translucent backgroundColor="transparent" barStyle={"light-content"} />
-
       <Animated.View style={[AppStyles.toolbar, toolbarBgStyle]}>
 
         <Animated.View style={[AppStyles.searchRow, headerStyle]}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton} activeOpacity={1}>
-            <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.text_secondary} />
+          <TouchableOpacity onPress={() => navigation.goBack()} style={AppStyles.backButton} activeOpacity={1}>
+            <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.text_white} />
 
           </TouchableOpacity>
           <View style={AppStyles.searchBar}>
@@ -413,11 +379,10 @@ const CompanyListScreen = () => {
               fetchCompanies(lastEvaluatedKey);
             }
           }}
-          contentContainerStyle={{ paddingTop: headerHeight, backgroundColor: colors.app_background }}
+
           onEndReachedThreshold={0.5}
           showsVerticalScrollIndicator={false}
-          onViewableItemsChanged={onViewableItemsChanged}
-          viewabilityConfig={viewabilityConfig}
+
           onScrollBeginDrag={() => {
             Keyboard.dismiss();
             searchInputRef.current?.blur?.();
@@ -445,7 +410,7 @@ const CompanyListScreen = () => {
 
           refreshControl={
             <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh}
-              progressViewOffset={headerHeight} />
+               />
           }
           ListEmptyComponent={
             (!searchTriggered && companies.length === 0) ||
@@ -473,7 +438,7 @@ const CompanyListScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.app_background
+    
 
   },
 
@@ -482,59 +447,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     flex: 1,
     paddingBottom: 20
-  },
-
-  icon1: {
-    opacity: 0.8,
-
-  },
-
-  icon: {
-    opacity: 0.8,
-    marginRight: 5,
-  },
-
-  headerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'white',
-    borderBottomWidth: 1,
-    borderColor: '#f0f0f0',
-
-  },
-  backButton: {
-    padding: 12,
-    alignSelf: 'center',
-    borderRadius: 10,
-    backgroundColor: colors.background
-  },
-  searchContainer: {
-    flex: 1,
-    flexDirection: 'row',
-    alignSelf: 'center',
-    padding: 10,
-    borderRadius: 10,
-
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    width: '100%',
-    borderRadius: 10,
-    backgroundColor: 'whitesmoke',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 14,
-    backgroundColor: "whitesmoke",
-    paddingHorizontal: 15,
-    borderRadius: 10,
   },
 
   shareButton: {
@@ -572,32 +484,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
 
-  label: {
-    flex: 1, // Take up available space
-    color: 'black',
-    fontWeight: '500',
-    fontSize: 15,
-    textAlign: 'left', // Align text to the left
-    alignSelf: 'flex-start',
-
-  },
-  colon: {
-    width: 20, // Fixed width for the colon
-    textAlign: 'center', // Center the colon
-    color: 'black',
-    fontWeight: '500',
-    fontSize: 15,
-    alignSelf: 'flex-start',
-
-  },
-
-  title: {
-    fontSize: 15,
-    color: 'black',
-    marginLeft: 8,
-    lineHeight: 20,
-    flexShrink: 1,
-  },
+  
 
   jobCount: {
     fontSize: 13,
@@ -636,7 +523,7 @@ const styles = StyleSheet.create({
   card: {
     top: 5,
     marginBottom: 5,
-    backgroundColor: "white",
+    backgroundColor: "#FFF",
     borderRadius: 10,
     borderWidth: 1,
     borderColor: '#ddd',
@@ -658,7 +545,7 @@ const styles = StyleSheet.create({
   },
 
   textContainer: {
-    padding: 10,
+    paddingHorizontal: 10,
   },
   buttonContainer: {
     display: 'flex',
@@ -669,7 +556,7 @@ const styles = StyleSheet.create({
   },
   viewMoreButton: {
     // marginTop: 10,
-    backgroundColor: COLORS.primary,
+    // backgroundColor: COLORS.primary,
     // borderRadius: 4,
     flex: 1,
     // marginRight: 10,

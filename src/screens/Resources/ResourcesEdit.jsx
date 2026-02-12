@@ -24,12 +24,15 @@ import { MediaPickerButton } from '../helperComponents/MediaPickerButton';
 import { useMediaPicker } from '../helperComponents/MediaPicker';
 import { deleteS3KeyIfExists } from '../helperComponents/s3Helpers';
 import { uploadFromBase64 } from '../Forum/VideoParams';
-import ImageResizer from 'react-native-image-resizer';
+
 import { useS3Uploader } from '../helperComponents/useS3Uploader';
 import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
 import { colors, dimensions } from '../../assets/theme.jsx';
-import AppStyles, { STATUS_BAR_HEIGHT } from '../AppUtils/AppStyles.js';
 import { sanitizeHtmlBody } from '../Forum/forumBody.jsx';
+import { pick, types } from '@react-native-documents/picker';
+import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
+import Avatar from '../helperComponents/Avatar.jsx';
+import { AppHeader } from '../AppUtils/AppHeader.jsx';
 
 const { DocumentPicker } = NativeModules;
 
@@ -134,96 +137,26 @@ const ResourcesEditScreen = () => {
 
 
 
-  const handleMediaPickerPress = () => {
-    Alert.alert(
-      'Select Media',
-      'Choose an option',
-      [
-        {
-          text: 'Open Gallery',
-          onPress: () => {
-            openGallery();
-          },
-        },
-        {
-          text: 'Select Video',
-          onPress: () => {
-            pickVideo();
-          },
-        },
-        {
-          text: 'Select PDF',
-          onPress: () => {
-            selectPDF();
-          },
-        },
-      ],
-      { cancelable: true }
-    );
-  };
 
-
-  const openGallery = async () => {
-    try {
-      // 1️⃣ Pick the file using DocumentPicker
-      const pickedFiles = await DocumentPicker.pick({
-        allowMultiple: false,
-        type: ['image/*'],
-      });
-
-      if (!pickedFiles || pickedFiles.length === 0) return;
-
-      const file = pickedFiles[0];
-
-      const maxWidth = 1080;   // max Instagram feed width
-      const maxHeight = 1350;  // max portrait height
-      const ratio = Math.min(maxWidth / file.width, maxHeight / file.height, 1);
-
-      const resizedWidth = Math.round(file.width * ratio);
-      const resizedHeight = Math.round(file.height * ratio);
-
-      const compressedImage = await ImageResizer.createResizedImage(
-        file.uri,
-        resizedWidth,
-        resizedHeight,
-        'JPEG',
-        80
-      );
-
-      const compressedSizeMB = compressedImage.size / 1024 / 1024;
-      if (compressedSizeMB > 5) {
-        showToast("Image size shouldn't exceed 5MB", 'error');
-        return;
-      }
-      const aspectRatio = calculateAspectRatio(file.width, file.height);
-
-      const meta = {
-        aspectRatio,
-        name: file.name,
-        type: file.type || 'image/jpeg',
-      };
-
-      setFile(file);                      // original picked file
-      setFileType(file.type || 'image/jpeg');
-      setMediaMeta(meta);
-      setCompressedImage(compressedImage)
-    } catch (err) {
-      if (err?.message?.includes('cancelled') || err?.code === 'E_PICKER_CANCELLED') return;
-      console.error('Error picking/compressing image:', err);
-      showToast('Failed to pick or compress image', 'error');
-    }
-  };
 
   const selectPDF = async () => {
     try {
       // Open the native document picker
-      const pickedFiles = await DocumentPicker.pick({
-        allowMultiple: false,
-        type: ['application/pdf'], // restrict to PDF only
+      const pickedFiles = await pick({
+        type: [
+          types.pdf,
+          types.doc,
+          types.docx,
+          types.xls,
+          types.xlsx,
+          types.ppt,
+          types.pptx,
+          types.plainText,
+        ],
       });
 
-      if (!pickedFiles || pickedFiles.length === 0) return;
 
+      if (!pickedFiles || pickedFiles.length === 0) return;
       const file = pickedFiles[0];
       console.log('Picked PDF:', file);
 
@@ -259,26 +192,26 @@ const ResourcesEditScreen = () => {
 
     } catch (err) {
       if (err?.message?.includes('cancelled') || err?.code === 'E_PICKER_CANCELLED') return;
-      console.error("Native DocumentPicker error:", err);
-      showToast("An unexpected error occurred while picking the file.", "error");
+      // console.error("Native DocumentPicker error:", err);
+      // showToast("An unexpected error occurred while picking the file.", "error");
     }
   };
 
   const cleanHtmlSpaces = (html) => {
     if (!html) return "";
-  
+
     let cleaned = html;
 
     const emptyBlock = /<div>\s*(?:<span>\s*)?(?:<br\s*\/?>)\s*(?:<\/span>)?\s*<\/div>/gi;
     cleaned = cleaned.replace(new RegExp(`^(?:${emptyBlock.source})+`, "i"), "");
     cleaned = cleaned.replace(new RegExp(`(?:${emptyBlock.source})+$`, "i"), "");
     cleaned = cleaned.trim();
-  
+
     return cleaned;
   };
 
   const handleForumBodyChange = (html) => {
-  
+
     const cleanedBody = sanitizeHtmlBody(html);
     const finalBody = cleanHtmlSpaces(cleanedBody);
 
@@ -322,7 +255,7 @@ const ResourcesEditScreen = () => {
         if (uploaded) {
           fileKey = uploaded.fileKey;
           thumbnailFileKey = uploaded.thumbnailFileKey;
-          console.log('Uploaded files:', fileKey, thumbnailFileKey);
+
         }
 
         fileKey = uploaded.fileKey;
@@ -354,7 +287,6 @@ const ResourcesEditScreen = () => {
       };
       setHasChanges(false)
       const response = await apiClient.post('/updateResourcePost', payload);
-      console.log('payload', payload)
       const updatedPostData = {
         ...payload,
       };
@@ -433,10 +365,10 @@ const ResourcesEditScreen = () => {
 
 
 
-  
-  
-  
-  
+
+
+
+
 
 
 
@@ -467,74 +399,41 @@ const ResourcesEditScreen = () => {
     }, [])
   );
 
+  const isPostDisabled =
+  !postData.title?.trim() ||
+  !postData.resource_body?.trim() ||
+  isLoading ||
+  isCompressing
+
   return (
 
     <View style={styles.container1} >
-      <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
+     
 
-      <View style={styles.headerContainer}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          onPress={handlePostSubmission}
-          style={[
-            styles.buttonContainer,
-            (!postData.resource_body.trim() || isLoading || isCompressing) && styles.disabledButton,
-          ]}
-          disabled={!postData.resource_body.trim() || isLoading || isCompressing}
-        >
-          {isLoading || isCompressing ? (
-            <ActivityIndicator size="small" color="#fff" style={styles.activityIndicator} />
-          ) : (
-            <Text
-              style={[
-                styles.buttonTextdown,
-                (!postData.resource_body.trim() || isLoading || isCompressing) && styles.disabledButtonText1,
-              ]}
-            >Update</Text>
-          )}
-        </TouchableOpacity>
-      </View>
-
+      <AppHeader
+  title="Update Resource Post"
+  onPost={handlePostSubmission}
+  postLabel="Update"
+  postLoading={isLoading || isCompressing}
+  postDisabled={isPostDisabled}
+/>
 
       <KeyboardAwareScrollView
-        contentContainerStyle={{ flexGrow: 1, paddingBottom: '40%', marginHorizontal: 10, }}
+        contentContainerStyle={[ { flexGrow: 1, paddingBottom: '40%', marginHorizontal: 10, }]}
         keyboardShouldPersistTaps="handled"
         extraScrollHeight={20}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.profileContainer}>
           <View style={styles.imageContainer}>
-            {profile?.fileKey ? (
-              <Image
-                source={{ uri: profile?.imageUrl }}
-                style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: 20,
-                  marginRight: 10,
-                }}
-              />
-            ) : (
-              <View
-                style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: 20,
-                  marginRight: 10,
-                  backgroundColor: profile?.companyAvatar?.backgroundColor || '#ccc',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                }}
-              >
-                <Text style={{ color: profile?.companyAvatar?.textColor || '#000', fontWeight: 'bold' }}>
-                  {profile?.companyAvatar?.initials || '?'}
-                </Text>
-              </View>
-            )}
+
+
+            <Avatar
+              imageUrl={profile?.imageUrl}
+              name={profile?.first_name || profile?.company_name}
+              size={40}
+            />
+
           </View>
           <View style={styles.profileTextContainer}>
             <Text style={styles.profileName}>
@@ -573,7 +472,7 @@ const ResourcesEditScreen = () => {
           }}
           initialContentHTML={initialBodyRef.current}
           placeholder="Share your thoughts, questions or ideas..."
-          
+
           onChange={handleForumBodyChange}
           editorStyle={{
             cssText: `
@@ -629,13 +528,19 @@ const ResourcesEditScreen = () => {
         </View>
 
         {!file && !image && (
+          <TouchableOpacity activeOpacity={1} onPress={() => selectPDF()} style={{ height: 80, borderWidth: 1, borderColor: '#ddd', borderRadius: 20, backgroundColor: '#FFF', alignItems: 'center', justifyContent: 'center' }}>
+            <Text > Upload file</Text>
+          </TouchableOpacity>
+        )}
+
+        {/* {!file && !image && (
           <View style={{ paddingHorizontal: 10, }}>
             <MediaPickerButton
               onPress={handleMediaPickerPress}
               isLoading={isCompressing}
             />
           </View>
-        )}
+        )} */}
 
 
       </KeyboardAwareScrollView>
@@ -693,8 +598,7 @@ const styles = StyleSheet.create({
 
   container1: {
     flex: 1,
-    backgroundColor: 'whitesmoke',
-    paddingTop: STATUS_BAR_HEIGHT
+    
   },
 
 

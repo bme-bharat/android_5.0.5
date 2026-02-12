@@ -15,13 +15,16 @@ const CustomDropdown = ({
     
     itemStyle,
     itemTextStyle,
-    placeholder = ""
+    placeholder = "",
+    disabled = false,   
 }) => {
     const [visible, setVisible] = useState(false);
 
     const toggleDropdown = () => {
+        if (disabled) return;   // ✅ HARD BLOCK
         setVisible(!visible);
     };
+    
 
     const handleSelect = (item) => {
 
@@ -31,7 +34,7 @@ const CustomDropdown = ({
 
     return (
         <View style={styles.dropdownContainer}>
-            <TouchableOpacity style={[styles.dropdown, buttonStyle]} onPress={toggleDropdown}>
+            <TouchableOpacity style={[styles.dropdown, buttonStyle]} onPress={toggleDropdown} disabled={disabled}>
                 <Text style={[styles.selectedText]} numberOfLines={1}  ellipsizeMode="tail" >{selectedItem || placeholder}</Text>
                 {visible ? (
                     <ArrowUp
@@ -48,10 +51,12 @@ const CustomDropdown = ({
                 )}
             </TouchableOpacity>
             <Modal
-                visible={visible}
+                visible={visible && !disabled}   
                 transparent={true}
-                animationType="slide"
+                animationType="fade"
                 onRequestClose={toggleDropdown}
+                statusBarTranslucent
+                navigationBarTranslucent
             >
                 <TouchableOpacity style={styles.overlay} onPress={toggleDropdown}>
                     <View style={styles.modalContent}>

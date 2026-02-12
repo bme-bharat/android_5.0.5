@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useCallback, useRef, Profiler, useMemo } from "react";
-import { View, Text, TouchableOpacity, TextInput, Dimensions, StyleSheet, Keyboard, ActivityIndicator, RefreshControl, InputAccessoryView, StatusBar, Platform } from "react-native";
+import { View, Text, TouchableOpacity, TextInput, Dimensions, StyleSheet, Keyboard, ActivityIndicator, RefreshControl, InputAccessoryView, Platform } from "react-native";
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { useIsFocused } from "@react-navigation/native";
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -14,10 +14,11 @@ import { EventRegister } from "react-native-event-listeners";
 import { useConnection } from "../AppUtils/ConnectionProvider";
 import { openMediaViewer } from "../helperComponents/mediaViewer";
 import ReactionSheet from "../helperComponents/ReactionUserSheet";
+import { useReactionPickerModal } from './ReactionPicker.jsx'
 import { useForumMedia } from "../helperComponents/forumViewableItems";
 import useRenderForumItem from './useRenderForumItem';
 import useForumFetcher, { enrichForum } from './useForumFetcher';
-import BottomNavigationBar from '../AppUtils/BottomNavigationBar';
+
 import scrollAnimations from '../helperComponents/scrollAnimations';
 import AppStyles from '../AppUtils/AppStyles';
 import Animated from "react-native-reanimated";
@@ -32,29 +33,14 @@ import ShareIcon from '../../assets/svgIcons/share.svg';
 import Add from '../../assets/svgIcons/add.svg';
 
 import { colors, dimensions } from '../../assets/theme.jsx';
-
-const JobListScreen = React.lazy(() => import('../Job/JobListScreen'));
-const ProductsList = React.lazy(() => import('../Products/ProductsList'));
-const CompanySettingScreen = React.lazy(() => import('../Profile/CompanySettingScreen'));
-const CompanyHomeScreen = React.lazy(() => import('../CompanyHomeScreen'));
-
-const { height: screenHeight } = Dimensions.get('window');
-const STATUS_BAR_HEIGHT =
-    Platform.OS === "android" ? StatusBar.currentHeight || 24 : 44;
-
-const headerHeight = STATUS_BAR_HEIGHT + 60;
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const AllPosts = () => {
     const navigation = useNavigation();
     const { onScroll, headerStyle, bottomStyle, toolbarBgStyle, barStyle } = scrollAnimations();
+    const { openReactionPicker, ReactionModal } = useReactionPickerModal();
 
-    const tabConfig = [
-        { name: "Home", component: CompanyHomeScreen, focusedIcon: 'home', unfocusedIcon: 'home-outline', iconComponent: Icon },
-        { name: "Jobs", component: JobListScreen, focusedIcon: 'briefcase', unfocusedIcon: 'briefcase-outline', iconComponent: Icon },
-        { name: "Feed", component: AllPosts, focusedIcon: 'rss', unfocusedIcon: 'rss-box', iconComponent: Icon },
-        { name: "Products", component: ProductsList, focusedIcon: 'shopping', unfocusedIcon: 'shopping-outline', iconComponent: Icon },
-        { name: "Settings", component: CompanySettingScreen, focusedIcon: 'cog', unfocusedIcon: 'cog-outline', iconComponent: Icon },
-    ];
+
 
     const parentNavigation = navigation.getParent();
     const currentRouteName = parentNavigation?.getState()?.routes[parentNavigation.getState().index]?.name;
@@ -76,7 +62,7 @@ const AllPosts = () => {
     const searchInputRef = useRef(null);
 
     const scrollOffsetY = useRef(0);
-    const listRef = useRef(null);
+    const flatListRef = useRef(null);
 
     const withTimeout = (promise, timeout = 10000) => {
         return Promise.race([
@@ -106,7 +92,7 @@ const AllPosts = () => {
         isConnected,
         myId
     });
-    console.log('localPosts', localPosts[0])
+
 
     const {
 
@@ -137,9 +123,6 @@ const AllPosts = () => {
                 setLocalPosts((prev) => [newPost, ...prev]);
             }
 
-            setTimeout(() => {
-                listRef.current?.scrollToOffset({ offset: 0, animated: true });
-            }, 1000);
         });
 
 
@@ -285,7 +268,7 @@ const AllPosts = () => {
     const openCommentSheet = (forum_id, user_id, myId, item) => {
 
         openSheet(
-            <View style={{ flex: 1, backgroundColor: 'white' }}>
+            <View style={{ flex: 1, backgroundColor: '#F7F8FA' }}>
                 <View style={{ flex: 1 }}>
                     <CommentsSection
                         forum_id={forum_id}
@@ -313,14 +296,45 @@ const AllPosts = () => {
                 />
 
             </View>,
-            -screenHeight
+
         );
     };
+    const isTabRefreshingRef = useRef(false);
+
+    React.useEffect(() => {
+        const unsubscribe = navigation.addListener('tabPress', (e) => {
+            if (!navigation.isFocused()) return;
+
+            e.preventDefault();
+
+            if (isTabRefreshingRef.current) return;
+            isTabRefreshingRef.current = true;
+
+            console.log('tab pressed again → scroll to top → refresh');
+
+            // 1️⃣ Scroll to top
+            flatListRef.current?.scrollToOffset({
+                offset: 0,
+                animated: true,
+            });
+
+            // 2️⃣ Refresh AFTER scroll is scheduled
+            requestAnimationFrame(() => {
+                Promise.resolve(handleRefresh()).finally(() => {
+                    isTabRefreshingRef.current = false;
+                });
+            });
+        });
+
+        return unsubscribe;
+    }, [navigation, handleRefresh]);
+
 
     const renderItem = useRenderForumItem({
         localPosts,
         setLocalPosts,
         forumIds,
+        openReactionPicker,
         searchResults,
         setSearchResults,
         activeVideo,
@@ -383,6 +397,17 @@ const AllPosts = () => {
         }
     };
 
+    useEffect(() => {
+        return () => {
+            Object.values(videoRefs.current || {}).forEach(ref => {
+                try {
+                    ref?.release?.();
+                } catch (e) { }
+            });
+            videoRefs.current = {};
+        };
+    }, []);
+
 
     const handleRefresh = useCallback(async () => {
 
@@ -401,7 +426,14 @@ const AllPosts = () => {
 
             isRefreshingRef.current = true;
             setIsRefreshing(true);
-
+            Object.values(videoRefs.current || {}).forEach(ref => {
+                try {
+                    ref?.stop?.();     // optional
+                    ref?.pause?.();    // optional
+                    ref?.release?.();  // ✅ MOST IMPORTANT
+                } catch (e) { }
+            });
+            videoRefs.current = {};
             setLocalPosts([])
 
             setSearchQuery('');
@@ -474,7 +506,6 @@ const AllPosts = () => {
 
         setSearchResults(posts);
         setSearchTriggered(true);
-        listRef.current?.scrollToOffset({ offset: 0, animated: true });
     }, [myId, isConnected]);
 
 
@@ -483,14 +514,15 @@ const AllPosts = () => {
         // console.log(`Actual render duration: ${actualDuration}ms`);
     };
 
+    const insets = useSafeAreaInsets();
+    const headerHeight = insets?.top+ 44;
 
     return (
 
 
         <>
-            <StatusBar translucent backgroundColor="transparent" barStyle={"light-content"} />
 
-            <Animated.View style={[AppStyles.toolbar, toolbarBgStyle]}>
+            <Animated.View style={[AppStyles.toolbar, toolbarBgStyle, { paddingTop: insets.top }]}>
 
                 <Animated.View style={[AppStyles.searchRow, headerStyle]}>
                     <View style={AppStyles.searchBar}>
@@ -507,12 +539,12 @@ const AllPosts = () => {
                     </View>
                     <TouchableOpacity
                         style={AppStyles.circle}
-                        onPress={() => { navigation.navigate('ForumPost'); }}
+                        onPress={() => { navigation.navigate('ForumPost') }}
                         activeOpacity={1}
                     >
-                        <Add width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.background} />
+                        <Add width={dimensions.icon.xl} height={dimensions.icon.xl} color={colors.primary} />
 
-                        <Text style={AppStyles.shareText}> Post</Text>
+
                     </TouchableOpacity>
                 </Animated.View>
                 {showNewJobAlert && (
@@ -527,9 +559,9 @@ const AllPosts = () => {
             <Animated.FlatList
                 data={!searchTriggered || searchQuery.trim() === '' ? localPosts : searchResults}
                 renderItem={renderItem}
-                ref={listRef}
+                ref={flatListRef}
                 showsVerticalScrollIndicator={false}
-                keyboardShouldPersistTaps="handled"
+                keyboardShouldPersistTaps="never"
                 onScrollBeginDrag={() => {
                     Keyboard.dismiss();
                     searchInputRef.current?.blur?.();
@@ -549,7 +581,7 @@ const AllPosts = () => {
 
                 onEndReached={handleEndReached}
                 onEndReachedThreshold={0.3}
-                contentContainerStyle={{ paddingTop: headerHeight, backgroundColor: colors.app_background }}
+                contentContainerStyle={{paddingTop:headerHeight}}
 
                 ListHeaderComponent={
                     <>
@@ -579,7 +611,7 @@ const AllPosts = () => {
             />
 
 
-            <Animated.View style={[AppStyles.bottom,]}>
+            {/* <Animated.View style={[AppStyles.bottom,]}>
 
                 <BottomNavigationBar
                     tabs={tabConfig}
@@ -589,8 +621,9 @@ const AllPosts = () => {
                     scrollOffsetY={scrollOffsetY}
                     handleRefresh={handleRefresh}
                 />
-            </Animated.View>
+            </Animated.View> */}
             <ReactionSheet ref={reactionSheetRef} />
+            <ReactionModal />
 
         </>
 

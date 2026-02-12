@@ -5,7 +5,8 @@ import axios from "axios";
 
 import Video from "react-native-video";
 import { launchImageLibrary } from "react-native-image-picker";
-import ImageResizer from 'react-native-image-resizer';
+import ImageResizer from '@bam.tech/react-native-image-resizer';
+
 import * as Compressor from 'react-native-compressor';
 import RNFS from 'react-native-fs';
 import Toast from 'react-native-toast-message';
@@ -17,13 +18,14 @@ import Message3 from "../../components/Message3";
 import { showToast } from "../AppUtils/CustomToast";
 import { EventRegister } from "react-native-event-listeners";
 import apiClient from "../ApiClient";
-import AppStyles, { STATUS_BAR_HEIGHT } from "../AppUtils/AppStyles";
+import AppStyles from "../AppUtils/AppStyles";
 import { useMediaPicker } from "../helperComponents/MediaPicker";
 import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
 import Pdf from '../../assets/svgIcons/pdf.svg';
 import Close from '../../assets/svgIcons/close.svg';
 
 import { colors, dimensions } from '../../assets/theme.jsx';
+import { AppHeader } from "../AppUtils/AppHeader.jsx";
 const BASE_API_URL = 'https://h7l1568kga.execute-api.ap-south-1.amazonaws.com/dev';
 const API_KEY = 'k1xuty5IpZ2oHOEOjgMz57wHfdFT8UQ16DxCFkzk';
 
@@ -335,7 +337,7 @@ const EditService = () => {
                 file.uri,
                 resizedWidth,
                 resizedHeight,
-                'JPEG',
+                'WEBP',
                 80
             );
 
@@ -671,24 +673,20 @@ const EditService = () => {
     return (
 
         <View style={styles.container} >
-                  <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
-            
-            <View style={styles.headerContainer}>
-                <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-                    <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
+        
+            <AppHeader
+                title={"Edit service"}
 
-                </TouchableOpacity>
-            </View>
-
+            />
             <KeyboardAwareScrollView
-                contentContainerStyle={{ flexGrow: 1, backgroundColor: "#f8f9fa", paddingHorizontal: 5, }}
+                contentContainerStyle={[ { paddingBottom: '20%', paddingHorizontal: 5, }]}
                 keyboardShouldPersistTaps="handled"
                 extraScrollHeight={20}
                 onScrollBeginDrag={() => Keyboard.dismiss()}
                 showsVerticalScrollIndicator={false}>
 
-                <Text style={styles.title}>Edit a service</Text>
-                <View style={styles.inputContainer}>
+                {/* <Text style={styles.title}>Edit a service</Text> */}
+                <View style={[styles.inputContainer,{marginTop:10}]}>
                     <Text style={styles.label}>Service name <Text style={{ color: 'red' }}>*</Text></Text>
                     <TextInput
                         style={styles.input}
@@ -924,13 +922,10 @@ const EditService = () => {
 };
 
 
-const formatKey = (key) => key.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
-
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: "#f8f9fa",
-paddingTop: STATUS_BAR_HEIGHT
+        
     },
 
     header: {
@@ -956,10 +951,10 @@ paddingTop: STATUS_BAR_HEIGHT
         color: "#000",
         fontWeight: "500",
         alignSelf: 'flex-start',
-        paddingBottom:5
+        paddingBottom: 5
     },
     inputContainer: {
-        marginBottom: 15,
+        marginBottom: 10,
     },
     backButton: {
         alignSelf: 'flex-start',
@@ -1136,7 +1131,7 @@ paddingTop: STATUS_BAR_HEIGHT
     dropdownButtonText: {
         fontSize: 14,
         fontWeight: '500',
-        color:colors.text_primary,
+        color: colors.text_primary,
         flex: 1,
         padding: 5
     },

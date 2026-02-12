@@ -5,6 +5,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useRoute, useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Image as FastImage } from 'react-native';
 import Video from 'react-native-video';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import apiClient from '../ApiClient';
 import { useNetwork } from '../AppUtils/IdProvider';
 import { getTimeDisplay } from '../helperComponents/signedUrls';
@@ -18,7 +19,10 @@ import File from '../../assets/svgIcons/file.svg';
 
 
 import { colors, dimensions } from '../../assets/theme.jsx';
-import AppStyles, { STATUS_BAR_HEIGHT } from '../AppUtils/AppStyles.js';
+import AppStyles from '../AppUtils/AppStyles.js';
+import { smartGoBack } from '../../navigation/smartGoBack.jsx';
+import { AppHeader } from '../AppUtils/AppHeader.jsx';
+import Avatar from '../helperComponents/Avatar.jsx';
 
 const ResourcesDetails = () => {
     const route = useRoute();
@@ -26,6 +30,7 @@ const ResourcesDetails = () => {
     const { myId, myData } = useNetwork();
     const { resourceID } = route.params || {};
     const [postData, setPostData] = useState(null);
+    console.log('postData', postData)
     const [mediaUrl, setMediaUrl] = useState(null);
     const [authorImageUrl, setAuthorImageUrl] = useState(null);
     const [loadingMedia, setLoadingMedia] = useState(false);
@@ -130,15 +135,6 @@ const ResourcesDetails = () => {
         setIsVideoPlaying(true); // 🔥 start playing!
     };
 
-    const handleOptionClick = (option) => {
-        if (option === 'Contact') {
-            setModalVisible1(true);
-        } else if (option === 'Share') {
-            shareJob(postData?.resource_id);
-        }
-
-    };
-
 
     const shareJob = async (forum_id) => {
         try {
@@ -167,11 +163,10 @@ const ResourcesDetails = () => {
     const handleNavigate = (item) => {
         if (item.user_type === "company") {
 
-            // Navigate to CompanyDetailsPage for company users
-            navigation.navigate('CompanyDetailsPage', { userId: item.user_id });
+            navigation.navigate('CompanyDetails', { userId: item.user_id });
         } else if (item.user_type === "users") {
             // Navigate to UserDetailsPage for regular users
-            navigation.navigate('UserDetailsPage', { userId: item.user_id });
+            navigation.navigate('UserDetails', { userId: item.user_id });
         }
     };
     const fetchMediaUrl = async (fileKey, type) => {
@@ -212,174 +207,130 @@ const ResourcesDetails = () => {
     const forumBodyHtml = hasHtmlTags ? rawHtml : `<p>${rawHtml}</p>`;
 
 
-    if (!postData) {
-        // Post is not loaded yet or null
-        return (
-            <View style={styles.mainContainer}>
-                <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
 
-                <View style={styles.headerContainer1}>
-                    <TouchableOpacity
-                        style={styles.backButton}
-                        onPress={() => navigation.goBack()}
-                    >
-                        <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
 
-                    </TouchableOpacity>
-
-                </View>
-                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-
-                    <ActivityIndicator size={'small'} color={'#075cab'} />
-                </View>
-            </View>
-        );
-    }
-
-    if (postData?.removed_by_author) {
-        return (
-            <View style={styles.mainContainer}>
-                <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
-
-                <View style={styles.headerContainer1}>
-                    <TouchableOpacity
-                        style={styles.backButton}
-                        onPress={() => navigation.goBack()}
-                    >
-                        <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-
-                    </TouchableOpacity>
-
-                </View>
-                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                    <Text style={{ fontSize: 16, color: 'gray' }}>This post was removed by the author</Text>
-                </View>
-            </View>
-        );
-    }
+    const isLoading = !postData
+    const isRemoved = postData?.removed_by_author
+    const hasResource = postData?.resource_body
     return (
 
         <View style={styles.mainContainer}>
-            <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
+            <AppHeader
+                title="Resource Details"
+                onShare={() => shareJob(postData?.resource_id)}
+            />
+            {isLoading && (
+                <View style={AppStyles.center}>
+                    <ActivityIndicator size="small" color="#075cab" />
+                </View>
+            )}
 
-            <View style={styles.headerContainer1}>
-                <TouchableOpacity
-                    style={styles.backButton}
-                    onPress={() => navigation.goBack()}
-                >
-                    <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
+            {!isLoading && isRemoved && (
+                <View style={AppStyles.center}>
+                    <Text style={AppStyles.removedText}>
+                        This post was removed by the author
+                    </Text>
+                </View>
+            )}
 
-                </TouchableOpacity>
+            {!isLoading && !isRemoved && hasResource && (
+                <>
+                    <ScrollView
+                        contentContainerStyle={[{ paddingHorizontal: 5 }]}
+                        showsVerticalScrollIndicator={false}
+                    >
+                        <View style={styles.container}>
+                            {/* Author section */}
+                            <View style={styles.authorContainer}>
 
+                                <Avatar
+                                    imageUrl={authorImageUrl}
+                                    name={postData?.author}
+                                    size={40}
+                                />
+                                <View style={styles.authorInfo}>
+                                    <View style={styles.authorNameRow}>
+                                        <Text style={styles.authorName} onPress={() => handleNavigate(postData)}>{postData?.author}</Text>
 
-                <TouchableOpacity onPress={() => handleOptionClick('Share')} style={styles.dropdownItem}>
-                    <ShareIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} /><Text style={styles.dropdownText}> Share</Text>
-                </TouchableOpacity>
-            </View>
-            <View style={styles.divider} />
+                                        <Text style={styles.timeText}>
+                                            {getTimeDisplay(postData?.posted_on)}
+                                        </Text>
+                                    </View>
+                                    <Text style={styles.authorCategory}>{postData?.author_category}</Text>
+                                </View>
+                            </View>
+                            <Text style={styles.title}>{postData?.title}</Text>
 
-            <ScrollView
-                contentContainerStyle={{ paddingBottom: "20%", paddingHorizontal: 5 }}
-                showsVerticalScrollIndicator={false}
-            >
-                <View style={styles.container}>
-                    {/* Author section */}
-                    <View style={styles.authorContainer}>
-                        {authorImageUrl ? (
-                            <FastImage
-                                source={{ uri: authorImageUrl }}
-                                style={styles.authorImage}
-                                resizeMode="cover"
+                            <ForumBody
+                                html={postData?.resource_body}
+                                forumId={postData?.resource_id}
+                                isExpanded={expandedTexts[postData?.resource_id]}
+                                toggleFullText={toggleFullText}
+                            // only meaningful here
                             />
-                        ) : (
-                            <View style={[styles.avatarContainerMini, { backgroundColor: authorImage?.backgroundColor }]}>
-                                <Text style={[styles.avatarTextMini, { color: authorImage?.textColor }]}>
-                                    {authorImage?.initials}
-                                </Text>
-                            </View>
-                        )}
-                        <View style={styles.authorInfo}>
-                            <View style={styles.authorNameRow}>
-                                <Text style={styles.authorName} onPress={() => handleNavigate(postData)}>{postData?.author}</Text>
-
-                                <Text style={styles.timeText}>
-                                    {getTimeDisplay(postData?.posted_on)}
-                                </Text>
-                            </View>
-                            <Text style={styles.authorCategory}>{postData?.author_category}</Text>
-                        </View>
-                    </View>
-                    <Text style={styles.title}>{postData?.title}</Text>
-
-                    <ForumBody
-                        html={forumBodyHtml}
-                        forumId={postData?.resource_id}
-                        isExpanded={expandedTexts[postData?.resource_id]}
-                        toggleFullText={toggleFullText}
-                    // only meaningful here
-                    />
 
 
-                    {loadingMedia ? (
-                        <ActivityIndicator size="small" color="#075cab" />
-                    ) : mediaUrl && fileExtension ? (
-                        <View style={styles.fileContainer} >
-                            {['png', 'jpeg', 'jpg', 'webp'].includes(fileExtension) ? (
-                                <TouchableOpacity onPress={() => openMediaViewer([{ type: 'image', url: mediaUrl }])}
-                                    activeOpacity={1} >
-                                    <FastImage
-                                        source={{ uri: mediaUrl }}
-                                        style={styles.resourceImage}
-                                        resizeMode="contain"
-                                    />
-                                </TouchableOpacity>
-                            ) : videoExtensions.includes(fileExtension) ? (
-                                <View style={styles.videoContainer} >
-                                    <Video
-                                        source={{ uri: mediaUrl }}
-                                        style={[styles.video, { backgroundColor: "#fff" }]}
-                                        resizeMode="contain"
-                                        onLoad={handleVideoLoad}
-                                        paused={!isVideoPlaying}
-                                        disableFullscreen={true}
-                                        repeat
-                                        controls
-                                        onBack={() => null} // Optional: handle back button
-                                        controlTimeout={2000} // Optional: hide controls after X ms
-                                        tapAnywhereToPause={true}
-                                        poster={thumbnailUrl} // Video poster thumbnail
-                                    />
+                            {loadingMedia ? (
+                                <ActivityIndicator size="small" color="#075cab" />
+                            ) : mediaUrl && fileExtension ? (
+                                <View style={styles.fileContainer} >
+                                    {['png', 'jpeg', 'jpg', 'webp'].includes(fileExtension) ? (
+                                        <TouchableOpacity onPress={() => openMediaViewer([{ type: 'image', url: mediaUrl }])}
+                                            activeOpacity={1} >
+                                            <FastImage
+                                                source={{ uri: mediaUrl }}
+                                                style={styles.resourceImage}
+                                                resizeMode="contain"
+                                            />
+                                        </TouchableOpacity>
+                                    ) : videoExtensions.includes(fileExtension) ? (
+                                        <View style={styles.videoContainer} >
+                                            <Video
+                                                source={{ uri: mediaUrl }}
+                                                style={[styles.video, { backgroundColor: "#fff" }]}
+                                                resizeMode="contain"
+                                                onLoad={handleVideoLoad}
+                                                paused={!isVideoPlaying}
+                                                disableFullscreen={true}
+                                                repeat
+                                                controls
+                                                onBack={() => null} // Optional: handle back button
+                                                controlTimeout={2000} // Optional: hide controls after X ms
+                                                tapAnywhereToPause={true}
+                                                poster={thumbnailUrl} // Video poster thumbnail
+                                            />
+
+                                        </View>
+                                    ) : fileExtension === 'pdf' ? (
+                                        <TouchableOpacity onPress={() => Linking.openURL(mediaUrl)} style={styles.pdfButton}>
+                                            <Pdf width={dimensions.icon.xl} height={dimensions.icon.xl} color={colors.danger} />
+
+                                            <Text style={styles.pdfText}>View/download</Text>
+                                        </TouchableOpacity>
+                                    ) : fileTypeMap[fileExtension] ? (
+                                        <TouchableOpacity onPress={() => Linking.openURL(mediaUrl)} style={styles.pdfButton}>
+                                            <File width={dimensions.icon.xl} height={dimensions.icon.xl} color={colors.primary} />
+
+                                            <Text style={styles.pdfText}>View/download</Text>
+                                        </TouchableOpacity>
+                                    ) : (
+                                        <Text>Unsupported file type</Text>
+                                    )}
 
                                 </View>
-                            ) : fileExtension === 'pdf' ? (
-                                <TouchableOpacity onPress={() => Linking.openURL(mediaUrl)} style={styles.pdfButton}>
-                                    <Pdf width={dimensions.icon.xl} height={dimensions.icon.xl} color={colors.primary} />
-
-                                    <Text style={styles.pdfText}>View/download</Text>
-                                </TouchableOpacity>
-                            ) : fileTypeMap[fileExtension] ? (
-                                <TouchableOpacity onPress={() => Linking.openURL(mediaUrl)} style={styles.pdfButton}>
-                                    <File width={dimensions.icon.xl} height={dimensions.icon.xl} color={colors.primary} />
-
-                                    <Text style={styles.pdfText}>View/download</Text>
-                                </TouchableOpacity>
-                            ) : (
-                                <Text>Unsupported file type</Text>
-                            )}
+                            ) : null}
 
                         </View>
-                    ) : null}
-
-                </View>
-            </ScrollView>
-
+                    </ScrollView>
+                </>
+            )}
         </View>
 
     );
 };
 
 const styles = StyleSheet.create({
-    mainContainer: { flex: 1, backgroundColor: '#fff', paddingTop:STATUS_BAR_HEIGHT },
+    mainContainer: { flex: 1, backgroundColor: '#fff' },
     backButton: { padding: 10, alignSelf: 'flex-start' },
     container: { padding: 10, },
     authorContainer: {
@@ -413,10 +364,10 @@ const styles = StyleSheet.create({
     },
 
     pdfText: {
-        marginLeft: 10,
         fontSize: 16,
         color: '#075cab',
         fontWeight: 'bold',
+        padding: 10
     },
     dropdownItem: {
         flexDirection: 'row',
@@ -528,10 +479,5 @@ const styles = StyleSheet.create({
         transform: [{ translateX: -25 }, { translateY: -25 }],
     },
 });
-
-
-
-
-
 
 export default ResourcesDetails;

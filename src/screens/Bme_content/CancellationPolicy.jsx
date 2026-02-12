@@ -4,7 +4,7 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 
 import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
 import { colors, dimensions } from '../../assets/theme.jsx';
-import AppStyles, { STATUS_BAR_HEIGHT } from '../AppUtils/AppStyles.js';
+import { AppHeader } from '../AppUtils/AppHeader.jsx';
 
 
 const CancellationPolicy = () => {
@@ -12,19 +12,12 @@ const CancellationPolicy = () => {
 
   return (
     < >
-      <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
 
-      <View style={styles.headerContainer}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <ArrowLeftIcon
-            width={dimensions.icon.ml}
-            height={dimensions.icon.ml}
-            color={colors.primary}
-          />
-        </TouchableOpacity>
-      </View>
+      <AppHeader
+        title="Cancellation policy"
 
-      <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+      />
+      <ScrollView contentContainerStyle={[ { paddingHorizontal: 10, marginTop: 10 }]} showsVerticalScrollIndicator={false}>
         <Text style={styles.sectionHeading}>Subscription Cancellation and Refund Policy</Text>
         <Text style={styles.subValue}>
           Thank you for choosing to subscribe to our biomedical engineering app B M E Bharat. We value your satisfaction and aim to provide a clear and fair policy regarding subscription cancellations and refunds. Please carefully review the following terms:
@@ -33,9 +26,7 @@ const CancellationPolicy = () => {
         <Text style={styles.sectionHeading}>Subscription Cancellations :</Text>
         <Text style={styles.value}>Cancellation by the Subscriber:</Text>
         <Text style={styles.subValue}>
-          Subscribers may cancel their subscription at any time. To cancel your subscription, please follow the cancellation process provided within the App or contact our customer support at:
-        </Text>
-        <Text style={styles.subValue}>
+          Subscribers may cancel their subscription at any time. To cancel your subscription, please follow the cancellation process provided within the App or contact our customer support at:{'\n'}
           • Email: admin@bmebharat.com{'\n'}
           • Phone Number: +91 8310491223
         </Text>
@@ -58,12 +49,11 @@ const CancellationPolicy = () => {
 
         <Text style={styles.value}>Refund Process:</Text>
         <Text style={styles.subValue}>
-          To request a refund, please contact our customer support at :
-        </Text>
-        <Text style={styles.subValue}>
+          To request a refund, please contact our customer support at : {'\n'}
           • Email: admin@bmebharat.com{'\n'}
           • Phone Number: +91 8310491223
         </Text>
+
         <Text style={styles.subValue}>
           Provide the necessary details, including your subscription information and the reason for the refund request. Our support team will review your request and respond within a reasonable time.
         </Text>
@@ -108,7 +98,6 @@ const styles = StyleSheet.create({
     padding: 10
   },
   sectionHeading: {
-    fontSize: 13,
     fontWeight: '500',
     color: colors.text_primary,
     marginBottom: 5,
@@ -117,78 +106,54 @@ const styles = StyleSheet.create({
     flex: 2, // Take the remaining space
     flexShrink: 1,
     color: colors.text_primary,
-    fontWeight: '400',
-    fontSize: 13,
     textAlign: 'left', // Align text to the left
     alignSelf: 'flex-start',
-    marginBottom: 5,
 
   },
   subValue: {
     flex: 2, // Take the remaining space
     flexShrink: 1,
-    color: colors.text_secondary,
-    fontWeight: '300',
     fontSize: 13,
+    color: colors.text_secondary,
     textAlign: 'left', // Align text to the left
     alignSelf: 'flex-start',
     marginBottom: 10,
+  },
 
-  },
-  headerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: 'white',
-    borderBottomWidth: 1,
-    borderColor: '#f0f0f0',
-    paddingTop: STATUS_BAR_HEIGHT
-  },
-  container1: {
-    flex: 1,
-    backgroundColor: '#fff',
-    paddingTop: STATUS_BAR_HEIGHT
-  },
+
   container: {
     padding: 10,
     backgroundColor: "white"
 
   },
   title: {
-    fontSize: 14,
-    fontWeight: '500',
+
     marginBottom: 10,
-    color: "black",
+
     textAlign: 'justify',
   },
   heading: {
-    fontSize: 14,
-    fontWeight: '500',
+
     marginVertical: 5,
-    color: "black",
+
   },
   subHeading: {
-    fontSize: 14,
+
     fontWeight: '400',
     marginTop: 5,
     marginBottom: 3,
-    color: "black",
+
   },
   paragraph: {
-    fontSize: 14,
-    lineHeight: 20,
+
     marginBottom: 10,
     // textAlign: 'justify',
-    color: "black",
+
     fontWeight: '300',
   },
   list: {
-    fontSize: 14,
-    lineHeight: 20,
     marginBottom: 10,
     paddingLeft: 10,
-    color: "black",
-    fontWeight: '300',
 
   },
 });

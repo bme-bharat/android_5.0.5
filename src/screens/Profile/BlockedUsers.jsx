@@ -10,7 +10,8 @@ import { showToast } from '../AppUtils/CustomToast';
 import { useNetwork } from '../AppUtils/IdProvider';
 import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
 import { colors, dimensions } from '../../assets/theme.jsx';
-import AppStyles, { STATUS_BAR_HEIGHT } from '../AppUtils/AppStyles.js';
+import AppStyles from '../AppUtils/AppStyles.js';
+import { AppHeader } from '../AppUtils/AppHeader.jsx';
 const BlockedUsers = () => {
   const { myId, myData } = useNetwork();
   const [blockedUsers, setBlockedUsers] = useState([]);
@@ -20,7 +21,7 @@ const BlockedUsers = () => {
 
   const handleNavigate = (item) => {
     if (item.blocked_user_type === "company") {
-      navigation.navigate('CompanyDetailsPage', { userId: item.blocked_user_id });
+      navigation.navigate('CompanyDetails', { userId: item.blocked_user_id });
     } else if (item.blocked_user_type === "users") {
       navigation.navigate('UserDetailsPage', { userId: item.blocked_user_id });
     }
@@ -56,10 +57,7 @@ const BlockedUsers = () => {
     } catch (err) {
       setLoading(false);
 
-    } finally {
-      setLoading(false);
-
-    }
+    } 
   };
 
   useEffect(() => {
@@ -97,96 +95,67 @@ const BlockedUsers = () => {
     }
   };
 
-
-  if (loading) {
-    return (
-      <View style={styles.container}>
-            <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
-
-        <View style={styles.headerContainer}>
-
-          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-            <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-
-          </TouchableOpacity>
-
-        </View>
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <ActivityIndicator size="small" color="#075cab" />
-        </View>
-      </View>
-    );
-  }
-
-  if (blockedUsers?.removed_by_author) {
-    return (
-      <View style={styles.container}>
-            <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
-
-        <View style={styles.headerContainer}>
-
-          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-            <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-
-          </TouchableOpacity>
-
-        </View>
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <Text style={{ fontSize: 16, color: 'gray' }}>No blocked accounts</Text>
-        </View>
-      </View>
-    );
-  }
+  const isLoading = !blockedUsers
+  const isRemoved = blockedUsers?.removed_by_author
+  const hasUser = blockedUsers?.length > 0
 
   return (
     <View style={styles.container}>
-            <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
-      
-      <View style={styles.headerContainer}>
-        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
 
-        </TouchableOpacity>
-      </View>
-      <TouchableOpacity style={styles.container} activeOpacity={1}>
+      <AppHeader
+        title="Blocked"
 
-        <FlatList
-          data={blockedUsers}
-          keyExtractor={(item) => item.block_id}
-          renderItem={({ item }) => (
-            <View style={styles.userCard}>
-              <Text style={styles.userName} onPress={() => handleNavigate(item)} >{item.blocked_user_name}</Text>
-              <Text style={styles.userDetails}>{item.blocked_user_category}</Text>
+      />
+      {isLoading && (
+        <View style={AppStyles.center}>
+          <ActivityIndicator size="small" color="#075cab" />
+        </View>
+      )}
 
-              <Text style={styles.userDetails}>
-                Blocked On: {new Date(item.blocked_on * 1000).toLocaleDateString('en-GB').replace(/\//g, '-')}
+      {!isLoading && isRemoved && (
+        <View style={AppStyles.center}>
+          <Text style={AppStyles.removedText}>
+            No blocked accounts
+          </Text>
+        </View>
+      )}
 
-              </Text>
-              <TouchableOpacity
-                style={styles.unblockButton}
-                onPress={() => handleUnblockUser(item.blocked_by_user_id, item.blocked_user_id)}
-              >
-                <Text style={styles.unblockButtonText}>Unblock</Text>
-              </TouchableOpacity>
-            </View>
-          )}
+      {!isLoading && !isRemoved && hasUser && (
+        <>
+          <FlatList
+            data={blockedUsers}
+            keyExtractor={(item) => item.block_id}
+            renderItem={({ item }) => (
+              <View style={styles.userCard}>
+                <Text style={styles.userName} onPress={() => handleNavigate(item)} >{item.blocked_user_name}</Text>
+                <Text style={styles.userDetails}>{item.blocked_user_category}</Text>
 
-        />
+                <Text style={styles.userDetails}>
+                  Blocked On: {new Date(item.blocked_on * 1000).toLocaleDateString('en-GB').replace(/\//g, '-')}
 
-      </TouchableOpacity>
+                </Text>
+                <TouchableOpacity
+                  style={styles.unblockButton}
+                  onPress={() => handleUnblockUser(item.blocked_by_user_id, item.blocked_user_id)}
+                >
+                  <Text style={styles.unblockButtonText}>Unblock</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
+          />
+        </>
+      )}
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container1: {
-    flex: 1,
-    backgroundColor: 'whitesmoke',
-  },
+  
   container: {
     flex: 1,
-    backgroundColor: 'whitesmoke',
-        paddingTop: STATUS_BAR_HEIGHT
+    
+
   },
   headerContainer: {
     flexDirection: 'row',
@@ -253,7 +222,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     paddingVertical: 8,
     marginTop: 12,
-    elevation:2
+    elevation: 2
   },
   unblockIcon: {
     marginRight: 8,

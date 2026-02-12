@@ -20,8 +20,11 @@ import Pdf from '../../assets/svgIcons/pdf.svg';
 
 import { colors, dimensions } from '../../assets/theme.jsx';
 import { useSelector } from 'react-redux';
-import AppStyles, { commonStyles, STATUS_BAR_HEIGHT } from '../AppUtils/AppStyles.js';
+import AppStyles, { commonStyles} from '../AppUtils/AppStyles.js';
 import { generateAvatarFromName } from '../helperComponents/useInitialsAvatar.jsx';
+import { smartGoBack } from '../../navigation/smartGoBack.jsx';
+import { AppHeader } from '../AppUtils/AppHeader.jsx';
+import Avatar from '../helperComponents/Avatar.jsx';
 
 const EnquiryDetails = () => {
     const route = useRoute();
@@ -70,6 +73,7 @@ const EnquiryDetails = () => {
 
                 if (res.data.status === 'success' && res.data.response.length > 0) {
                     setPostData(res.data.response[0]);
+                    console.log('res.data.response', res.data.response)
                 } else {
 
                     setPostData(null);
@@ -86,8 +90,10 @@ const EnquiryDetails = () => {
                     fetchMediaUrl(res.data.response[0].user_fileKey, 'author');
 
                 } else {
-                    const avatar = generateAvatarFromName(res.data.response?.first_name || 'user');
+                    const name = postData?.first_name
+                    const avatar = generateAvatarFromName(name);
                     setAuthorImageUrl(avatar)
+
                 }
             }
 
@@ -152,13 +158,12 @@ const EnquiryDetails = () => {
 
 
     const handleNavigate = (item) => {
-        console.log('item', item)
         const userType = item.enquired_user_type || item.user_type;
 
         if (userType === "company") {
-            navigation.navigate('CompanyDetailsPage', { userId: item.user_id });
+            navigation.navigate('CompanyDetails', { userId: item.user_id });
         } else if (userType === "users") {
-            navigation.navigate('UserDetailsPage', { userId: item.user_id });
+            navigation.navigate('UserDetails', { userId: item.user_id });
         }
     };
 
@@ -220,58 +225,29 @@ const EnquiryDetails = () => {
     return (
 
         <View style={styles.mainContainer}>
-            <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
+            <AppHeader
+                title={'Enquiry'}
 
-            <View style={styles.headerContainer}>
-                <TouchableOpacity
-                    style={styles.backButton}
-                    onPress={() => navigation.goBack()}
-                >
-                    <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-
-                </TouchableOpacity>
-
-            </View>
-            <View style={styles.divider} />
+            />
 
             {postData && Object.keys(postData).length > 0 ? (
                 <ScrollView
-                    contentContainerStyle={{ paddingBottom: "20%" }}
+
                     showsVerticalScrollIndicator={false}
                 >
                     <View style={styles.container}>
                         {/* Author section */}
-                        <View style={styles.authorContainer}>
-                            {typeof authorImageUrl === 'string' ? (
-                                // 🔹 User has uploaded image
-                                <FastImage
-                                    source={{ uri: authorImageUrl }}
-                                    style={styles.authorImage}
-                                    resizeMode="contain"
-                                    onError={() => { }}
-                                />
-                            ) : (
-                                // 🔹 Generated avatar
-                                <View
-                                    style={[
-                                        styles.authorImage,
-                                        { backgroundColor: authorImageUrl?.backgroundColor }
-                                    ]}
-                                >
-                                    <Text
-                                        style={[
-                                            styles.avatarText,
-                                            { color: authorImageUrl?.textColor }
-                                        ]}
-                                    >
-                                        {authorImageUrl?.initials}
-                                    </Text>
-                                </View>
-                            )}
+                        <TouchableOpacity style={styles.authorContainer} onPress={() => handleNavigate(postData)} activeOpacity={1}>
+
+                            <Avatar
+                                imageUrl={authorImageUrl}
+                                name={postData?.first_name}
+                                size={40}
+                            />
 
                             <View style={styles.authorInfo}>
                                 <View style={styles.authorNameRow}>
-                                    <Text style={styles.authorName} onPress={() => handleNavigate(postData)}>
+                                    <Text style={styles.authorName} >
                                         {postData?.first_name}</Text>
                                     <Text style={styles.timeText}>
                                         {getTimeDisplay(postData?.enquired_on)}
@@ -279,7 +255,7 @@ const EnquiryDetails = () => {
                                 </View>
                                 <Text style={styles.authorCategory}>{postData?.company_category}</Text>
                             </View>
-                        </View>
+                        </TouchableOpacity>
 
                         {/* Content section */}
                         <Text style={commonStyles.label}>{postData?.service_title}</Text>
@@ -319,7 +295,7 @@ const EnquiryDetails = () => {
 };
 
 const styles = StyleSheet.create({
-    mainContainer: { flex: 1, backgroundColor: '#fff', paddingTop: STATUS_BAR_HEIGHT },
+    mainContainer: { flex: 1, backgroundColor: '#fff' },
     backButton: { padding: 10, alignSelf: 'flex-start' },
     container: { padding: 10 },
     authorContainer: {
@@ -373,8 +349,8 @@ const styles = StyleSheet.create({
         // marginVertical: 10,
     },
     authorImage: {
-        width: 50,
-        height: 50,
+        width: 40,
+        height: 40,
         borderRadius: 25,
         marginRight: 5,
         justifyContent: 'center',
@@ -392,6 +368,8 @@ const styles = StyleSheet.create({
     },
     authorInfo: {
         flex: 1,
+        marginLeft: 10,
+
     },
     authorNameRow: {
         flexDirection: 'row',
@@ -399,15 +377,16 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     authorName: {
-        fontSize: 16,
+        fontSize: 15,
         color: colors.text_primary,
-        fontWeight: '600',
-        maxWidth: '70%'
+        fontWeight: '500',
+        maxWidth: '70%',
+        
     },
     authorCategory: {
         fontSize: 13,
         color: colors.text_secondary,
-        fontWeight: '300',
+        fontWeight: '400',
     },
     timeText: {
         fontSize: 12,
@@ -462,10 +441,5 @@ const styles = StyleSheet.create({
         transform: [{ translateX: -25 }, { translateY: -25 }],
     },
 });
-
-
-
-
-
 
 export default EnquiryDetails;

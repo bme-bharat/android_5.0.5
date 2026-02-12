@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Keyboard, BackHandler, StatusBar } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Keyboard } from 'react-native';
 import { CommonActions, useNavigation, useRoute } from '@react-navigation/native';
 import axios from 'axios';
 import { showToast } from '../AppUtils/CustomToast';
@@ -9,7 +9,7 @@ import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
 import ArrowRight from '../../assets/svgIcons/arrow-right-circle.svg';
 
 import { colors, dimensions } from '../../assets/theme.jsx';
-import AppStyles, { STATUS_BAR_HEIGHT } from '../AppUtils/AppStyles.js';
+import { AppHeader } from '../AppUtils/AppHeader.jsx';
 
 const VerifyOTPScreen = () => {
   const navigation = useNavigation();
@@ -182,25 +182,15 @@ const VerifyOTPScreen = () => {
 
   return (
     <View style={styles.container}>
-          <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
-    
-      {/* ========== Header ========== */}
+      <AppHeader
+        title="OTP Verification"
 
-      <TouchableOpacity
-        style={styles.backButton}
-        onPress={() => navigation.navigate('ProfileType')}
-      >
-        <ArrowLeftIcon
-          width={dimensions.icon.medium}
-          height={dimensions.icon.medium}
-          color={colors.primary}
-        />
-      </TouchableOpacity>
-
+      />
 
       {/* ========== Main Content ========== */}
-      <View style={styles.content}>
-        <Text style={styles.title}>OTP Verification</Text>
+      <View style={[{
+        paddingHorizontal: 10,
+      }]}>
 
         <Text style={styles.infoText}>
           Enter OTP sent to <Text style={styles.phoneNumber}>{fullPhoneNumber || phone}</Text>
@@ -276,8 +266,6 @@ const VerifyOTPScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'whitesmoke',
-    paddingTop:STATUS_BAR_HEIGHT
   },
 
   backButton: {
@@ -300,17 +288,14 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.primary,
     // textAlign: 'center',
-    paddingHorizontal: 15,
-
+    marginVertical: 16
   },
 
   infoText: {
     fontSize: 16,
     // textAlign: 'center',
     color: '#555',
-    marginBottom: 24,
-    marginTop: 10,
-    paddingHorizontal: 15,
+    marginVertical: 16,
 
   },
   resendRow: {
@@ -337,8 +322,8 @@ const styles = StyleSheet.create({
   otpContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    width: '90%',
-    marginVertical: 40,
+    width: '96%',
+    marginBottom: 26,
     alignSelf: 'center',
   },
   pinCodeContainer: {
@@ -390,7 +375,6 @@ const styles = StyleSheet.create({
   },
   timerText: {
     color: colors.text_secondary,
-    fontSize: 14,
     marginLeft: 6,
 
   },
@@ -402,7 +386,9 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingVertical: 12,
     paddingHorizontal: 15,
-    width: '90%',
+    alignSelf:'flex-end',
+    paddingHorizontal:16,
+    marginVertical:26
     // borderWidth:1,
     // borderColor: colors.primary
   },

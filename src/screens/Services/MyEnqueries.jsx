@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, Image, StyleSheet, TouchableOpacity, Alert, Linking, ActivityIndicator } from 'react-native';
 import axios from 'axios';
 
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 
 import apiClient from '../ApiClient';
 import Message from '../../components/Message';
@@ -12,10 +12,12 @@ import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
 import Delete from '../../assets/svgIcons/delete.svg';
 
 import { colors, dimensions } from '../../assets/theme.jsx';
-import AppStyles, { commonStyles, STATUS_BAR_HEIGHT } from '../AppUtils/AppStyles.js';
+import AppStyles, { commonStyles } from '../AppUtils/AppStyles.js';
 
 const MyEnqueries = () => {
-    const { myId, myData } = useNetwork();
+    const route = useRoute();
+    const userId = route.params?.userId;
+    const myId = userId
     const navigation = useNavigation();
     const [enquiredServices, setEnquiredServices] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -250,33 +252,18 @@ const MyEnqueries = () => {
     if (loading) {
         return (
             <View style={styles.container}>
-                <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
 
-                <View style={styles.headerContainer}>
-
-                    <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-                        <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-
-                    </TouchableOpacity>
-
-                </View>
                 <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
                     <ActivityIndicator size="small" color="#075cab" />
                 </View>
             </View>
         );
     }
+    
     if (!enquiredServices || enquiredServices.length === 0 || enquiredServices?.removed_by_author) {
         return (
             <View style={styles.container}>
-                <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
 
-                <View style={styles.headerContainer}>
-                    <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-                        <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-
-                    </TouchableOpacity>
-                </View>
                 <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
                     <Text style={{ fontSize: 16, color: 'gray' }}>No enquiries available</Text>
                 </View>
@@ -286,19 +273,13 @@ const MyEnqueries = () => {
 
     return (
         <View style={styles.container}>
-            <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
 
-            <View style={styles.headerContainer}>
-                <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-                    <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-
-                </TouchableOpacity>
-            </View>
 
             <FlatList
                 data={enquiredServices}
                 keyExtractor={(item) => item.enquiry_id}
                 renderItem={renderItem}
+
             />
 
             {showDeleteConfirmation && (
@@ -327,23 +308,15 @@ const styles = StyleSheet.create({
     },
     container: {
         flex: 1,
-        backgroundColor: '#f5f5f5',
-        paddingTop: STATUS_BAR_HEIGHT
+
     },
     textContainer: {
         marginBottom: 5,
         marginHorizontal: 5,
         backgroundColor: 'white',
-        justifyContent: 'center',
         borderRadius: 10,
-        borderWidth: 0.5,
-        borderColor: '#ddd',
-        elevation: 3,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.25,
-        shadowRadius: 2,
-        top: 5
+        // borderWidth: 0.5,
+        // borderColor: '#ddd',
     },
     productDetails: {
         flex: 1,

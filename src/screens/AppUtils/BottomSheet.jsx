@@ -34,20 +34,16 @@ LogBox.ignoreLogs([
 const BottomSheet = forwardRef(({ children, onClose }, ref) => {
   const insets = useSafeAreaInsets();
 
-  // height of sheet visible when fully open
-  const OPEN_HEIGHT = SCREEN_HEIGHT - insets.top - 10; 
+  const OPEN_HEIGHT = SCREEN_HEIGHT * 0.8;
+  const MAX_TRANSLATE_Y = 0;              // fully open
+  const MIN_TRANSLATE_Y = OPEN_HEIGHT;   // fully closed (push down)
   
-  // fully open position
-  const MAX_TRANSLATE_Y = -OPEN_HEIGHT;
-  
-  // fully hidden position
-  const MIN_TRANSLATE_Y = 0;
-  
-  const translateY = useSharedValue(MIN_TRANSLATE_Y);
-  
+
+  const translateY = useSharedValue(OPEN_HEIGHT);
+
   const gestureContext = useSharedValue({ startY: 0 });
-  const isActive = useSharedValue(false);
-  const [active, setActive] = useState(false);
+  const isActive = useSharedValue(true);
+  const [active, setActive] = useState(true);
 
   const dismissKeyboard = () => Keyboard.dismiss();
 
@@ -60,17 +56,18 @@ const BottomSheet = forwardRef(({ children, onClose }, ref) => {
 
   const scrollTo = (dest) => {
     "worklet";
-  
+
     const clamped = Math.min(
       Math.max(dest, MAX_TRANSLATE_Y),
       MIN_TRANSLATE_Y
     );
-  
+    
+    
     const shouldClose = clamped === MIN_TRANSLATE_Y;
-  
+
     isActive.value = !shouldClose;
     runOnJS(setActive)(!shouldClose);
-  
+
     translateY.value = withSpring(
       clamped,
       { damping: 20, stiffness: 200, overshootClamping: true },
@@ -79,13 +76,14 @@ const BottomSheet = forwardRef(({ children, onClose }, ref) => {
       }
     );
   };
-  
+
 
   const closeSheet = () => {
     runOnJS(dismissKeyboard)();
-    scrollTo(0);
-    if (onClose) runOnJS(onClose)();
+    scrollTo(MIN_TRANSLATE_Y);
   };
+  
+  
 
   useImperativeHandle(ref, () => ({
     scrollTo,
@@ -107,37 +105,40 @@ const BottomSheet = forwardRef(({ children, onClose }, ref) => {
       );
     })
     .onEnd((event) => {
-      const SNAP = OPEN_HEIGHT / 3;
-    
-      if (event.velocityY > 500 || translateY.value > MAX_TRANSLATE_Y + SNAP) {
-        scrollTo(MIN_TRANSLATE_Y);   // close
+      if (event.velocityY > 500 || translateY.value > OPEN_HEIGHT / 2) {
+        scrollTo(MIN_TRANSLATE_Y);   // close (down)
       } else {
-        scrollTo(MAX_TRANSLATE_Y);   // open
+        scrollTo(MAX_TRANSLATE_Y);  // open (0)
       }
     });
     
+    
+
+
+
 
   const animatedStyle = useAnimatedStyle(() => {
     const borderRadius = interpolate(
       translateY.value,
-      [MAX_TRANSLATE_Y, 0],
+      [0, OPEN_HEIGHT],
       [25, 5],
       Extrapolation.CLAMP
     );
+
 
     return {
       transform: [{ translateY: translateY.value }],
       borderTopLeftRadius: borderRadius,
       borderTopRightRadius: borderRadius,
     };
-    
+
   });
 
   const backdropOpacity = useAnimatedStyle(() => ({
     opacity: withTiming(isActive.value ? 0.5 : 0, { duration: 150 }),
   }));
 
-  
+
   return (
     <>
       {/* Dimmed backdrop */}
@@ -149,7 +150,15 @@ const BottomSheet = forwardRef(({ children, onClose }, ref) => {
       </TouchableWithoutFeedback>
 
       {/* Sheet */}
-      <Animated.View style={[styles.sheet, animatedStyle]}>
+      <Animated.View
+        style={[
+          styles.sheet,
+          animatedStyle,
+        { height: OPEN_HEIGHT, bottom: 0 }
+
+        ]}
+      >
+
         {/* Drag handle + header row */}
         <GestureDetector gesture={gesture}>
           <View style={styles.header}>
@@ -184,11 +193,10 @@ const styles = StyleSheet.create({
   },
   sheet: {
     position: 'absolute',
-    top: SCREEN_HEIGHT,
     left: 0,
     right: 0,
-    height: SCREEN_HEIGHT,
-    backgroundColor: 'white',
+
+    backgroundColor: '#F7F8FA',
     zIndex: 1000,
     paddingTop: 10,
   },

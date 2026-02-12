@@ -1,14 +1,14 @@
 
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, TextInput, Modal, FlatList, Linking, Pressable, RefreshControl, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, TextInput, Modal, FlatList, Linking, Pressable, RefreshControl, ActivityIndicator, Alert } from 'react-native';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import axios from 'axios';
 import RNRestart from 'react-native-restart';
 
-import { Image as FastImage } from 'react-native';
+
 import Message from '../../components/Message';
 import { useDispatch, useSelector } from 'react-redux';
 import { showToast } from '../AppUtils/CustomToast';
@@ -28,32 +28,33 @@ import Sucess from '../../assets/svgIcons/success.svg';
 import Close from '../../assets/svgIcons/close.svg';
 import Warning from '../../assets/svgIcons/warning.svg';
 import defaultImage from '../../images/homepage/buliding.jpg';
+import Job from '../../assets/svgIcons/jobs.svg';
 
 import { colors, dimensions } from '../../assets/theme.jsx';
-import AppStyles, { commonStyles, STATUS_BAR_HEIGHT } from '../AppUtils/AppStyles.js';
+import AppStyles, { commonStyles } from '../AppUtils/AppStyles.js';
+import { useLogoutManager } from '../AppUtils/useLogoutManager.jsx';
+import Avatar from '../helperComponents/Avatar.jsx';
+import { smartGoBack } from '../../navigation/smartGoBack.jsx';
+import { AppHeader } from '../AppUtils/AppHeader.jsx';
+import MaterialIcons from '@react-native-vector-icons/material-icons';
 
 const CompanyProfileScreen = ({ route }) => {
   const navigation = useNavigation();
   const profile = useSelector(state => state.CompanyProfile.profile);
   const { myId } = useNetwork();
+  const profileUserId = route.params?.userId ?? myId
+  const isMyProfile = profileUserId === myId
   const [isProductDropdownVisible, setProductDropdownVisible] = useState(false);
   const [isServiceDropdownVisible, setServiceDropdownVisible] = useState(false);
-  const [isModalVisible, setIsModalVisible] = useState(false);
 
-  const [otp, setOTP] = useState('');
-  const otpRef = useRef('');
-  const [timer, setTimer] = useState(30);
-  const [step, setStep] = useState(1);
-  const [isResendEnabled, setIsResendEnabled] = useState(true);
-  const [isDeleting, setIsDeleting] = useState(false);
   const [isLogoutModalVisible, setLogoutModalVisible] = useState(false);
-  const [phoneNumber, setPhoneNumber] = useState(profile?.company_contact_number);
   const [products, setProducts] = useState([]);
   const [services, setServices] = useState([]);
 
   const { openFile } = useFileOpener();
   const [loading, setLoading] = useState(false);
   const [loading1, setLoading1] = useState(false);
+  const { logoutNow } = useLogoutManager();
 
   const handleOpenResume = async () => {
     if (!profile?.brochureKey) return;
@@ -155,215 +156,9 @@ const CompanyProfileScreen = ({ route }) => {
   }, [isProductDropdownVisible]);
 
 
-  const handleDeleteAccount = async () => {
-    if (isDeleting) return;
 
-    setIsDeleting(true);
-
-    try {
-      const response = await axios.post(
-        'https://h7l1568kga.execute-api.ap-south-1.amazonaws.com/dev/deleteAccount',
-        {
-          command: 'deleteAccount',
-          user_phone_number: phoneNumber,
-        },
-        {
-          headers: { 'x-api-key': 'k1xuty5IpZ2oHOEOjgMz57wHfdFT8UQ16DxCFkzk' },
-        }
-      );
-
-      if (response.data.status === 'success') {
-
-        showToast("Account deleted successfully", 'success');
-
-        await AsyncStorage.removeItem('CompanyUserData');
-        await AsyncStorage.removeItem('CompanyUserlogintimeData');
-        RNRestart.Restart();
-      } else {
-
-        showToast("Account deletion failed or already deleted", 'error');
-
-      }
-    } catch (error) {
-
-      showToast("You dont have an internet connection", 'error');
-
-    } finally {
-      setIsDeleting(false); // Reset deletion status
-    }
-  };
-
-  useEffect(() => {
-    if (timer > 0) {
-      const timeout = setTimeout(() => setTimer((prev) => prev - 1), 1000);
-      return () => clearTimeout(timeout);
-    } else if (timer === 0) {
-      setIsResendEnabled(true);
-    }
-  }, [timer]);
-
-
-  const handleVerifyOTP = async () => {
-    const enteredOTP = otpRef.current;
-    console.log('Entered OTP:', enteredOTP);
-
-    if (enteredOTP.length !== 6 || !/^\d{6}$/.test(enteredOTP)) {
-      showToast("Please enter a valid 6 digit OTP", 'error');
-      return;
-    }
-
-    try {
-      const res = await axios.post(
-        'https://h7l1568kga.execute-api.ap-south-1.amazonaws.com/dev/verifyOtpMsg91',
-        {
-          command: 'verifyOtpMsg91',
-          otp: enteredOTP, // ✅ use correct OTP value
-          user_phone_number: phoneNumber,
-        },
-        {
-          headers: {
-            'x-api-key': 'k1xuty5IpZ2oHOEOjgMz57wHfdFT8UQ16DxCFkzk',
-          },
-        }
-      );
-
-      if (res.data.type === 'success') {
-        await handleDeleteAccount(); // ✅ added `await` in async context
-      } else {
-        showToast("OTP doesn't match", 'error');
-      }
-    } catch (error) {
-      showToast("Try again later", 'error');
-    }
-  };
-
-
-  const sendOtp = (phoneNumber) => {
-    axios
-      .post(
-        'https://h7l1568kga.execute-api.ap-south-1.amazonaws.com/dev/sendVerifyOtpMsg91',
-        { command: 'sendVerifyOtpMsg91', user_phone_number: phoneNumber },
-        { headers: { 'x-api-key': 'k1xuty5IpZ2oHOEOjgMz57wHfdFT8UQ16DxCFkzk' } }
-      )
-      .then((otpRes) => {
-        if (otpRes.status === 200) {
-          showToast("OTP Sent", 'success');
-        }
-      })
-      .catch((error) => {
-        showToast("try again later", 'error');
-
-      });
-  };
-  const resendHandle = async () => {
-    try {
-      const response = await axios.post(
-        'https://h7l1568kga.execute-api.ap-south-1.amazonaws.com/dev/resendOtpMsg91',
-        { command: 'resendOtpMsg91', user_phone_number: phoneNumber },
-        { headers: { 'x-api-key': 'k1xuty5IpZ2oHOEOjgMz57wHfdFT8UQ16DxCFkzk' } }
-      );
-
-      if (response.data.type === 'success') {
-
-        showToast("OTP sent", 'success');
-
-        setTimer(30);
-        setIsResendEnabled(false);
-      } else {
-
-        showToast("Try again later", 'error');
-
-
-      }
-    } catch (error) {
-      showToast("You dont have an internet connection", 'error');
-
-    }
-  };
-
-  const handleLogoutConfirm = async () => {
-    try {
-      console.log("[LogoutConfirm] Fetching session data from AsyncStorage...");
-      const sessionData = await AsyncStorage.getItem('userSession');
-
-      if (!sessionData) {
-        console.warn("[LogoutConfirm] No session data found.");
-        showToast("No session data found", 'error');
-        return;
-      }
-
-      const parsedSessionData = JSON.parse(sessionData);
-      if (parsedSessionData?.sessionId) {
-        const payload = {
-          command: 'logoutUserSession',
-          session_id: parsedSessionData.sessionId,
-        };
-
-        console.log("[LogoutConfirm] Sending logout request with payload:", payload);
-
-        const response = await apiClient.post(
-          'https://h7l1568kga.execute-api.ap-south-1.amazonaws.com/dev/logoutUserSession',
-          payload
-        );
-
-        console.log("[LogoutConfirm] Logout response received:", response?.data);
-
-        if (response?.data?.statusCode !== 200) {
-          console.error("[LogoutConfirm] Logout failed:", response?.data?.message);
-          showToast(response.data.statusCode, 'error');
-          return;
-        }
-      } else {
-        console.warn("[LogoutConfirm] sessionId not found in parsed session data.");
-      }
-
-      if (myId) {
-        console.log("[Logout] Updating last seen for user:", myId);
-        await updateLastSeen(myId, new Date().toISOString()); // ✅ use directly
-      }
-
-      console.log("[LogoutConfirm] Removing session-related data from AsyncStorage...");
-      await AsyncStorage.multiRemove([
-        'CompanyUserData',
-        'CompanyUserlogintimeData',
-        'sessionId',
-        'userSession'
-      ]);
-
-      showToast("Logout successful", 'success');
-      console.log("[LogoutConfirm] Restarting app...");
-      setTimeout(() => {
-        RNRestart.Restart();
-      }, 1000);
-
-    } catch (error) {
-      console.error("[LogoutConfirm] Logout error:", error?.message || error);
-      showToast("Please check your connection", 'error');
-    }
-  };
-
-
-
-  const handleLogout = () => {
+  const openLogoutModal = () => {
     setLogoutModalVisible(true);
-  };
-
-  const handleDeleteClick = () => {
-    setIsModalVisible(true); // Show modal
-    setStep(1); // Start at the confirmation step
-  };
-
-  const handleYesClick = () => {
-    setStep(2); // Move to OTP step
-    sendOtp(phoneNumber); // Send OTP
-    setOTP('');
-    setTimer(30); // Start timer
-    setIsResendEnabled(false); // Disable resend button initially
-  };
-
-
-  const handleNoClick = () => {
-    setIsModalVisible(false);
   };
 
   const handleProductSelect = (product) => {
@@ -387,416 +182,342 @@ const CompanyProfileScreen = ({ route }) => {
 
 
   if (!profile) {
-    <View style={styles.loaderContainer}>
-      <ActivityIndicator size="large" color="#075cab" />
-    </View>
-
+    return (
+      <View style={styles.loaderContainer}>
+        <ActivityIndicator size="large" color="#075cab" />
+      </View>
+    );
   }
 
+  const Row = ({ icon, label, value, isLink = false, verified = false }) => {
 
+    const handlePress = async () => {
+      if (!isLink || !value) return;
+
+      let url = value.trim();
+
+      if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        url = `https://${url}`;
+      }
+
+      try {
+        const supported = await Linking.canOpenURL(url);
+        if (supported) {
+          await Linking.openURL(url);
+        } else {
+          Alert.alert('Invalid URL', 'Cannot open this website');
+        }
+      } catch (err) {
+        Alert.alert('Error', 'Failed to open website');
+      }
+    };
+
+    return (
+      <TouchableOpacity
+        activeOpacity={isLink ? 0.7 : 1}
+        style={styles.row}
+        onPress={isLink ? handlePress : undefined}
+        disabled={!isLink}
+      >
+        <View style={styles.left}>
+          <View style={styles.iconWrap}>
+            <MaterialIcons
+              name={icon}
+              size={20}
+              color={isLink ? '#1a73e8' : '#000'}
+            />
+          </View>
+
+          <View style={styles.textWrap}>
+            <Text
+              style={[
+                styles.value,
+                isLink && { color: '#1a73e8', textDecorationLine: 'underline' },
+              ]}
+            >
+              {value}
+            </Text>
+            {verified && (
+              <MaterialIcons
+                name="verified"
+                size={16}
+                color="#2ecc71"   // green verified
+                style={{ marginLeft: 6 }}
+              />
+            )}
+
+            <Text style={styles.label}>{label}</Text>
+          </View>
+        </View>
+      </TouchableOpacity>
+    );
+  };
 
 
   return (
 
     <View style={styles.container}>
-      <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
-
-      <View style={styles.headerContainer}>
-        <TouchableOpacity style={styles.backButton}
-          activeOpacity={1}
-          onPress={() => navigation.goBack()}>
-          <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
 
 
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.circle}
-          onPress={handleUpdate} activeOpacity={0.8}>
-          <EditIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
+      <AppHeader
+        title={profile?.company_name}
+        onEdit={handleUpdate}
+      />
 
-          <Text style={styles.shareText}>Edit profile</Text>
-        </TouchableOpacity>
-      </View>
+      <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled"
+        contentContainerStyle={{ paddingHorizontal: 16 }}>
+
+        <View style={styles.profileBox}>
 
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: '20%', paddingHorizontal: 5 }}>
-
-        <TouchableOpacity activeOpacity={1} onPress={() => openMediaViewer([{ type: 'image', url: profile?.imageUrl }])}
-          style={styles.imageContainer} >
-
-          {profile?.imageUrl ? (
-            <FastImage
-              source={{ uri: profile?.imageUrl || defaultImage }}
-              style={styles.detailImage}
-              resizeMode='contain'
-              onError={() => { }}
+          <TouchableOpacity activeOpacity={1} onPress={() => openMediaViewer([{ type: 'image', url: profile?.imageUrl }])}
+            style={styles.imageContainer} >
+            <Avatar
+              imageUrl={profile?.imageUrl}
+              name={profile?.company_name}
+              size={60}
+              radius={8}
             />
-          ) : (
-            <View style={[styles.avatarContainer, { backgroundColor: profile?.companyAvatar?.backgroundColor }]}>
-              <Text style={[styles.avatarText, { color: profile?.companyAvatar?.textColor }]}>
-                {profile?.companyAvatar?.initials}
-              </Text>
-            </View>
-          )}
+          </TouchableOpacity>
+
+
+          <View style={styles.textContainer}>
+            <Text style={[styles.title]} numberOfLines={1} ellipsizeMode='tail'>
+              {profile?.company_name}
+            </Text>
+            <Text style={styles.category}>{profile?.category || ""}</Text>
+          </View>
+
+        </View>
+        <Text style={styles.header}>About Me</Text>
+
+        <Row
+          icon="email"
+          value={(profile?.company_email_id || "").trimStart().trimEnd()}
+          label="E-mail Address"
+          verified={profile?.is_email_verified === true}
+
+        />
+
+        <Row
+          icon="phone"
+          value={profile?.company_contact_number}
+          label="Business phone no."
+        />
+        <Row
+          icon="app-registration"
+          value={profile?.business_registration_number}
+          label="CIN / Business registration number"
+        />
+        {profile?.company_address && (
+          <Row
+            icon="location-on"
+            value={profile.company_address.trimStart().trimEnd()}
+            label="Company address"
+          />
+        )}
+
+        <Row
+          icon="location-on"
+          value={`${profile?.company_located_city || ''}, ${profile?.company_located_state || ''}`.trim()}
+          label="Location"
+        />
+
+        <Row
+          icon="person"
+          value={profile?.select_your_profile}
+          label="Profile"
+        />
+        <Row
+          icon="category"
+          value={profile?.category}
+          label="Category"
+        />
+        {profile?.Website && (
+          <Row
+            icon="open-in-new"
+            value={profile.Website.trim()}
+            label="Website"
+            isLink
+          />
+        )}
+        {profile?.company_description && (
+
+          <Row
+            icon="description"
+            value={profile?.company_description}
+            label="Description"
+          />
+        )}
+        <TouchableOpacity
+          onPress={() => navigation.navigate('Timeline', { userId: profileUserId, profileType: "company", })}
+          style={styles.halfButtonPrimary}
+        >
+          <View style={{ flexDirection: 'row' }}>
+            <MaterialIcons
+              name="timeline"
+              size={20}
+              color={colors.primary}
+              style={styles.icon}
+            />
+            <Text
+              style={styles.buttonTextPrimary}>Timeline</Text>
+          </View>
+
+          <MaterialIcons name='chevron-right' size={26} color={colors.primary} />
+
         </TouchableOpacity>
 
-        <View style={styles.detailsContainer}>
-          {/* Profile Details */}
-          <View style={commonStyles.labValContainer}>
-            <Text style={commonStyles.label}>Company name   </Text>
-            <Text style={commonStyles.colon}>:</Text>
-
-            <Text style={commonStyles.value}>{(profile?.company_name || "").trimStart().trimEnd()}</Text>
-
-          </View>
-          <View style={commonStyles.labValContainer}>
-            <Text style={commonStyles.label}>Business phone no. </Text>
-            <Text style={commonStyles.colon}>:</Text>
-
-            <Text style={commonStyles.value}>{(profile?.company_contact_number || "").trimStart().trimEnd()}</Text>
-          </View>
-          <View style={commonStyles.labValContainer}>
-            <Text style={commonStyles.label}>Email ID     </Text>
-            <Text style={commonStyles.colon}>:</Text>
-
-            <Text style={commonStyles.value}>{profile?.company_email_id || ""} <Text >{profile.is_email_verified && (
-              <Sucess width={dimensions.icon.small} height={dimensions.icon.small} color={colors.success} />
-
-            )}</Text>
-            </Text>
-          </View>
-          <View style={commonStyles.labValContainer}>
-            <Text style={commonStyles.label}>CIN / Business registration number </Text>
-            <Text style={commonStyles.colon}>:</Text>
-
-            <Text style={commonStyles.value}>{(profile?.business_registration_number || "").trimStart().trimEnd()}</Text>
-          </View>
-
-          {/* select_your_profile */}
-          <View style={commonStyles.labValContainer}>
-            <Text style={commonStyles.label}>Profile type      </Text>
-            <Text style={commonStyles.colon}>:</Text>
-
-            <Text style={commonStyles.value}>{profile?.select_your_profile || ""}</Text>
-          </View>
-          <View style={commonStyles.labValContainer}>
-            <Text style={commonStyles.label}>Category      </Text>
-            <Text style={commonStyles.colon}>:</Text>
-
-            <Text style={commonStyles.value}>{profile?.category || ""}</Text>
-          </View>
-
-          <View style={commonStyles.labValContainer}>
-            <Text style={commonStyles.label}>State            </Text>
-            <Text style={commonStyles.colon}>:</Text>
-
-            <Text style={commonStyles.value}>{profile?.company_located_state || ""}</Text>
-          </View>
-          <View style={commonStyles.labValContainer}>
-            <Text style={commonStyles.label}>City              </Text>
-            <Text style={commonStyles.colon}>:</Text>
-
-            <Text style={commonStyles.value}>{profile?.company_located_city || ""}</Text>
-          </View>
-
-          {(profile?.Website?.trimStart().trimEnd()) ? (
-            <View style={commonStyles.labValContainer}>
-              <Text style={commonStyles.label}>Website</Text>
-              <Text style={commonStyles.colon}>:</Text>
-              <Text style={commonStyles.value}>
-                <TouchableOpacity onPress={() => openLink(profile.Website)}>
-                  <Text style={[commonStyles.value, { color: "#075cab", textDecorationLine: "underline" }]}>
-                    {profile.Website.trim()}
-                  </Text>
-                </TouchableOpacity>
-              </Text>
-            </View>
-          ) : null}
-
-          {(profile?.company_address?.trimStart().trimEnd()) ? (
-            <View style={commonStyles.labValContainer}>
-              <Text style={commonStyles.label}>Company address</Text>
-              <Text style={commonStyles.colon}>:</Text>
-              <Text style={commonStyles.value}>{profile.company_address.trimStart().trimEnd()}</Text>
-            </View>
-          ) : null}
-
-          {(profile?.company_description?.trimStart().trimEnd()) ? (
-            <View style={[commonStyles.labValContainer, { textAlign: 'justify' }]}>
-              <Text style={commonStyles.label}>Company description</Text>
-              <Text style={commonStyles.colon}>:</Text>
-              <Text style={[commonStyles.value, { textAlign: 'justify' }]}>
-                {profile.company_description.trimStart().trimEnd()}
-              </Text>
-            </View>
-          ) : null}
+        <View style={styles.rowContainer}>
 
           {
             profile?.brochureKey &&
-            (<TouchableOpacity onPress={handleOpenResume} disabled={loading} style={styles.pdfButton}>
+            (<TouchableOpacity onPress={handleOpenResume} disabled={loading} style={styles.tabButton}>
               {loading1 ? (
                 <ActivityIndicator size="small" color="#075cab" style={styles.pdfButtonText} />
               ) : (
-                <Text style={styles.pdfButtonText}>View Catalogue</Text>
+                <Text style={styles.tabButtonText} numberOfLines={1}>View Catalogue</Text>
               )}
             </TouchableOpacity>)
           }
-          <View style={styles.rowContainer}>
-            <TouchableOpacity
-              activeOpacity={1}
-              style={[styles.tabButton]}
-              onPress={() => setProductDropdownVisible(true)}
-            >
-              <Text style={styles.tabButtonText}>Products</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              activeOpacity={1}
-              style={[styles.tabButton]}
-              onPress={() => setServiceDropdownVisible(true)}
-            >
-              <Text style={styles.tabButtonText}>Services</Text>
-            </TouchableOpacity>
-          </View>
-
-
-          <Modal
-            transparent={true}
-            visible={isProductDropdownVisible}
-            onRequestClose={() => setProductDropdownVisible(false)}
+          <TouchableOpacity
+            activeOpacity={1}
+            style={[styles.tabButton]}
+            onPress={() => setProductDropdownVisible(true)}
           >
-            <Pressable style={styles.modalContainer} onPress={() => setProductDropdownVisible(false)}>
-              <View style={styles.modalContent}>
-                {loading ? (
-                  <ActivityIndicator size="small" color="#000" />
-                ) : (
-                  <>
-                    {products.length === 0 ? (
-                      <Text style={styles.noServicesText}>No products available</Text>
-                    ) : (
-                      <FlatList
-                        data={products}
-                        renderItem={({ item }) => (
-                          <TouchableOpacity
-                            activeOpacity={1}
-                            style={styles.dropdownItem}
-                            onPress={() => handleProductSelect(item)}
-                          >
-                            <Text style={styles.dropdownItemText}>
-                              🛒 {item.title || 'Unnamed Product'}
-                            </Text>
-                          </TouchableOpacity>
-                        )}
-                        keyExtractor={(item, index) => index.toString()}
-                      />
-                    )}
+            <Text style={styles.tabButtonText} numberOfLines={1}>Products</Text>
+          </TouchableOpacity>
 
-                    {/* Add Product Button */}
-                    <TouchableOpacity style={styles.addProductButton} onPress={handleAddProduct}>
-                      <Add width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-
-                      <Text style={styles.addProductText}>Add Product</Text>
-                    </TouchableOpacity>
-                  </>
-                )}
-              </View>
-            </Pressable>
-          </Modal>
-
-
-
-          <Modal
-            transparent={true}
-            visible={isServiceDropdownVisible}
-            onRequestClose={() => setServiceDropdownVisible(false)}
+          <TouchableOpacity
+            activeOpacity={1}
+            style={[styles.tabButton]}
+            onPress={() => setServiceDropdownVisible(true)}
           >
-            <Pressable style={styles.modalContainer} onPress={() => setServiceDropdownVisible(false)}>
-              <View style={styles.modalContent}>
-                {loading ? (
-                  <ActivityIndicator size="small" color="#000" />
-                ) : (
-                  <>
-                    {services.length === 0 ? (
-                      <Text style={styles.noServicesText}>No services available</Text>
-                    ) : (
-                      <FlatList
-                        data={services}
-                        renderItem={({ item }) => (
-                          <TouchableOpacity
-                            activeOpacity={1}
-                            style={styles.dropdownItem}
-                            onPress={() => handleSevicesSelect(item)}
-                          >
-                            <Text style={styles.dropdownItemText}>
-                              🛠️ {item.title || 'Unnamed Services'}
-                            </Text>
-                          </TouchableOpacity>
-                        )}
-                        keyExtractor={(item, index) => index.toString()}
-                      />
-                    )}
-
-                    {/* Add Service Button */}
-                    <TouchableOpacity style={styles.addProductButton} onPress={handleAddService}>
-                      <Add width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-
-                      <Text style={styles.addProductText}>Add Service</Text>
-                    </TouchableOpacity>
-                  </>
-                )}
-              </View>
-            </Pressable>
-          </Modal>
-
+            <Text style={styles.tabButtonText} numberOfLines={1}>Services</Text>
+          </TouchableOpacity>
         </View>
-        <TouchableOpacity
-          style={styles.signOutButton}
-          onPress={handleLogout} // Opens modal
-        >
-          <Logout width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
 
-          <Text style={styles.signOutButtonText}>Logout</Text>
+
+
+
+        <TouchableOpacity style={styles.halfButtonDelete} onPress={openLogoutModal}>
+          <MaterialIcons
+            name="logout"
+            size={20}
+            color={colors.danger}
+            style={styles.icon}
+          />
+          <Text style={styles.buttonTextDelete} numberOfLines={1} ellipsizeMode='tail'>Logout</Text>
+
         </TouchableOpacity>
 
 
-        <TouchableOpacity style={styles.deleteAccountButton} onPress={handleDeleteClick}>
-          <Account width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.danger} />
-
-          <Text style={styles.deleteAccountButtonText} >Delete account</Text>
-        </TouchableOpacity>
 
       </ScrollView>
 
-
-      <Message
-        visible={isLogoutModalVisible} // Modal should appear if true
-        onClose={() => setLogoutModalVisible(false)}
-        onCancel={() => setLogoutModalVisible(false)}
-        onOk={() => {
-          setLogoutModalVisible(false);
-          setTimeout(handleLogoutConfirm, 200);
-        }}
-        title="Confirm Logout"
-        message="Are you sure you want to logout?"
-        iconType="info"
-      />
-
       <Modal
-        visible={isModalVisible}
-        onRequestClose={() => setIsModalVisible(false)}
         transparent={true}
-        animationType="slide"
+        visible={isProductDropdownVisible}
+        onRequestClose={() => setProductDropdownVisible(false)}
       >
-        <View style={styles.modalBackground}>
-          <View style={styles.modalContainer1}>
-            <TouchableOpacity onPress={() => {
-              setIsModalVisible(false);
-              setOTP('');
-              setTimer(null);
-            }} style={styles.closeIconContainer}>
-              <Close width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.gray} />
-
-
-            </TouchableOpacity>
-            {step === 1 ? (
-
-              <>
-                <View style={styles.warningContainer}>
-                  <Warning width={dimensions.icon.xl} height={dimensions.icon.xl} color={colors.warning} />
-
-                </View>
-                <Text style={styles.modalTitle}>Confirm Deletion</Text>
-                <Text style={styles.deletionText}>
-                  Are you sure you want to delete your account?{'\n\n'}By
-                  confirming, you will permanently lose all data associated with
-                  this account within 5 business days, including your posts in the feed, comments, uploaded files (images,
-                  videos, documents), and transaction details. This action is irreversible. {'\n\n'}
-                  <Text style={styles.deletionText1}>Do you wish to proceed?</Text>
-                </Text>
-                <View style={styles.buttonContainer}>
-                  <TouchableOpacity
-                    style={styles.confirmButton}
-                    onPress={handleYesClick}
-                  >
-                    <Text style={styles.confirmButtonText}>Yes</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.cancelButton}
-                    onPress={handleNoClick}
-                  >
-                    <Text style={styles.cancelButtonText}>No</Text>
-                  </TouchableOpacity>
-                </View>
-              </>
+        <Pressable style={styles.modalContainer} onPress={() => setProductDropdownVisible(false)}>
+          <View style={styles.modalContent}>
+            {loading ? (
+              <ActivityIndicator size="small" color="#000" />
             ) : (
-
               <>
-                <View style={styles.scrollViewContainer} showsVerticalScrollIndicator={false}>
-
-                  <Text style={styles.infoText}>
-                    Enter the OTP sent to: {phoneNumber}
-                  </Text>
-                  <OtpInput
-                    numberOfDigits={6}
-                    focusColor="#075cab"
-                    autoFocus={true}
-                    // hideStick={true}
-                    placeholder="•"
-                    // blurOnFilled={true}
-                    disabled={false}
-                    type="numeric"
-                    secureTextEntry={false}
-                    focusStickBlinkingDuration={500}
-                    onTextChange={(text) => {
-                      setOTP(text);
-                      otpRef.current = text; // ✅ latest OTP
-                    }}
-                    onFilled={(text) => {
-                      setOTP(text);
-                      otpRef.current = text;
-                      handleVerifyOTP();
-                    }}
-
-                    textInputProps={{
-                      accessibilityLabel: "One-Time Password",
-                    }}
-                    textProps={{
-                      accessibilityRole: "text",
-                      accessibilityLabel: "OTP digit",
-                      allowFontScaling: false,
-                    }}
-                    theme={{
-                      containerStyle: styles.otpContainer,
-                      pinCodeContainerStyle: styles.pinCodeContainer,
-                      pinCodeTextStyle: styles.pinCodeText,
-                      focusStickStyle: styles.focusStick,
-                      focusedPinCodeContainerStyle: styles.activePinCodeContainer,
-                      placeholderTextStyle: styles.placeholderText,
-                      filledPinCodeContainerStyle: styles.filledPinCodeContainer,
-                      disabledPinCodeContainerStyle: styles.disabledPinCodeContainer,
-                    }}
-                  />
-
-
-                  <View style={styles.actionsRow}>
-                    {isResendEnabled ? (
-                      <TouchableOpacity onPress={resendHandle} >
-                        <Text style={styles.resendButtonText}>Resend OTP</Text>
+                {products.length === 0 ? (
+                  <Text style={styles.noServicesText}>No products available</Text>
+                ) : (
+                  <FlatList
+                    data={products}
+                    renderItem={({ item }) => (
+                      <TouchableOpacity
+                        activeOpacity={1}
+                        style={styles.dropdownItem}
+                        onPress={() => handleProductSelect(item)}
+                      >
+                        <Text style={styles.dropdownItemText}>
+                          🛒 {item.title || 'Unnamed Product'}
+                        </Text>
                       </TouchableOpacity>
-                    ) : (
-                      <Text style={styles.timerText}>Resend in {timer}s</Text>
                     )}
+                    keyExtractor={(item, index) => index.toString()}
+                  />
+                )}
 
-                    <TouchableOpacity onPress={handleVerifyOTP} >
-                      <Text style={styles.resendButtonText}>Verify OTP</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
+                {/* Add Product Button */}
+                <TouchableOpacity style={styles.addProductButton} onPress={handleAddProduct}>
+                  <Add width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
 
+                  <Text style={styles.addProductText}>Add Product</Text>
+                </TouchableOpacity>
               </>
             )}
           </View>
-        </View>
+        </Pressable>
       </Modal>
+
+
+
+      <Modal
+        transparent={true}
+        visible={isServiceDropdownVisible}
+        onRequestClose={() => setServiceDropdownVisible(false)}
+      >
+        <Pressable style={styles.modalContainer} onPress={() => setServiceDropdownVisible(false)}>
+          <View style={styles.modalContent}>
+            {loading ? (
+              <ActivityIndicator size="small" color="#000" />
+            ) : (
+              <>
+                {services.length === 0 ? (
+                  <Text style={styles.noServicesText}>No services available</Text>
+                ) : (
+                  <FlatList
+                    data={services}
+                    renderItem={({ item }) => (
+                      <TouchableOpacity
+                        activeOpacity={1}
+                        style={styles.dropdownItem}
+                        onPress={() => handleSevicesSelect(item)}
+                      >
+                        <Text style={styles.dropdownItemText}>
+                          🛠️ {item.title || 'Unnamed Services'}
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+                    keyExtractor={(item, index) => index.toString()}
+                  />
+                )}
+
+                {/* Add Service Button */}
+                <TouchableOpacity style={styles.addProductButton} onPress={handleAddService}>
+                  <Add width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
+
+                  <Text style={styles.addProductText}>Add Service</Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
+        </Pressable>
+      </Modal>
+      {isLogoutModalVisible && (
+        <Message
+          visible={isLogoutModalVisible}
+          onClose={() => setLogoutModalVisible(false)}
+          onCancel={() => setLogoutModalVisible(false)}
+          onOk={() => {
+            setLogoutModalVisible(false);
+            logoutNow();
+          }}
+          title="Confirm Logout"
+          message="Are you sure you want to logout?"
+          iconType="warning"
+        />
+      )}
+
+
 
     </View >
 
@@ -806,8 +527,7 @@ const CompanyProfileScreen = ({ route }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
-    paddingTop: STATUS_BAR_HEIGHT
+
   },
   headerContainer: {
     flexDirection: 'row',
@@ -865,38 +585,12 @@ const styles = StyleSheet.create({
     marginLeft: 4,
 
   },
-  pdfButton: {
-    backgroundColor: 'white',
-    borderRadius: 5,
-    marginTop: 15,
-    alignSelf: 'center',
-    borderWidth: 0.5,
-    borderColor: '#075cab',
-    width: "40%",
-    paddingVertical: 10,
-    alignItems: 'center',
-  },
-  pdfButtonText: {
-    color: '#075cab',
-    textAlign: 'center',
-    fontSize: 13,
-    fontWeight: '500',
-  },
+
 
 
   scrollViewContent: {
     elevation: 1,
     backgroundColor: 'white'
-  },
-  title: {
-    flex: 1,
-    justifyContent: 'space-between',
-    flexDirection: 'row',  // Align label and detail in a row
-    alignItems: 'center',  // Center the items vertically
-    marginVertical: 4,
-    paddingHorizontal: 5,
-    paddingVertical: 5,
-
   },
 
 
@@ -908,43 +602,8 @@ const styles = StyleSheet.create({
     textAlign: 'left', // Align text to the left
     alignSelf: 'flex-start',
   },
-  detailsContainer: {
-    marginTop: 20,
-  },
-  title1: {
-    flex: 1,
-    justifyContent: 'space-between',
-    flexDirection: 'row',  // Align label and detail in a row
-    alignItems: 'center',  // Center the items vertically
-    backgroundColor: 'white',
-    shadowColor: '#000', // iOS shadow color
-    shadowOffset: { width: 0, height: 2 }, // iOS shadow offset
-    shadowOpacity: 0.2, // iOS shadow opacity
-    shadowRadius: 3, // iOS shadow radius
-    borderRadius: 10,
-    padding: 10,
-    marginVertical: 5,
-    marginHorizontal: 10,
-    elevation: 3
-  },
-  colon: {
-    width: 20, // Fixed width for the colon
-    textAlign: 'center', // Center the colon
-    color: 'black',
-    fontWeight: '500',
-    fontSize: 15,
-    alignSelf: 'flex-start',
-  },
 
-  value: {
-    flex: 2, // Take the remaining space
-    flexShrink: 1,
-    color: 'black',
-    fontWeight: '400',
-    fontSize: 15,
-    textAlign: 'left', // Align text to the left
-    alignSelf: 'flex-start',
-  },
+
 
 
   addProductButton: {
@@ -978,41 +637,29 @@ const styles = StyleSheet.create({
   },
 
   signOutButton: {
-    paddingVertical: 10,
-    paddingHorizontal: 15,
-    justifyContent: "center",
-    alignItems: 'center',
+    padding: 10,
     flexDirection: 'row',
-    borderRadius: 5,
-    width: 'auto',
-    alignSelf: 'center',
-    minWidth: 120,
-    maxWidth: 200,
-  },
+    marginTop: 5,
+    alignItems: 'center',
 
+  },
   signOutButtonText: {
-    color: "#075cab",
-    fontSize: 15,
-    fontWeight: '500',
-    marginLeft: 5,
-    alignSelf: 'center'
+    color: colors.danger,
+    fontSize: 16,
+    fontWeight: '600',
+
+
   },
   deleteAccountButton: {
-    justifyContent: "center",
-    alignItems: 'center',
     flexDirection: 'row',
-    borderRadius: 5,
-    marginTop: 10,
-    width: 'auto', // Ensure it doesn't take full width
-    alignSelf: 'center',
-    minWidth: 180, // Optional: ensures a minimum size for the button
-    maxWidth: 200,
+    padding: 10,
+    alignItems: 'center',
+    marginTop: 5,
   },
   deleteAccountButtonText: {
     color: colors.danger,
-    fontSize: 15,
-    fontWeight: '500',
-    marginLeft: 5,
+    fontSize: 16,
+    fontWeight: '600',
   },
 
   modalContainerImage: { flex: 1, backgroundColor: 'black' },
@@ -1021,12 +668,95 @@ const styles = StyleSheet.create({
   modalImage: { width: '100%', height: '100%', resizeMode: 'contain' },
 
   imageContainer: {
-    width: 140,
-    height: 140,
-    borderRadius: 80,
-    alignSelf: 'center',
-    marginTop: 20,
+    alignItems: 'flex-start',
+    justifyContent: 'flex-start',
+    marginVertical: 10
   },
+  category: {
+    fontSize: 14,
+    fontWeight: '400',
+    color: colors.text_secondary,
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: '500',
+    color: colors.text_primary,
+
+  },
+  textContainer: {
+    marginLeft: 10,
+    flex: 1
+  },
+  header: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: colors.text_primary,
+    marginBottom: 8,
+  },
+  profileBox: {
+    flexDirection: 'row',
+    justifyContent: 'flex-start',
+    alignItems: 'center',
+    marginBottom: 10,
+
+  },
+  actionRow: {
+    flexDirection: 'row',
+    // marginVertical: 20, 
+    // borderTopWidth: 1,
+    // borderColor: '#e0e0e0',
+    overflow: 'hidden',
+    // backgroundColor: 'red'
+    top: 2
+  },
+  centerDivider: {
+    width: 1,
+    backgroundColor: '#e0e0e0',   // 👈 vertical center line
+  },
+  halfButtonDelete: {
+    flex: 1,               // 👈 takes half
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    borderRadius: 8,
+    // borderWidth: 1,
+    // borderColor: colors.danger,
+    backgroundColor: '#f2f2f2',
+  },
+
+  halfButtonPrimary: {
+    flex: 1,               // 👈 takes half
+    flexDirection: 'row',
+    paddingVertical: 14,
+
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderBottomWidth: 1,
+    borderColor: '#e2e2e2',
+    // backgroundColor: '#fff',
+  },
+
+  buttonTextPrimary: {
+    fontSize: 15,
+    fontWeight: '400',
+    color: colors.primary,
+  },
+  rowCenter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+
+  icon: {
+    marginRight: 6,
+  },
+
+  buttonTextDelete: {
+    fontSize: 15,
+    fontWeight: '400',
+    color: colors.danger,
+  },
+
   detailImage: {
     width: '100%',
     height: '100%',
@@ -1048,26 +778,52 @@ const styles = StyleSheet.create({
   },
   rowContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginTop: 20,
-    marginBottom: 5,
-
+    alignItems: 'center',
+    justifyContent: 'space-between', // or 'flex-start'
+    gap: 10, // RN 0.71+ (otherwise use marginRight)
+    marginVertical: 10,
   },
-  tabButton: {
+
+  pdfButton: {
+    flex: 1,
     paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 5,
-    backgroundColor: '#f9f9f9',
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#075cab',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 0.5,
-    borderColor: '#075cab',
   },
 
+  tabButton: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#075cab',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  pdfButtonText: {
+    color: '#075cab',
+    fontSize: 13,
+    fontWeight: '600',
+    letterSpacing: 0.3,
+  },
   tabButtonText: {
     color: '#075cab',
-    fontSize: 15,
-    fontWeight: '500',
+    fontSize: 13,
+    fontWeight: '600',
+    letterSpacing: 0.3,
+  },
+
+  timeLine: {
+    marginTop: 5,
+    padding: 10,
+    textDecorationLine: 'underline',
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.primary,
   },
 
   modalContainer: {
@@ -1287,6 +1043,46 @@ const styles = StyleSheet.create({
     paddingBottom: 10,
     justifyContent: 'flex-start',
 
+  },
+
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderColor: '#e2e2e2',
+  },
+
+  left: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+
+  iconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#e2e2e2',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  textWrap: {
+    flexShrink: 1
+  },
+  value: {
+    flex: 1,
+    fontSize: 15,
+    color: colors.text_primary,
+    fontWeight: '400',
+    flexWrap: 'wrap'
+  },
+
+  label: {
+    fontSize: 13,
+    color: '#888',
+    marginTop: 2,
   },
 });
 

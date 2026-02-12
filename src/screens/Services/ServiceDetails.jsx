@@ -19,18 +19,21 @@ import apiClient from '../ApiClient';
 import DisclaimerBox from '../Products/DisclaimerBox';
 import { useFileOpener } from '../helperComponents/fileViewer';
 import { useNetwork } from '../AppUtils/IdProvider';
-import AppStyles, { STATUS_BAR_HEIGHT } from '../AppUtils/AppStyles';
+import AppStyles from '../AppUtils/AppStyles';
 import { openMediaViewer } from '../helperComponents/mediaViewer';
 import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
 import ShareIcon from '../../assets/svgIcons/share.svg';
 import Play from '../../assets/svgIcons/play.svg';
 
 import { colors, dimensions } from '../../assets/theme';
+import { trackRecent } from "../appTrack/RecentViews";
+import { smartGoBack } from '../../navigation/smartGoBack';
+import { AppHeader } from '../AppUtils/AppHeader';
 
 
 const BASE_API_URL = 'https://h7l1568kga.execute-api.ap-south-1.amazonaws.com/dev';
 const API_KEY = 'k1xuty5IpZ2oHOEOjgMz57wHfdFT8UQ16DxCFkzk';
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 
 const ServiceDetails = () => {
   const route = useRoute();
@@ -40,6 +43,7 @@ const ServiceDetails = () => {
   const { openFile } = useFileOpener();
   const { myId, myData } = useNetwork();
   const [loading1, setLoading1] = useState(false);
+  const contactSheetRef = useRef(null);
 
   const handleOpenResume = async (key) => {
     if (!key) return;
@@ -83,7 +87,23 @@ const ServiceDetails = () => {
   const [mediaType, setMediaType] = useState(null);
   const [lastEvaluatedKey, setLastEvaluatedKey] = useState(null);
 
+  useEffect(() => {
+    if (!product?.service_id) return;
 
+    const productMedia = [
+      ...imageUrls.map(url => ({ type: 'image', url })),
+      ...videoUrls.map(url => ({ type: 'video', url })),
+    ];
+
+    trackRecent({
+      type: 'service',
+      data: {
+        ...product,
+        media: productMedia, // ✅ stored INSIDE data
+      },
+      id: product?.service_id
+    });
+  }, [product?.service_id, imageUrls, videoUrls]);
 
   const startAutoScroll = () => {
     if (!combinedData || combinedData.length <= 1) {
@@ -389,7 +409,6 @@ const ServiceDetails = () => {
     }
   };
 
-  const handleGoBack = () => { navigation.goBack() };
 
   const toggleFullText = () => {
     setShowFullText((prev) => !prev);
@@ -426,77 +445,38 @@ const ServiceDetails = () => {
   };
 
   const handleNavigate = (company_id) => {
-    // console.log('Navigating to CompanyDetailsPage with company_id:', company_id);
-    navigation.navigate('CompanyDetailsPage', { userId: company_id });
+    navigation.navigate('CompanyDetails', { userId: company_id });
   };
 
 
+  const isLoading = !product
+  const isRemoved = product?.removed_by_author
+  const hasProduct = product?.title
 
-  if (!product) {
-
-    return (
-      <View style={styles.container}>
-        <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
-
-        <View style={styles.headerContainer}>
-
-          <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
-            <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-
-          </TouchableOpacity>
-
-        </View>
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <ActivityIndicator size="small" color="#075cab" />
-        </View>
-      </View>
-    );
-  }
-
-  if (product?.removed_by_author) {
-    return (
-      <View style={styles.container}>
-        <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
-
-        <View style={styles.headerContainer}>
-
-          <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
-            <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-
-          </TouchableOpacity>
-
-        </View>
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <Text style={{ fontSize: 16, color: 'gray' }}>This post was removed by the author</Text>
-        </View>
-      </View>
-    );
-  }
   return (
 
     <View style={styles.container}>
-      <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
-
-      <View style={styles.headerContainer}>
-        <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
-          <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => shareProduct(product)} style={styles.circle}>
-          <ShareIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-
-
-          <Text style={styles.shareText}>Share</Text>
-        </TouchableOpacity>
-
-      </View>
-      {product?.removed_by_author ? (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <Text style={{ fontSize: 16, color: 'gray' }}>This post was removed by the author</Text>
+      <AppHeader
+        title={product?.title || ''}
+        onShare={() => shareProduct(product)}
+      />
+      {isLoading && (
+        <View style={AppStyles.center}>
+          <ActivityIndicator size="small" color="#075cab" />
         </View>
-      ) : (
+      )}
+
+      {!isLoading && isRemoved && (
+        <View style={AppStyles.center}>
+          <Text style={AppStyles.removedText}>
+            This post was removed by the author
+          </Text>
+        </View>
+      )}
+
+      {!isLoading && !isRemoved && hasProduct && (
         <>
-          <ScrollView showsVerticalScrollIndicator={false} ref={scrollViewRef} contentContainerStyle={{ paddingBottom: '20%' }}>
+          <ScrollView showsVerticalScrollIndicator={false} ref={scrollViewRef} >
             <TouchableOpacity activeOpacity={1}>
               <Text style={styles.title}>{product.title}</Text>
               <Text style={styles.category}>{product.category}</Text>
@@ -525,55 +505,47 @@ const ServiceDetails = () => {
                   snapToInterval={width}
                   decelerationRate="fast"
                   keyExtractor={(item, index) => index.toString()}
-                  renderItem={({ item, index }) =>
-                    item.type === 'image' ? (
-                      <TouchableOpacity
-                        onPress={() => openMediaViewer(combinedData, index)}
-                        style={{
-                          width: width,
-                          height: width,
-                          justifyContent: 'center',
-                          alignItems: 'center',
-                          padding: 10
-                        }}
-                        activeOpacity={0.8}
-                      >
+                  renderItem={({ item, index }) => (
+                    <TouchableOpacity
+                      onPress={() => openMediaViewer(combinedData, index)}
+                      activeOpacity={0.85}
+                      style={{
+                        width,
+                        aspectRatio: 1,
+                        justifyContent: "center",
+                        alignItems: "center",
+                        padding: 10,
+                      }}
+                    >
+                      {item.type === "image" ? (
                         <Image
                           source={{ uri: item.url }}
-                          style={[styles.mainProductImage]}
+                          style={styles.mainProductImage}
                         />
-                      </TouchableOpacity>
-                    ) : (
-                      <View
-                        style={[
-                          styles.videoContainer,
-                          {
-                            width: width,
-                            height: width,
-                            justifyContent: 'center',
-                            alignItems: 'center',
-                            padding: 10
-                          },
-                        ]}
-                      >
-                        <TouchableOpacity
-                          onPress={() => openMediaViewer(combinedData, index)}
-                          style={{ width: '100%', height: '100%' }}
-                        >
-                          <Video
-                            source={{ uri: item.url }}
-                            style={[styles.productVideo, { width: '100%', height: '100%' }]}
-                            resizeMode="contain"
-                            paused
-                          />
-                          <TouchableOpacity style={styles.playButton}>
-                            <Play width={dimensions.icon.ml} height={dimensions.icon.ml} color={colors.background} />
+                      ) : (
+                        <View style={styles.videoContainer}>
+                          {/* Video preview (non-interactive) */}
+                          <View pointerEvents="none" style={{ width: "100%", height: "100%" }}>
+                            <Video
+                              source={{ uri: item.url }}
+                              style={{ width: "100%", height: "100%" }}
+                              resizeMode="contain"
+                              paused
+                            />
+                          </View>
 
-                          </TouchableOpacity>
-                        </TouchableOpacity>
-                      </View>
-                    )
-                  }
+                          {/* Play icon overlay */}
+                          <View style={styles.playButton}>
+                            <Play
+                              width={dimensions.icon.ml}
+                              height={dimensions.icon.ml}
+                              color={colors.background}
+                            />
+                          </View>
+                        </View>
+                      )}
+                    </TouchableOpacity>
+                  )}
                   showsHorizontalScrollIndicator={false}
                   onScroll={handleScroll}
                   scrollEventThrottle={16}
@@ -628,31 +600,34 @@ const ServiceDetails = () => {
 
 
               {myId !== product.company_id && (
-                <>
-                  <TouchableOpacity onPress={() => setModalVisible1(true)} activeOpacity={0.5}>
-                    <Text style={styles.contact}>Contact supplier</Text>
+                <View style={styles.actionRow}>
+                  <TouchableOpacity
+                    onPress={() => {
+                      contactSheetRef.current?.present();     // ✅ open sheet
+                    }}
+                    style={styles.halfButtonPrimary}
+                  >
+                    <Text style={styles.buttonTextPrimary}>Contact details</Text>
                   </TouchableOpacity>
 
-                  <ContactSupplierModal
-                    visible={modalVisible1}
-                    onClose={() => setModalVisible1(false)}
-                    company_id={company_id}
-                  />
-
-                  <TouchableOpacity activeOpacity={0.5} onPress={() =>
-                    navigation.navigate('EnquiryForm', {
-                      company_id: product.company_id,
-                      service_id: product.service_id,
-                    })
-                  }>
-                    <Text
-                      style={styles.contact1} >
+                  <TouchableOpacity
+                    style={styles.halfButtonPrimary}
+                    onPress={() =>
+                      navigation.navigate('EnquiryForm', {
+                        company_id: product.company_id,
+                        service_id: product.service_id,
+                      })
+                    }>
+                    <Text style={styles.buttonTextPrimary} >
                       Send enquiry
                     </Text>
                   </TouchableOpacity>
-                </>
+                </View>
               )}
-
+              <ContactSupplierModal
+                ref={contactSheetRef}
+                company_id={product?.company_id}
+              />
 
               <Modal
                 animationType="slide"
@@ -720,7 +695,7 @@ const ServiceDetails = () => {
 
                         <Text numberOfLines={1} style={styles.productName}>{item.title || 'No Title'}</Text>
                         <Text numberOfLines={1} style={styles.price1}>
-                          {item.price && item.price.trim() !== '' ? `₹ ${item.price}` : '₹ Contact Seller'}
+                          {item.price && item.price.trim() !== '' ? `₹ ${item.price}` : '₹ Contact supplier'}
                         </Text>
                         <Text numberOfLines={1} style={styles.productDescription}>{item.description}</Text>
                       </TouchableOpacity>
@@ -748,7 +723,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: 'white',
-    paddingTop: STATUS_BAR_HEIGHT
+
   },
 
   divider: {
@@ -1150,23 +1125,33 @@ const styles = StyleSheet.create({
   relatedList: {
     marginBottom: 20,
   },
-  contact: {
-    fontSize: 15,
-    fontWeight: '500',
-    color: '#075cab',
-    textDecorationLine: 'underline',
-    padding: 10,
-    textAlign: 'center',
+  actionRow: {
+    flexDirection: 'row',
+    marginHorizontal: 10,
+    paddingVertical: 6,
+    // borderTopWidth: 1,
+    // borderColor: '#e0e0e0',
+    overflow: 'hidden',
+    // backgroundColor: 'red'
   },
-  contact1: {
-    fontSize: 15,
-    fontWeight: '500',
-    color: '#075cab',
-    textAlign: 'center',
-    padding: 10,
+  halfButtonPrimary: {
+    flex: 1,               // 👈 takes half
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    borderRadius: 8,
+    // borderWidth: 1,
+    // borderColor: colors.primary,
+    backgroundColor: '#E7F0FA',
+    marginHorizontal: 6,
 
   },
-
+  buttonTextPrimary: {
+    fontSize: 15,
+    fontWeight: '400',
+    color: colors.primary,
+  },
   productCard: {
     width: 220,
     backgroundColor: '#fff',

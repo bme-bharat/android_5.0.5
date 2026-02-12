@@ -96,8 +96,8 @@ android {
         applicationId "com.bmebharat.newapp"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 48
-        versionName "2.5.4"
+        versionCode 50
+        versionName "6.0.2"
     }
     signingConfigs {
 
@@ -120,7 +120,7 @@ android {
 
     buildTypes {
         debug {
-            signingConfig signingConfigs.debug
+            signingConfig signingConfigs.release
         }
         release {
             // Caution! In production, you need to generate your own keystore file.
@@ -161,7 +161,9 @@ dependencies {
     annotationProcessor "com.github.bumptech.glide:compiler:4.15.1"
     implementation("com.squareup.okhttp3:okhttp:4.10.0")
 
-    implementation platform('com.google.firebase:firebase-bom:32.3.0')
+    implementation platform('com.google.firebase:firebase-bom:33.0.0')
+    implementation 'com.google.firebase:firebase-analytics'
+
     implementation 'com.google.firebase:firebase-messaging'
     // Use Hermes
     implementation("com.facebook.react:hermes-android")

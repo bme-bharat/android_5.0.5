@@ -1,9 +1,8 @@
 
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Image, ActivityIndicator, Linking, Modal, RefreshControl, Share, Alert, Keyboard, FlatList, TouchableWithoutFeedback, StatusBar, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Image, ActivityIndicator, Linking, Modal, RefreshControl, Share, Alert, Keyboard, FlatList, Platform } from 'react-native';
 import axios from 'axios';
 import { useFocusEffect, useNavigation, useNavigationState, useScrollToTop } from '@react-navigation/native';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { COLORS } from '../../assets/Constants';
 import { Image as FastImage } from 'react-native';
 import apiClient from '../ApiClient';
@@ -18,8 +17,8 @@ import { getSignedUrl, highlightMatch, useLazySignedUrls } from '../helperCompon
 import buliding from '../../images/homepage/buliding.jpg';
 import { EventRegister } from 'react-native-event-listeners';
 import { generateAvatarFromName } from '../helperComponents/useInitialsAvatar';
-import BottomNavigationBar from '../AppUtils/BottomNavigationBar';
-import Animated from "react-native-reanimated";
+
+import Animated, { useAnimatedScrollHandler, useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
 import scrollAnimations from '../helperComponents/scrollAnimations';
 import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
 import Search from '../../assets/svgIcons/search.svg';
@@ -29,55 +28,19 @@ import Add from '../../assets/svgIcons/add.svg';
 import Company from '../../assets/svgIcons/company.svg';
 import Money from '../../assets/svgIcons/money.svg';
 import Location from '../../assets/svgIcons/location.svg';
-
+import Menu from '../../assets/svgIcons/menu.svg';
 import { colors, dimensions } from '../../assets/theme.jsx';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import Avatar from '../helperComponents/Avatar.jsx';
+import { Appbar } from 'react-native-paper';
+import { runOnJS } from 'react-native-worklets';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-
-
-const ProductsList = React.lazy(() => import('../Products/ProductsList'));
-const CompanySettingScreen = React.lazy(() => import('../Profile/CompanySettingScreen'));
-const CompanyHomeScreen = React.lazy(() => import('../CompanyHomeScreen'));
-const AllPosts = React.lazy(() => import('../Forum/Feed'));
-
-const STATUS_BAR_HEIGHT =
-  Platform.OS === "android" ? StatusBar.currentHeight || 24 : 44;
-
-const headerHeight = STATUS_BAR_HEIGHT + 60;
-const bottomHeight = 60;
 const JobListScreen = () => {
   const navigation = useNavigation();
   const { onScroll, headerStyle, bottomStyle, toolbarBgStyle, barStyle } = scrollAnimations();
 
-
-  const tabNameMap = {
-    CompanyJobList: "Jobs",
-    Home: 'Home3',
-    CompanySetting: 'Settings',
-    ProductsList: 'Products'
-  };
-
-  const tabConfig = [
-    { name: "Home", component: CompanyHomeScreen, focusedIcon: 'home', unfocusedIcon: 'home-outline', iconComponent: Icon },
-    { name: "Jobs", component: JobListScreen, focusedIcon: 'briefcase', unfocusedIcon: 'briefcase-outline', iconComponent: Icon },
-    { name: "Feed", component: AllPosts, focusedIcon: 'rss', unfocusedIcon: 'rss-box', iconComponent: Icon },
-    { name: "Products", component: ProductsList, focusedIcon: 'shopping', unfocusedIcon: 'shopping-outline', iconComponent: Icon },
-    { name: "Settings", component: CompanySettingScreen, focusedIcon: 'cog', unfocusedIcon: 'cog-outline', iconComponent: Icon },
-  ];
-
-  const parentNavigation = navigation.getParent();
-  const currentRouteName = parentNavigation?.getState()?.routes[parentNavigation.getState().index]?.name;
-
-
   const { myId } = useNetwork();
   const { isConnected } = useConnection();
-
-
-  const { jobPosts: jobs } = useSelector(state => state.jobs);
-  const jobImageUrls = useSelector(state => state.jobs.jobImageUrls);
-  const storeProfile = useSelector(state => state.CompanyProfile.profile);
-
-
 
   const flatListRef = useRef(null);
   const scrollOffsetY = useRef(0);
@@ -94,6 +57,37 @@ const JobListScreen = () => {
   const [loading, setLoading] = useState(false);
   const [profileCreated, setProfileCreated] = useState(false)
 
+  const isTabRefreshingRef = useRef(false);
+
+  React.useEffect(() => {
+    const unsubscribe = navigation.addListener('tabPress', (e) => {
+      if (!navigation.isFocused()) return;
+
+      e.preventDefault();
+
+      if (isTabRefreshingRef.current) return;
+      isTabRefreshingRef.current = true;
+
+      console.log('tab pressed again → scroll to top → refresh');
+
+      // 1️⃣ Scroll to top
+      flatListRef.current?.scrollToOffset({
+        offset: 0,
+        animated: true,
+      });
+
+      // 2️⃣ Refresh AFTER scroll is scheduled
+      requestAnimationFrame(() => {
+        Promise.resolve(handleRefresh()).finally(() => {
+          isTabRefreshingRef.current = false;
+        });
+      });
+    });
+
+    return unsubscribe;
+  }, [navigation, handleRefresh]);
+
+
   useEffect(() => {
     const onJobCreated = async (data) => {
       const { newPost } = data;
@@ -105,7 +99,7 @@ const JobListScreen = () => {
         const jobWithImage = {
           ...newPost,
           imageUrl,
-          companyAvatar: generateAvatarFromName(newPost.company_name)
+          
         };
 
         setLocalJobs(prevJobs => {
@@ -127,7 +121,7 @@ const JobListScreen = () => {
         const updatedJobWithImage = {
           ...updatedPost,
           imageUrl,
-          companyAvatar: generateAvatarFromName(updatedPost.company_name)
+       
         };
 
         setLocalJobs(prevJobs =>
@@ -318,22 +312,21 @@ const JobListScreen = () => {
       }
 
       // Only add avatar data to jobs that don't have a fileKey
-      const jobsWithAvatars = jobs.map(job => {
-        // If fileKey exists, return the job as-is
-        if (job.fileKey) {
+      const jobsWithImg = await Promise.all(
+        jobs.map(async (job) => {
+          if (job.fileKey) {
+            const imageObj = await getSignedUrl(job.post_id, job.fileKey);
+            job.imageUrl = imageObj[job.post_id];
+          }
           return job;
-        }
-        // Otherwise, add generated avatar
-        return {
-          ...job,
-          companyAvatar: generateAvatarFromName(job.company_name)
-        };
-      });
+        })
+      );
+
 
       // Append new jobs to localJobs state
       setLocalJobs(prevJobs => {
         const existingIds = new Set(prevJobs.map(job => job.post_id));
-        const newUniqueJobs = jobsWithAvatars.filter(job => !existingIds.has(job.post_id));
+        const newUniqueJobs = jobsWithImg.filter(job => !existingIds.has(job.post_id));
         return [...prevJobs, ...newUniqueJobs];
       });
 
@@ -363,14 +356,6 @@ const JobListScreen = () => {
   }, []);
 
 
-  const {
-    getUrlFor,
-    onViewableItemsChanged,
-    viewabilityConfig
-  } = useLazySignedUrls(localJobs, getSignedUrl, 5, {
-    idField: 'post_id',
-    fileKeyField: 'fileKey',
-  });
 
 
   const searchInputRef = useRef(null);
@@ -452,9 +437,9 @@ const JobListScreen = () => {
         };
 
         // Only generate avatar if no fileKey exists
-        return job.fileKey ? baseJob : {
+        return {
           ...baseJob,
-          companyAvatar: generateAvatarFromName(job.company_name)
+
         };
       });
 
@@ -520,16 +505,13 @@ const JobListScreen = () => {
 
 
   const handleNavigate = (company_id) => {
-    navigation.navigate('CompanyDetailsPage', { userId: company_id });
+    navigation.navigate('CompanyDetails', { userId: company_id });
   };
 
   const [lastEvaluatedKey, setLastEvaluatedKey] = useState(null);
 
 
   const renderJob = ({ item: job }) => {
-    const imageUrl = getUrlFor(job.post_id);
-
-    const resizeMode = imageUrl?.includes('buliding.jpg') ? 'cover' : 'contain';
 
     return (
 
@@ -539,21 +521,12 @@ const JobListScreen = () => {
         activeOpacity={1}
       >
         <View style={AppStyles.cardImage1}>
-          {imageUrl ? (
-            <FastImage
-              source={{ uri: imageUrl, }}
 
-              style={AppStyles.cardImage}
-              resizeMode={resizeMode}
-              onError={() => { }}
-            />
-          ) : (
-            <View style={[AppStyles.cardImage1, { backgroundColor: job.companyAvatar?.backgroundColor }]}>
-              <Text style={[AppStyles.avatarText, { color: job.companyAvatar?.textColor }]}>
-                {job.companyAvatar?.initials}
-              </Text>
-            </View>
-          )}
+          <Avatar
+            imageUrl={job?.imageUrl}
+            name={job?.company_name}
+            size={100}
+          />
         </View>
 
 
@@ -618,21 +591,79 @@ const JobListScreen = () => {
     );
   };
 
+  const [searchOpen, setSearchOpen] = useState(false);
 
+  const searchProgress = useSharedValue(0);
+
+  const toggleSearch = () => {
+    const isOpening = searchProgress.value === 0;
+
+    if (isOpening) {
+      // OPEN SEARCH
+      setSearchOpen(true);
+      searchProgress.value = withTiming(1, { duration: 220 });
+
+      setTimeout(() => {
+        searchInputRef.current?.focus();
+      }, 150);
+    } else {
+      // CLOSE + RESET SEARCH
+      setSearchOpen(false);
+      searchProgress.value = withTiming(0, { duration: 200 });
+
+      Keyboard.dismiss();
+
+      // 🔥 Reset everything
+      setSearchQuery('');
+      setSearchTriggered(false);   // if you use this flag
+      setSearchResults([]);        // if you store results
+    }
+  };
+
+  const searchAnimatedStyle = useAnimatedStyle(() => {
+    return {
+      transform: [
+        { scaleX: searchProgress.value },
+        { translateX: (1 - searchProgress.value) * 20 },
+      ],
+      opacity: searchProgress.value,
+    };
+  });
+
+  const closeSearchFromScroll = () => {
+    setSearchOpen(false);
+    Keyboard.dismiss();
+    setSearchQuery('');
+  };
+
+  const scrollHandler = useAnimatedScrollHandler({
+    onScroll: () => {
+      if (searchProgress.value === 1) {
+        // 🔥 Update React state FIRST (icon changes immediately)
+        runOnJS(closeSearchFromScroll)();
+
+        // Then animate UI
+        searchProgress.value = withTiming(0, { duration: 180 });
+      }
+    },
+  });
+
+  const insets = useSafeAreaInsets();
+
+const headerHeight = insets?.top+ 44;
   return (
     <>
-      <StatusBar translucent backgroundColor="transparent" barStyle={"light-content"} />
 
-      <Animated.View style={[AppStyles.toolbar, toolbarBgStyle]}>
+      <Animated.View style={[AppStyles.toolbar, toolbarBgStyle, {paddingTop: insets.top}]}>
 
         <Animated.View style={[AppStyles.searchRow, headerStyle]}>
-          <View style={AppStyles.searchBar}>
+          <View style={[AppStyles.searchBar]}>
             <Search width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.text_secondary} />
 
             <TextInput
               ref={searchInputRef}
               placeholder="Search jobs..."
-              style={AppStyles.searchInput}
+              style={[AppStyles.searchInput]}
               placeholderTextColor="#666"
               value={searchQuery}
               onChangeText={handleDebouncedTextChange}
@@ -640,7 +671,7 @@ const JobListScreen = () => {
           </View>
           {isConnected && (
             <TouchableOpacity
-              style={AppStyles.circle}
+              style={[AppStyles.circle]}
               onPress={() => {
                 if (profile?.user_type === 'company') {
                   navigation.navigate("CompanyJobPost");
@@ -654,9 +685,9 @@ const JobListScreen = () => {
               }}
               activeOpacity={0.5}
             >
-              <Add width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.background} />
+              <Add width={36} height={36} color={'#075cab'} />
 
-              <Text style={AppStyles.shareText}> {storeProfile?.user_type === 'company' ? 'Post' : 'Job profile'}</Text>
+              {/* <Text style={AppStyles.shareText}> {storeProfile?.user_type === 'company' ? 'Post' : 'Job profile'}</Text> */}
             </TouchableOpacity>
           )}
         </Animated.View>
@@ -669,9 +700,56 @@ const JobListScreen = () => {
 
       </Animated.View>
 
+      {/* <Appbar.Header style={{ backgroundColor:'#075CAB', height:56 }}>
 
 
+        <Appbar.Content title="Jobs" color={'#FFF'}/>
 
+
+        <Animated.View
+          style={[
+            {
+              position: 'absolute',
+              left: 12,
+              right: 64,   
+              height: 40,
+              borderRadius: 20,
+              backgroundColor: '#f1f3f4',
+              flexDirection: 'row',
+              alignItems: 'center',
+              paddingHorizontal: 12,
+            },
+            searchAnimatedStyle,
+          ]}
+          pointerEvents={searchOpen ? 'auto' : 'none'}
+        >
+          <View style={{ width: 8 }} />
+
+          <TextInput
+            ref={searchInputRef}
+            placeholder="Search jobs..."
+            style={{
+              flex: 1,
+              paddingVertical: 0,
+              paddingHorizontal: 0,
+              fontSize: 16,
+              color: '#000',
+            }}
+            placeholderTextColor="#777"
+            value={searchQuery}
+            onChangeText={handleDebouncedTextChange}
+            returnKeyType="search"
+            underlineColorAndroid="transparent"
+          />
+        </Animated.View>
+
+        <Appbar.Action
+          icon={searchOpen ? 'close' : 'magnify'}
+          onPress={toggleSearch}
+          color={'#FFF'}
+        />
+
+      </Appbar.Header> */}
 
       {!loading ? (
         <Animated.FlatList
@@ -679,16 +757,13 @@ const JobListScreen = () => {
           renderItem={({ item }) => renderJob({ item })}
           ref={flatListRef}
           onScroll={onScroll}
+          keyboardDismissMode="on-drag"
+
           scrollEventThrottle={16}
           overScrollMode={'never'}
-          onScrollBeginDrag={() => {
-            Keyboard.dismiss();
-            searchInputRef.current?.blur?.();
-          }}
-          contentContainerStyle={{ paddingBottom: bottomHeight }}
-          onViewableItemsChanged={onViewableItemsChanged}
-          viewabilityConfig={viewabilityConfig}
-          keyboardShouldPersistTaps="handled"
+
+          contentContainerStyle={{paddingTop: headerHeight,}}
+          keyboardShouldPersistTaps="never"
           keyExtractor={(item, index) => `${item.post_id}-${index}`}
           onEndReached={() => !searchQuery && hasMoreJobs && fetchJobs(lastEvaluatedKey)}
           onEndReachedThreshold={0.3}
@@ -701,7 +776,7 @@ const JobListScreen = () => {
             ) : null
           }
           ListHeaderComponent={
-            <Animated.View style={{ height: headerHeight }}>
+            <Animated.View >
               {searchTriggered && (
                 <>
                   <Text style={styles.companyCount}>
@@ -733,7 +808,7 @@ const JobListScreen = () => {
 
 
 
-
+      {/* 
       <BottomNavigationBar
         tabs={tabConfig}
         currentRouteName={currentRouteName}
@@ -742,7 +817,7 @@ const JobListScreen = () => {
         scrollOffsetY={scrollOffsetY}
         handleRefresh={handleRefresh}
         tabNameMap={tabNameMap}
-      />
+      /> */}
 
 
 
@@ -770,61 +845,6 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 5,
   },
-
-  searchRow: {
-    width: "100%",
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 12,
-    gap: 10,
-
-  },
-
-  searchBar: {
-    flex: 1,
-    backgroundColor: "#f2f2f2",
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    flexDirection: "row",
-    alignItems: "center",
-
-  },
-  searchIcon: {
-    fontSize: 18,
-    marginRight: 8,
-    color: "#666",
-  },
-  searchInput: {
-    fontSize: 18,
-  },
-
-  toolbar: {
-    position: "absolute",
-    top: 0,
-    width: "100%",
-    paddingTop: STATUS_BAR_HEIGHT,
-    zIndex: 50,
-  },
-
-  topHeader: {
-    width: "100%",
-    flexDirection: "row",
-    alignItems: "center",
-  },
-
-  navItem: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  navText: {
-    fontSize: 12,
-    color: 'black',
-    marginTop: 2,
-  },
-
 
   container1: {
     flex: 1,

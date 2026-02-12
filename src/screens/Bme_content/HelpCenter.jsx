@@ -5,7 +5,7 @@ import {
   Linking,
   TouchableOpacity,
   ScrollView,
-  StatusBar,
+
 } from 'react-native';
 import React from 'react';
 import { useNavigation } from '@react-navigation/native';
@@ -22,7 +22,7 @@ import Web from '../../assets/svgIcons/web.svg';
 import X from '../../assets/svgIcons/x.svg';
 
 import { colors, dimensions } from '../../assets/theme';
-import AppStyles, { STATUS_BAR_HEIGHT } from '../AppUtils/AppStyles';
+import { AppHeader } from '../AppUtils/AppHeader';
 
 const HelpCenter = () => {
   const navigation = useNavigation();
@@ -67,33 +67,24 @@ const HelpCenter = () => {
   const openWhatsapp = () => {
     const phone = contactDetails.phone; // your phone number
     const message = "Hello! I want to know more about BME Bharat services.";
-  
+
     const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
-  
+
     Linking.openURL(url).catch(err => {
       console.error("Failed to open WhatsApp:", err);
     });
   };
-  
+
   return (
     <>
 
-      <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
 
-      <View style={styles.headerContainer}>
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={styles.backButton}>
-          <ArrowLeftIcon
-            width={dimensions.icon.medium}
-            height={dimensions.icon.medium}
-            color={colors.primary}
-          />
-        </TouchableOpacity>
-      </View>
+      <AppHeader
+        title="Help"
 
+      />
       {/* Body */}
-      <ScrollView style={styles.container}>
+      <ScrollView contentContainerStyle={[{ padding: 10 }]}>
         <Text style={styles.description}>
           You can get in touch with us through the platforms below. Our team
           will reach out to you as soon as possible.
@@ -243,17 +234,9 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: '#F9F9F9',
-    
+
   },
-  headerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: 'white',
-    borderBottomWidth: 1,
-    borderColor: '#f0f0f0',
-    paddingTop: STATUS_BAR_HEIGHT
-  },
+
   backButton: {
     alignSelf: 'flex-start',
     padding: 10
@@ -266,7 +249,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '500',
     color: colors.text_secondary,
-    marginVertical: 10,
+    marginBottom: 10,
     lineHeight: 20,
     letterSpacing: 0.2
   },

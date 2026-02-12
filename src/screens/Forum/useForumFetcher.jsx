@@ -27,9 +27,6 @@ export const enrichForum = async (post, myId) => {
     thumbnailFileKey ? getSignedUrl(forumId, thumbnailFileKey) : Promise.resolve({}),
   ]);
 
-  const authorImageUri = authorFileKey
-    ? authorSignedUrl[forumId] || ''
-    : generateAvatarFromName(post.author || 'U');
 
   return {
     ...post,
@@ -40,7 +37,7 @@ export const enrichForum = async (post, myId) => {
     fileKeySignedUrl: fileKeySignedUrl[forumId] || '',
     thumbnailSignedUrl: thumbnailSignedUrl[forumId] || '',
     authorSignedUrl: authorSignedUrl[forumId] || '',
-    authorImageUri,
+
   };
 };
 
@@ -61,10 +58,6 @@ export const enrichForumPost = async (posts, myId) => {
         thumbnailFileKey ? getSignedUrl(forumId, thumbnailFileKey) : Promise.resolve({}),
       ]);
 
-      const authorImageUri = authorFileKey
-        ? authorSignedUrl[forumId] || ''
-        : generateAvatarFromName(post.author || 'U');
-
       return {
         ...post,
         commentCount: commentCount || 0,
@@ -74,7 +67,7 @@ export const enrichForumPost = async (posts, myId) => {
         fileKeySignedUrl: fileKeySignedUrl[forumId] || '',
         thumbnailSignedUrl: thumbnailSignedUrl[forumId] || '',
         authorSignedUrl: authorSignedUrl[forumId] || '',
-        authorImageUri,
+
       };
     })
   );
@@ -138,16 +131,13 @@ export default function useForumFetcher({ command, type, fetchLimit = 10, isConn
             thumbnailFileKey ? getSignedUrl(forumId, thumbnailFileKey) : Promise.resolve({}),
           ]);
       
-          const authorImageUri = authorFileKey
-            ? authorSignedUrl[forumId] || ''
-            : generateAvatarFromName(post.author || 'U');
-      
+  
           return {
             ...post,
             fileKeySignedUrl: fileKeySignedUrl[forumId] || '',
             thumbnailSignedUrl: thumbnailSignedUrl[forumId] || '',
             authorSignedUrl: authorSignedUrl[forumId] || '',
-            authorImageUri,
+   
           };
         })
       );

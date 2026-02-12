@@ -1,34 +1,53 @@
 import React from 'react';
-import { Text, TouchableOpacity } from 'react-native';
-import NavigationItem from './NavigationItem';
+import { View, Text, TouchableOpacity } from 'react-native';
 import { settingStyles as styles } from '../Styles/settingStyles';
 import { colors, dimensions } from '../../assets/theme';
+import MaterialIcons from '@react-native-vector-icons/material-icons';
 
-const DrawerNavigationList = ({ items, expandedItem, onToggle, isConnected }) => {
-
-  return items.filter(Boolean).map((item, index) => (
-    <NavigationItem
-      key={index}
-      icon={ <item.icon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary}/> }
-      label={item.label}
-      onPress={() => {
-        if (isConnected) item.onPress?.();
-      }}
-      showSubItems={expandedItem === item.label}
-      onToggle={() => onToggle(item.label)}
-      styles={styles}
-    >
-      {item.subItems?.map((subItem, subIndex) => (
+const DrawerNavigationList = ({ items, isConnected }) => {
+  return items
+    .filter(Boolean)
+    .map((item, index) => (
+      <View key={index}>
+        {/* Parent Item */}
         <TouchableOpacity
-          key={subIndex}
           onPress={() => {
-            if (isConnected) subItem.onPress?.();
-          }} >
-          <Text style={styles.subItem}>{subItem.label}</Text>
+            if (isConnected) item.onPress?.();
+          }}
+          style={{flexDirection:'row', justifyContent:'space-between', alignItems:'center', paddingVertical:8, paddingHorizontal: 16,top:6 }}
+        >
+          <View style={styles.drawerItem}>
+            {item.icon && (
+              <item.icon
+                width={dimensions.icon.minlarge}
+                height={dimensions.icon.minlarge}
+                color={colors.text_primary}
+              />
+            )}
+            <Text style={styles.drawerLabel}>{item.label} </Text>
+          </View>
+          <MaterialIcons name='chevron-right' size={26} color={colors.text_primary}/>
+
         </TouchableOpacity>
-      ))}
-    </NavigationItem>
-  ));
+
+        {/* Sub Items – always visible */}
+        {item.subItems?.length > 0 && (
+          <View style={styles.subItemsContainer}>
+            {item.subItems.map((subItem, subIndex) => (
+              <TouchableOpacity
+                key={subIndex}
+                activeOpacity={0.7}
+                onPress={() => {
+                  if (isConnected) subItem.onPress?.();
+                }}
+              >
+                <Text style={styles.subItem}>{subItem.label}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+      </View>
+    ));
 };
 
 export default DrawerNavigationList;

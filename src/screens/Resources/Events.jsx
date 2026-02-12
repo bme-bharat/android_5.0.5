@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { StyleSheet, Text, View, FlatList, ActivityIndicator, TouchableOpacity, Linking, Image, Keyboard, ScrollView, RefreshControl, useWindowDimensions, Dimensions, StatusBar, Platform } from 'react-native';
+import { StyleSheet, Text, View, FlatList, ActivityIndicator, TouchableOpacity, Linking, Image, Keyboard, ScrollView, RefreshControl, useWindowDimensions, Dimensions, Platform } from 'react-native';
 import axios from 'axios';
 
 import { useNavigation } from '@react-navigation/native';
@@ -18,11 +18,9 @@ import Close from '../../assets/svgIcons/close.svg';
 import { colors, dimensions } from '../../assets/theme.jsx';
 import scrollAnimations from '../helperComponents/scrollAnimations.jsx';
 import Animated from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-const STATUS_BAR_HEIGHT =
-  Platform.OS === "android" ? StatusBar.currentHeight || 24 : 44;
 
-const headerHeight = STATUS_BAR_HEIGHT + 60;
 
 const AllEvents = () => {
   const [events, setEvents] = useState([]);
@@ -38,6 +36,9 @@ const AllEvents = () => {
   const [searchTriggered, setSearchTriggered] = useState(false);
   const [searchResults, setSearchResults] = useState([]);
   const { onScroll, headerStyle, bottomStyle, toolbarBgStyle, barStyle } = scrollAnimations();
+
+  const insets = useSafeAreaInsets();
+  const headerHeight = insets?.top + 44;
 
 
 
@@ -157,7 +158,7 @@ const AllEvents = () => {
 
       const body = {
         command: 'getAllEvents',
-        limit: 5,
+        limit: 10,
         ...(key && { lastEvaluatedKey: key }),
       };
 
@@ -169,9 +170,28 @@ const AllEvents = () => {
 
         setEvents((prev) => {
           const merged = isRefresh ? newEvents : [...prev, ...newEvents];
-          const uniqueEvents = Array.from(new Map(merged.map(e => [e.event_id, e])).values());
-          return uniqueEvents;
+
+          // Deduplicate by event_id
+          const uniqueEvents = Array.from(
+            new Map(merged.map(e => [e.event_id, e])).values()
+          );
+
+          // Sort: active events first, expired last
+          const sortedEvents = uniqueEvents.sort((a, b) => {
+            const aExpired = dayjs().isAfter(dayjs(a.end_date));
+            const bExpired = dayjs().isAfter(dayjs(b.end_date));
+
+            if (aExpired === bExpired) {
+              // optional: sort by start_date or end_date inside same group
+              return dayjs(a.start_date).diff(dayjs(b.start_date));
+            }
+
+            return aExpired ? 1 : -1; // expired goes down
+          });
+
+          return sortedEvents;
         });
+
 
         setLastKey(newKey);
         setHasMore(newKey !== null);
@@ -227,29 +247,29 @@ const AllEvents = () => {
           {highlightMatch(item.title || '', searchQuery)}
         </Text>
 
-        <View style={styles.detailsContainer}>
-          <View style={commonStyles.valContainer}>
+        <View style={[styles.detailsContainer, isExpired && { backgroundColor: '#e0e0e0' }]}>
+          <View style={[commonStyles.valContainer,]}>
 
-            <Text style={[commonStyles.label, isExpired && styles.expiredText]}>Date</Text>
-            <Text style={[commonStyles.colon, isExpired && styles.expiredText]}>:</Text>
-            <Text style={[commonStyles.value, isExpired && styles.expiredText]}>
+            <Text style={[commonStyles.label,]}>Date</Text>
+            <Text style={[commonStyles.colon,]}>:</Text>
+            <Text style={[commonStyles.value,]}>
               {dayjs(item.start_date).format("DD")} to {dayjs(item.end_date).format("DD MMM YYYY")}
             </Text>
           </View>
 
           <View style={commonStyles.valContainer}>
 
-            <Text style={[commonStyles.label, isExpired && styles.expiredText]}>Location</Text>
-            <Text style={[commonStyles.colon, isExpired && styles.expiredText]}>:</Text>
-            <Text style={[commonStyles.value, isExpired && styles.expiredText]}>{highlightMatch(item.location, searchQuery)}</Text>
+            <Text style={[commonStyles.label,]}>Location</Text>
+            <Text style={[commonStyles.colon,]}>:</Text>
+            <Text style={[commonStyles.value,]}>{highlightMatch(item.location, searchQuery)}</Text>
 
           </View>
 
           <View style={commonStyles.valContainer}>
 
-            <Text style={[commonStyles.label, isExpired && styles.expiredText]}>Time</Text>
-            <Text style={[commonStyles.colon, isExpired && styles.expiredText]}>:</Text>
-            <Text style={[commonStyles.value, isExpired && styles.expiredText]}>{highlightMatch(item.time)}</Text>
+            <Text style={[commonStyles.label,]}>Time</Text>
+            <Text style={[commonStyles.colon,]}>:</Text>
+            <Text style={[commonStyles.value,]}>{highlightMatch(item.time)}</Text>
           </View>
         </View>
 
@@ -269,21 +289,50 @@ const AllEvents = () => {
 
   if (loading) {
     return (
-      <View style={styles.loaderContainer}>
-        <ActivityIndicator size="large" color="#075cab" />
-      </View>
+      <>
+        <Animated.View style={[AppStyles.toolbar, toolbarBgStyle, { paddingTop: insets.top }]}>
+
+          <Animated.View style={[AppStyles.searchRow, headerStyle]}>
+            <TouchableOpacity onPress={() => navigation.goBack()} style={AppStyles.backButton} activeOpacity={1}>
+              <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} fill={colors.primary} />
+
+            </TouchableOpacity>
+            <View style={AppStyles.searchBar}>
+              <Search width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.text_secondary} />
+
+              <TextInput
+                ref={searchInputRef}
+                placeholder="Search events..."
+                style={AppStyles.searchInput}
+                placeholderTextColor={colors.text_secondary}
+                value={searchQuery}
+                onChangeText={handleDebouncedTextChange}
+              />
+            </View>
+          </Animated.View>
+
+        </Animated.View>
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+
+
+          <ActivityIndicator size="large" color="#075cab" />
+
+
+        </View>
+
+
+
+      </>
     );
   }
 
   return (
     <>
-      <StatusBar translucent backgroundColor="transparent" barStyle={"light-content"} />
-
-      <Animated.View style={[AppStyles.toolbar, toolbarBgStyle]}>
+      <Animated.View style={[AppStyles.toolbar, toolbarBgStyle, { paddingTop: insets.top }]}>
 
         <Animated.View style={[AppStyles.searchRow, headerStyle]}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton} activeOpacity={1}>
-            <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.text_secondary} />
+          <TouchableOpacity onPress={() => navigation.goBack()} style={AppStyles.backButton} activeOpacity={1}>
+            <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} fill={colors.primary} />
 
           </TouchableOpacity>
           <View style={AppStyles.searchBar}>
@@ -311,7 +360,7 @@ const AllEvents = () => {
         scrollEventThrottle={16}
         keyExtractor={(item, index) => `${item.event_id}-${index}`}
         onScrollBeginDrag={() => Keyboard.dismiss()}
-        contentContainerStyle={{ paddingTop: headerHeight, backgroundColor: colors.app_background }}
+        contentContainerStyle={{ paddingTop: headerHeight }}
         onEndReached={() => {
           if (hasMore && !loadingMore) fetchEvents(lastKey);
         }}
@@ -371,7 +420,7 @@ const styles = StyleSheet.create({
 
   expiredText: {
     color: '#888',
-    backgroundColor: '#e0e0e0',
+    // backgroundColor: '#e0e0e0',
   },
 
   expiredImage: {

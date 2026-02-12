@@ -14,26 +14,27 @@ import DisclaimerBox from './DisclaimerBox';
 import { useFileOpener } from '../helperComponents/fileViewer';
 import { useNetwork } from '../AppUtils/IdProvider';
 import { openMediaViewer } from '../helperComponents/mediaViewer';
-import AppStyles, { STATUS_BAR_HEIGHT } from '../AppUtils/AppStyles';
+import AppStyles from '../AppUtils/AppStyles';
 
 import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
 import ShareIcon from '../../assets/svgIcons/share.svg';
 import Company from '../../assets/svgIcons/company.svg';
 import Play from '../../assets/svgIcons/play.svg';
-
 import { colors, dimensions } from '../../assets/theme.jsx';
-
-const { width } = Dimensions.get('window');
+import { trackRecent } from "../appTrack/RecentViews";
+import { smartGoBack } from '../../navigation/smartGoBack.jsx';
+import { AppHeader } from '../AppUtils/AppHeader.jsx';
+const { width, height } = Dimensions.get('window');
 
 const ProductDetails = () => {
   const route = useRoute();
   const navigation = useNavigation();
   const { company_id, product_id } = route.params;
-
   const scrollViewRef = useRef(null);
   const { myId, myData } = useNetwork();
   const { openFile } = useFileOpener();
   const [loading1, setLoading1] = useState(false);
+  const contactSheetRef = useRef(null);
 
   const handleOpenResume = async (key) => {
     if (!key) return;
@@ -67,14 +68,34 @@ const ProductDetails = () => {
   const flatListRef = useRef(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [relatedProducts, setRelatedProducts] = useState([]);
-  const [modalVisible1, setModalVisible1] = useState(false);
-
   const [modalVisible, setModalVisible] = useState(false);
   const autoScrollRef = useRef(null);
   const [pdfUrls, setPdfUrls] = useState([]);
   const [selectedMedia, setSelectedMedia] = useState(null);
   const [mediaType, setMediaType] = useState(null);
   const [lastEvaluatedKey, setLastEvaluatedKey] = useState(null);
+
+
+
+  useEffect(() => {
+    if (!product?.product_id) return;
+
+    const productMedia = [
+      ...imageUrls.map(url => ({ type: 'image', url })),
+      ...videoUrls.map(url => ({ type: 'video', url })),
+    ];
+
+    trackRecent({
+      type: 'product',
+      data: {
+        ...product,
+        media: productMedia, // ✅ stored INSIDE data
+      },
+      id: product?.product_id
+    });
+  }, [product?.product_id, imageUrls, videoUrls]);
+
+
 
 
   const startAutoScroll = () => {
@@ -196,7 +217,6 @@ const ProductDetails = () => {
         const productData = data.response;
 
         setProduct(productData);
-
         if (productData.images) fetchImageUrls(productData.images);
         if (productData.videos) fetchVideoUrls(productData.videos);
         if (productData.files) fetchPdfUrls(productData.files);
@@ -421,75 +441,39 @@ const ProductDetails = () => {
 
   const handleNavigate = (company_id) => {
 
-    navigation.navigate('CompanyDetailsPage', { userId: company_id });
+    navigation.navigate('CompanyDetails', { userId: company_id });
   };
 
-  if (!product) {
 
-    return (
-      <View style={styles.container}>
-        <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
 
-        <View style={styles.headerContainer}>
-
-          <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
-            <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-
-          </TouchableOpacity>
-
-        </View>
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <ActivityIndicator size="small" color="#075cab" />
-        </View>
-      </View>
-    );
-  }
-
-  if (product?.removed_by_author) {
-    return (
-      <View style={styles.container}>
-        <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
-
-        <View style={styles.headerContainer}>
-
-          <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
-            <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-
-          </TouchableOpacity>
-
-        </View>
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <Text style={{ fontSize: 16, color: 'gray' }}>This post was removed by the author</Text>
-        </View>
-      </View>
-    );
-  }
+  const isLoading = !product
+  const isRemoved = product?.removed_by_author
+  const hasProduct = product?.title
 
   return (
 
     <View style={styles.container}>
-      <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
-
-      <View style={styles.headerContainer}>
-        <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
-          <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => shareProduct(product)} style={styles.circle}>
-          <ShareIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-
-
-          <Text style={styles.shareText}>Share</Text>
-        </TouchableOpacity>
-
-      </View>
-      {product?.removed_by_author ? (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <Text style={{ fontSize: 16, color: 'gray' }}>This post was removed by the author</Text>
+      <AppHeader
+        title={product?.title || ''}
+        onShare={() => shareProduct(product)}
+      />
+      {isLoading && (
+        <View style={AppStyles.center}>
+          <ActivityIndicator size="small" color="#075cab" />
         </View>
-      ) :
+      )}
+
+      {!isLoading && isRemoved && (
+        <View style={AppStyles.center}>
+          <Text style={AppStyles.removedText}>
+            This post was removed by the author
+          </Text>
+        </View>
+      )}
+
+      {!isLoading && !isRemoved && hasProduct && (
         <>
-          <ScrollView contentContainerStyle={{ paddingBottom: '20%' }}
+          <ScrollView
             showsVerticalScrollIndicator={false} ref={scrollViewRef} >
             <TouchableOpacity activeOpacity={1} >
               <Text style={styles.title}>{product?.title}</Text>
@@ -519,55 +503,48 @@ const ProductDetails = () => {
                   snapToInterval={width}
                   decelerationRate="fast"
                   keyExtractor={(item, index) => index.toString()}
-                  renderItem={({ item, index }) =>
-                    item.type === 'image' ? (
-                      <TouchableOpacity
-                        onPress={() => openMediaViewer(combinedData, index)}
-                        style={{
-                          width: width,
-                          height: width,
-                          justifyContent: 'center',
-                          alignItems: 'center',
-                          padding: 10
-                        }}
-                        activeOpacity={0.8}
-                      >
+                  renderItem={({ item, index }) => (
+                    <TouchableOpacity
+                      onPress={() => openMediaViewer(combinedData, index)}
+                      activeOpacity={0.85}
+                      style={{
+                        width,
+                        aspectRatio: 1,
+                        justifyContent: "center",
+                        alignItems: "center",
+                        padding: 10,
+                      }}
+                    >
+                      {item.type === "image" ? (
                         <Image
                           source={{ uri: item.url }}
-                          style={[styles.mainProductImage]}
+                          style={styles.mainProductImage}
                         />
-                      </TouchableOpacity>
-                    ) : (
-                      <View
-                        style={[
-                          styles.videoContainer,
-                          {
-                            width: width,
-                            height: width,
-                            justifyContent: 'center',
-                            alignItems: 'center',
-                            padding: 10
-                          },
-                        ]}
-                      >
-                        <TouchableOpacity
-                          onPress={() => openMediaViewer(combinedData, index)}
-                          style={{ width: '100%', height: '100%' }}
-                        >
-                          <Video
-                            source={{ uri: item.url }}
-                            style={[styles.productVideo, { width: '100%', height: '100%' }]}
-                            resizeMode="contain"
-                            paused
-                          />
-                          <TouchableOpacity style={styles.playButton}>
-                            <Play width={dimensions.icon.ml} height={dimensions.icon.ml} color={colors.background} />
+                      ) : (
+                        <View style={styles.videoContainer}>
+                          {/* Video preview (non-interactive) */}
+                          <View pointerEvents="none" style={{ width: "100%", height: "100%" }}>
+                            <Video
+                              source={{ uri: item.url }}
+                              style={{ width: "100%", height: "100%" }}
+                              resizeMode="contain"
+                              paused
+                            />
+                          </View>
 
-                          </TouchableOpacity>
-                        </TouchableOpacity>
-                      </View>
-                    )
-                  }
+                          {/* Play icon overlay */}
+                          <View style={styles.playButton}>
+                            <Play
+                              width={dimensions.icon.ml}
+                              height={dimensions.icon.ml}
+                              color={colors.background}
+                            />
+                          </View>
+                        </View>
+                      )}
+                    </TouchableOpacity>
+                  )}
+
                   showsHorizontalScrollIndicator={false}
                   onScroll={handleScroll}
                   scrollEventThrottle={16}
@@ -599,18 +576,29 @@ const ProductDetails = () => {
 
 
               <TouchableOpacity activeOpacity={0.8} style={styles.headerRow} onPress={() => handleNavigate(product.company_id)}>
-                <Company width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.secondary} /><Text style={styles.company} >{product.company_name}</Text>
+                <Company width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.secondary} /><Text style={styles.company} > {product.company_name}</Text>
               </TouchableOpacity>
 
+              <View style={styles.actionRow}>
 
-              {product?.price?.trim() && (
-                // <Text style={styles.price}>₹ {product?.price}</Text>
+                {product?.price?.trim() && (
+                  // <Text style={styles.price}>₹ {product?.price}</Text>
+                  <View style={styles.halfButtonPrimary1}>
+                    <Text style={styles.priceLabel}>Price: ₹ {product?.price}</Text>
+                  </View>
+                )}
 
-                <Text style={styles.priceLabel}>₹ {product?.price}</Text>
-
-              )}
-
-
+                {myId !== product?.company_id && (
+                  <TouchableOpacity
+                    onPress={() => {
+                      contactSheetRef.current?.present();     // ✅ open sheet
+                    }}
+                    style={styles.halfButtonPrimary}
+                  >
+                    <Text style={styles.buttonTextPrimary}>Contact details</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
               <Text style={styles.specTitle}>Specifications </Text>
 
               {specifications
@@ -667,24 +655,17 @@ const ProductDetails = () => {
                   </TouchableOpacity>
                 )}
 
-              {myId !== product?.company_id && (
-                <>
-                  <TouchableOpacity onPress={() => setModalVisible1(true)} style={{ padding: 10 }}>
-                    <Text style={styles.contact}>Contact supplier</Text>
-                  </TouchableOpacity>
+              <ContactSupplierModal
+                ref={contactSheetRef}
+                company_id={product?.company_id}
+              />
 
-                  <ContactSupplierModal
-                    visible={modalVisible1}
-                    onClose={() => setModalVisible1(false)}
-                    company_id={company_id}
-                  />
-                </>
-              )}
+
 
 
               {relatedProducts?.length > 0 && (
                 <View style={styles.relatedProductsContainer}>
-                  <View style={styles.divider}></View>
+                  <View style={styles.divider} />
 
                   <Text style={styles.relatedTitle}>Related Products </Text>
                   <FlatList
@@ -702,7 +683,7 @@ const ProductDetails = () => {
 
                         <Text numberOfLines={1} style={styles.productName}>{item?.title || 'No Title'}</Text>
                         <Text numberOfLines={1} style={styles.price1}>
-                          {item.price && item.price.trim() !== '' ? `₹ ${item?.price}` : '₹ Contact Seller'}
+                          {item.price && item.price.trim() !== '' ? `₹ ${item?.price}` : '₹ Contact supplier'}
                         </Text>
                         <Text numberOfLines={2} style={styles.productDescription}>{item?.description}</Text>
                       </TouchableOpacity>
@@ -718,7 +699,7 @@ const ProductDetails = () => {
             </TouchableOpacity>
           </ScrollView>
         </>
-      }
+      )}
 
     </View>
   );
@@ -732,7 +713,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: 'white',
-    paddingTop: STATUS_BAR_HEIGHT
   },
 
   divider: {
@@ -810,7 +790,6 @@ const styles = StyleSheet.create({
   videoContainer: {
     position: 'relative',
     width: width,
-    height: 16 / 9 * width - 450,
     overflow: 'hidden',
   },
 
@@ -830,7 +809,6 @@ const styles = StyleSheet.create({
   headerRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginBottom: 10,
     paddingHorizontal: 10
 
   },
@@ -903,7 +881,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
     paddingHorizontal: 10,
-    marginBottom: 10
   },
 
   productDescription: {
@@ -1136,23 +1113,44 @@ const styles = StyleSheet.create({
   relatedList: {
     marginBottom: 20,
   },
-  contact: {
-    fontSize: 15,
-    fontWeight: '500',
-    color: '#075cab',
-    textDecorationLine: 'underline',
-    padding: 10,
-    textAlign: 'center',
-  },
-  contact1: {
-    fontSize: 15,
-    fontWeight: '500',
-    color: '#075cab',
-    textAlign: 'center',
-    padding: 10,
+  halfButtonPrimary: {
+    flex: 1,               // 👈 takes half
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    borderRadius: 8,
+    // borderWidth: 1,
+    // borderColor: colors.primary,
+    backgroundColor: '#E7F0FA',
 
   },
+  halfButtonPrimary1: {
+    flex: 1,               // 👈 takes half
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    borderRadius: 8,
+    // borderWidth: 1,
+    // borderColor: colors.primary,
 
+  },
+  buttonTextPrimary: {
+    fontSize: 15,
+    color: colors.primary,
+  },
+  actionRow: {
+    flexDirection: 'row',
+    marginHorizontal: 10,
+    marginVertical:6,
+    paddingVertical: 6,
+    // borderTopWidth: 1,
+    // borderColor: '#e0e0e0',
+    overflow: 'hidden',
+    // backgroundColor: 'red'
+    gap:8,
+  },
   productCard: {
     width: 220,
     backgroundColor: '#fff',

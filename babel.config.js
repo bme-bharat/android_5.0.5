@@ -1,6 +1,7 @@
+// babel.config.js
 module.exports = {
   presets: ['@react-native/babel-preset'],
   plugins: [
-    'react-native-worklets/plugin', // MUST be last
+    'react-native-reanimated/plugin', // ✅ MUST be last
   ],
 };

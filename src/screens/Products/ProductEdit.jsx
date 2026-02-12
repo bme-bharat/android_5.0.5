@@ -5,7 +5,8 @@ import axios from "axios";
 
 import Video from "react-native-video";
 import { launchImageLibrary } from "react-native-image-picker";
-import ImageResizer from 'react-native-image-resizer';
+import ImageResizer from '@bam.tech/react-native-image-resizer';
+
 import * as Compressor from 'react-native-compressor';
 import RNFS from 'react-native-fs';
 import Toast from 'react-native-toast-message';
@@ -17,7 +18,7 @@ import CustomDropDownMenu from "../../components/DropDownMenu";
 import Message3 from "../../components/Message3";
 import { showToast } from "../AppUtils/CustomToast";
 import { EventRegister } from "react-native-event-listeners";
-import AppStyles, { STATUS_BAR_HEIGHT } from "../AppUtils/AppStyles";
+import AppStyles from "../AppUtils/AppStyles";
 import apiClient from "../ApiClient";
 import { useMediaPicker } from "../helperComponents/MediaPicker";
 import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
@@ -25,6 +26,8 @@ import Pdf from '../../assets/svgIcons/pdf.svg';
 import Close from '../../assets/svgIcons/close.svg';
 import { colors, dimensions } from '../../assets/theme.jsx';
 import KeyboardAvoid from "../AppUtils/KeyboardAvoid.jsx";
+import { AppHeader } from "../AppUtils/AppHeader.jsx";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const BASE_API_URL = 'https://h7l1568kga.execute-api.ap-south-1.amazonaws.com/dev';
 const API_KEY = 'k1xuty5IpZ2oHOEOjgMz57wHfdFT8UQ16DxCFkzk';
@@ -396,7 +399,7 @@ const EditProduct = () => {
                 file.uri,
                 resizedWidth,
                 resizedHeight,
-                'JPEG',
+                'WEBP',
                 80
             );
             console.log('Resized image:', resizedImage);
@@ -473,48 +476,6 @@ const EditProduct = () => {
 
 
 
-
-    const compressVideo = async (videoUri) => {
-        if (!videoUri || typeof videoUri !== "string") {
-
-            return null;
-        }
-
-        try {
-            setIsCompressing(true);
-            showToast("Uploading video...", 'info');
-
-            const originalPath = videoUri.startsWith("file://") ? videoUri.replace("file://", "") : videoUri;
-            const originalStats = await RNFS.stat(originalPath);
-            const originalSizeMB = (originalStats.size / (1024 * 1024)).toFixed(2);
-
-            const compressedUri = await Compressor.Video.compress(videoUri, {
-                quality: "medium",
-                progress: (p) => console.log(`Compression Progress: ${Math.round(p * 100)}%`)
-            });
-
-            if (!compressedUri) {
-                throw new Error("Compression failed, no output URI.");
-            }
-
-            const compressedPath = compressedUri.startsWith("file://") ? compressedUri.replace("file://", "") : compressedUri;
-            const compressedStats = await RNFS.stat(compressedPath);
-            const compressedSizeMB = (compressedStats.size / (1024 * 1024)).toFixed(2);
-
-            return { uri: compressedUri, size: compressedStats.size, sizeMB: compressedSizeMB };
-        } catch (error) {
-
-            showToast("Upload failed", 'error');
-
-            return { uri: videoUri, size: 0, sizeMB: "N/A" };
-        } finally {
-
-            Toast.hide();
-        }
-    };
-
-
-
     const uploadFileToS3 = async (fileUri, fileType) => {
         if (!fileUri || typeof fileUri !== "string") {
 
@@ -563,32 +524,6 @@ const EditProduct = () => {
         }
     };
 
-
-    const compressImage = async (image) => {
-        try {
-            const originalStat = await RNFS.stat(image.uri);
-            const compressed = await ImageResizer.createResizedImage(
-                image.uri,
-                1080, // Width
-                1080, // Height
-                "JPEG",
-                70 // Quality
-            );
-
-            const compressedStat = await RNFS.stat(compressed.uri);
-
-            return {
-                uri: compressed.uri,
-                name: compressed.name,
-                size: compressedStat.size,
-                width: compressed.width,
-                height: compressed.height
-            };
-        } catch (error) {
-
-            return image;
-        }
-    };
 
 
 
@@ -811,415 +746,408 @@ const EditProduct = () => {
     });
 
 
-
     return (
         <KeyboardAvoid>
-        <View style={styles.container} >
-                  <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
-            
-            <View style={styles.searchContainer}>
+            <View style={styles.container} >
+                <AppHeader
+                    title={"Edit product"}
 
-                <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-                    <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
+                />
 
-                </TouchableOpacity>
-            </View>
-             <ScrollView
-                   contentContainerStyle={{ paddingBottom: '10%', paddingHorizontal: 5, backgroundColor: 'whitesmoke' }}
-                   keyboardShouldPersistTaps="handled"
-                 >
+                <ScrollView
+                    contentContainerStyle={[, { paddingHorizontal: 5, paddingBottom: '10%' }]}
+                    keyboardShouldPersistTaps="handled"
+                >
 
-                <Text style={styles.title}>Edit a product</Text>
-                <TouchableOpacity activeOpacity={1}>
-                    <View style={styles.inputContainer}>
-                        <Text style={styles.label}>Product name <Text style={{ color: 'red' }}>*</Text></Text>
-                        <TextInput
-                            style={styles.input}
-                            placeholderTextColor="gray"
-                            multiline={true}
-                            textBreakStrategy="simple"
-                            value={productData.title}
-                            onChangeText={(text) => handleInputChange("title", text)}
-                        />
-                    </View>
+                    {/* <Text style={styles.title}>Edit a product</Text> */}
+                    <TouchableOpacity activeOpacity={1}>
+                        <View style={styles.inputContainer}>
+                            <Text style={styles.label}>Product name <Text style={{ color: 'red' }}>*</Text></Text>
+                            <TextInput
+                                style={styles.input}
+                                placeholderTextColor="gray"
+                                multiline={true}
+                                textBreakStrategy="simple"
+                                value={productData.title}
+                                onChangeText={(text) => handleInputChange("title", text)}
+                            />
+                        </View>
 
-                    <View style={[styles.inputContainer]}>
-                        <Text style={styles.label}>Product description <Text style={{ color: 'red' }}>*</Text></Text>
-                        <TextInput
-                            style={[styles.input]}
-                            value={productData.description}
-                            multiline={true}
-                            textBreakStrategy="simple"
-                            placeholderTextColor="gray"
-                            onChangeText={(text) => handleInputChange("description", text)}
-                        />
-                    </View>
+                        <View style={[styles.inputContainer]}>
+                            <Text style={styles.label}>Product description <Text style={{ color: 'red' }}>*</Text></Text>
+                            <TextInput
+                                style={[styles.input]}
+                                value={productData.description}
+                                multiline={true}
+                                textBreakStrategy="simple"
+                                placeholderTextColor="gray"
+                                onChangeText={(text) => handleInputChange("description", text)}
+                            />
+                        </View>
 
-                    <View style={styles.inputContainer}>
-                        <Text style={styles.label}>Price:</Text>
-                        <TextInput
-                            style={styles.input}
-                            placeholderTextColor="gray"
-                            keyboardType="numeric"
-                            value={productData.price}
-                            multiline={true}
-                            textBreakStrategy="simple"
-                            onChangeText={(text) => handleInputChange("price", text)}
-                        />
-                    </View>
+                        <View style={styles.inputContainer}>
+                            <Text style={styles.label}>Price:</Text>
+                            <TextInput
+                                style={styles.input}
+                                placeholderTextColor="gray"
+                                keyboardType="numeric"
+                                value={productData.price}
+                                multiline={true}
+                                textBreakStrategy="simple"
+                                onChangeText={(text) => handleInputChange("price", text)}
+                            />
+                        </View>
 
-                    <View style={[styles.inputContainer]}>
-                        <Text style={styles.label}>Category <Text style={{ color: 'red' }}>*</Text></Text>
-                        <CustomDropdown
+                        <View style={[styles.inputContainer]}>
+                            <Text style={styles.label}>Category <Text style={{ color: 'red' }}>*</Text></Text>
+                            <CustomDropdown
 
-                            data={state}
-                            selectedItem={selectedState}
-                            setSelectedItem={setSelectedState}
-                            onSelect={handleStateSelect}
-                            buttonStyle={styles.dropdownButton}
-                            buttonTextStyle={styles.dropdownButtonText}
-                        />
-                    </View>
-
-                    <View style={[styles.inputContainer]}>
-                        <Text style={styles.label}>Sub category <Text style={{ color: 'red' }}>*</Text></Text>
-                        <CustomDropdown
-                            data={cities}
-                            onSelect={handleCitySelect}
-                            selectedItem={selectedCity}
-                            setSelectedItem={setSelectedCity}
-                            disabled={!selectedState}
-                            buttonStyle={styles.dropdownButton}
-                            buttonTextStyle={styles.dropdownButtonText}
-                        />
-                    </View>
-                    <View style={styles.inputContainer}>
-                        <Text style={styles.label}>Brand <Text style={{ color: 'red' }}>*</Text></Text>
-                        <TextInput
-                            style={styles.input}
-                            placeholderTextColor='gray'
-                            multiline={true}
-                            textBreakStrategy="simple"
-                            value={productData.specifications.brand}
-                            onChangeText={(text) => handleInputChange('brand', text, true)}
-                        />
-                    </View>
-                    <View style={styles.inputContainer}>
-                        <Text style={styles.label}>Model name <Text style={{ color: 'red' }}>*</Text></Text>
-                        <TextInput
-                            style={styles.input}
-
-                            placeholderTextColor='gray'
-                            multiline={true}  // Allows text to wrap to the next line
-                            textBreakStrategy="simple"
-                            value={productData.specifications.model_name}
-                            onChangeText={(text) => handleInputChange('model_name', text, true)}
-                        />
-                    </View>
-
-                    <View style={styles.inputContainer}>
-                        <Text style={styles.label}>Weight:</Text>
-                        <TextInput
-                            style={[styles.input]}
-
-                            multiline={true}  // Allows text to wrap to the next line
-                            textBreakStrategy="simple"
-                            placeholderTextColor='gray'
-                            value={productData.specifications.weight}
-                            onChangeText={(text) => handleInputChange('weight', text, true)}
-                        />
-                    </View>
-
-                    <View style={styles.inputContainer}>
-                        <Text style={styles.label}>Dimensions:</Text>
-                        <TextInput
-                            style={[styles.input]}
-
-                            multiline={true}  // Allows text to wrap to the next line
-                            textBreakStrategy="simple"
-                            placeholderTextColor='gray'
-                            value={productData.specifications.dimensions}
-                            onChangeText={(text) => handleInputChange('dimensions', text, true)}
-                        />
-                    </View>
-
-
-                    <View style={styles.inputContainer}>
-                        <Text style={styles.label}>Country of origin <Text style={{ color: 'red' }}>*</Text></Text>
-                        <TextInput
-                            style={styles.input}
-                            placeholderTextColor='gray'
-
-                            multiline={true}  // Allows text to wrap to the next line
-                            textBreakStrategy="simple"
-
-                            value={productData.specifications.country_of_origin}
-
-                            onChangeText={(text) => handleInputChange('country_of_origin', text, true)}
-                        />
-                    </View>
-
-
-                    <View style={styles.inputContainer}>
-                        <Text style={styles.label}>Warranty:</Text>
-                        <TextInput
-                            style={[styles.input]}
-                            placeholderTextColor='gray'
-
-                            multiline={true}  // Allows text to wrap to the next line
-                            textBreakStrategy="simple"
-                            value={productData.specifications.warranty}
-                            onChangeText={(text) => handleInputChange('warranty', text, true)}
-                        />
-                    </View>
-
-
-
-                    <View style={styles.inputContainer}>
-                        <Text style={styles.label}>Package contents:</Text>
-                        <TextInput
-                            style={styles.input}
-                            multiline={true}  // Allows text to wrap to the next line
-                            textBreakStrategy="simple"
-                            placeholderTextColor='gray'
-                            value={productData.specifications.package_contents}
-                            onChangeText={(text) => handleInputChange('package_contents', text, true)}
-                        />
-                    </View>
-
-
-                    <View style={styles.inputContainer}>
-                        <Text style={styles.label}>Accessories:</Text>
-                        <TextInput
-                            style={styles.input}
-
-                            multiline={true}  // Allows text to wrap to the next line
-                            textBreakStrategy="simple"
-                            placeholderTextColor='gray'
-                            value={productData.accessories}
-                            onChangeText={(text) => setProductData({ ...productData, accessories: text })}
-                        />
-                    </View>
-
-                    <View style={styles.inputContainer}>
-                        <Text style={styles.label}>regulatory_and_compliance:</Text>
-                        <TextInput
-                            style={[styles.input]}
-                            placeholderTextColor='gray'
-
-                            multiline={true}  // Allows text to wrap to the next line
-                            textBreakStrategy="simple"
-                            value={productData.specifications.regulatory_and_compliance}
-                            onChangeText={(text) => handleInputChange('warranty', text, true)}
-                        />
-                    </View>
-
-                    {[
-                        { label: "Product application", field: "application", items: applications },
-                        { label: "Operation mode", field: "operation_mode", items: operation_mode },
-                        { label: "Types", field: "types", items: types },
-                        { label: "Power supply", field: "power_supply", items: power_supply },
-                        { label: "Certification", field: "certifications", items: certifications },
-
-                        { label: "Installation support", field: "installation_support", items: installation_support },
-                        { label: "Sales support", field: "after_sales_service", items: after_sales_service }
-                    ].map(({ label, field, items }) => (
-                        <View key={field} style={styles.inputContainer}>
-                            <Text style={styles.label}>
-                                {label} {formData[field]?.toLowerCase() === "others" && <Text style={{ color: 'red' }}> *</Text>}
-                            </Text>
-
-                            <CustomDropDownMenu
-                                items={items}
-                                onSelect={(selectedItem) => handleSelect(field, selectedItem.label)}
+                                data={state}
+                                selectedItem={selectedState}
+                                setSelectedItem={setSelectedState}
+                                onSelect={handleStateSelect}
                                 buttonStyle={styles.dropdownButton}
                                 buttonTextStyle={styles.dropdownButtonText}
-                                placeholder={formData[field] || "Select an option"} // Added fallback placeholder
-                                placeholderTextColor="gray"
                             />
+                        </View>
 
-                            {formData[field]?.toLowerCase() === "others" && ( // Case-insensitive check for "Others"
-                                <TextInput
-                                    style={styles.textInput}
-                                    placeholder={`Enter ${label.toLowerCase()}`}
-                                    value={customInputs[field] || ""}
-                                    onChangeText={(text) => handleCustomInputChange(field, text)}
+                        <View style={[styles.inputContainer]}>
+                            <Text style={styles.label}>Sub category <Text style={{ color: 'red' }}>*</Text></Text>
+                            <CustomDropdown
+                                data={cities}
+                                onSelect={handleCitySelect}
+                                selectedItem={selectedCity}
+                                setSelectedItem={setSelectedCity}
+                                disabled={!selectedState}
+                                buttonStyle={styles.dropdownButton}
+                                buttonTextStyle={styles.dropdownButtonText}
+                            />
+                        </View>
+                        <View style={styles.inputContainer}>
+                            <Text style={styles.label}>Brand <Text style={{ color: 'red' }}>*</Text></Text>
+                            <TextInput
+                                style={styles.input}
+                                placeholderTextColor='gray'
+                                multiline={true}
+                                textBreakStrategy="simple"
+                                value={productData.specifications.brand}
+                                onChangeText={(text) => handleInputChange('brand', text, true)}
+                            />
+                        </View>
+                        <View style={styles.inputContainer}>
+                            <Text style={styles.label}>Model name <Text style={{ color: 'red' }}>*</Text></Text>
+                            <TextInput
+                                style={styles.input}
+
+                                placeholderTextColor='gray'
+                                multiline={true}  // Allows text to wrap to the next line
+                                textBreakStrategy="simple"
+                                value={productData.specifications.model_name}
+                                onChangeText={(text) => handleInputChange('model_name', text, true)}
+                            />
+                        </View>
+
+                        <View style={styles.inputContainer}>
+                            <Text style={styles.label}>Weight:</Text>
+                            <TextInput
+                                style={[styles.input]}
+
+                                multiline={true}  // Allows text to wrap to the next line
+                                textBreakStrategy="simple"
+                                placeholderTextColor='gray'
+                                value={productData.specifications.weight}
+                                onChangeText={(text) => handleInputChange('weight', text, true)}
+                            />
+                        </View>
+
+                        <View style={styles.inputContainer}>
+                            <Text style={styles.label}>Dimensions:</Text>
+                            <TextInput
+                                style={[styles.input]}
+
+                                multiline={true}  // Allows text to wrap to the next line
+                                textBreakStrategy="simple"
+                                placeholderTextColor='gray'
+                                value={productData.specifications.dimensions}
+                                onChangeText={(text) => handleInputChange('dimensions', text, true)}
+                            />
+                        </View>
+
+
+                        <View style={styles.inputContainer}>
+                            <Text style={styles.label}>Country of origin <Text style={{ color: 'red' }}>*</Text></Text>
+                            <TextInput
+                                style={styles.input}
+                                placeholderTextColor='gray'
+
+                                multiline={true}  // Allows text to wrap to the next line
+                                textBreakStrategy="simple"
+
+                                value={productData.specifications.country_of_origin}
+
+                                onChangeText={(text) => handleInputChange('country_of_origin', text, true)}
+                            />
+                        </View>
+
+
+                        <View style={styles.inputContainer}>
+                            <Text style={styles.label}>Warranty:</Text>
+                            <TextInput
+                                style={[styles.input]}
+                                placeholderTextColor='gray'
+
+                                multiline={true}  // Allows text to wrap to the next line
+                                textBreakStrategy="simple"
+                                value={productData.specifications.warranty}
+                                onChangeText={(text) => handleInputChange('warranty', text, true)}
+                            />
+                        </View>
+
+
+
+                        <View style={styles.inputContainer}>
+                            <Text style={styles.label}>Package contents:</Text>
+                            <TextInput
+                                style={styles.input}
+                                multiline={true}  // Allows text to wrap to the next line
+                                textBreakStrategy="simple"
+                                placeholderTextColor='gray'
+                                value={productData.specifications.package_contents}
+                                onChangeText={(text) => handleInputChange('package_contents', text, true)}
+                            />
+                        </View>
+
+
+                        <View style={styles.inputContainer}>
+                            <Text style={styles.label}>Accessories:</Text>
+                            <TextInput
+                                style={styles.input}
+
+                                multiline={true}  // Allows text to wrap to the next line
+                                textBreakStrategy="simple"
+                                placeholderTextColor='gray'
+                                value={productData.accessories}
+                                onChangeText={(text) => setProductData({ ...productData, accessories: text })}
+                            />
+                        </View>
+
+                        <View style={styles.inputContainer}>
+                            <Text style={styles.label}>regulatory_and_compliance:</Text>
+                            <TextInput
+                                style={[styles.input]}
+                                placeholderTextColor='gray'
+
+                                multiline={true}  // Allows text to wrap to the next line
+                                textBreakStrategy="simple"
+                                value={productData.specifications.regulatory_and_compliance}
+                                onChangeText={(text) => handleInputChange('warranty', text, true)}
+                            />
+                        </View>
+
+                        {[
+                            { label: "Product application", field: "application", items: applications },
+                            { label: "Operation mode", field: "operation_mode", items: operation_mode },
+                            { label: "Types", field: "types", items: types },
+                            { label: "Power supply", field: "power_supply", items: power_supply },
+                            { label: "Certification", field: "certifications", items: certifications },
+
+                            { label: "Installation support", field: "installation_support", items: installation_support },
+                            { label: "Sales support", field: "after_sales_service", items: after_sales_service }
+                        ].map(({ label, field, items }) => (
+                            <View key={field} style={styles.inputContainer}>
+                                <Text style={styles.label}>
+                                    {label} {formData[field]?.toLowerCase() === "others" && <Text style={{ color: 'red' }}> *</Text>}
+                                </Text>
+
+                                <CustomDropDownMenu
+                                    items={items}
+                                    onSelect={(selectedItem) => handleSelect(field, selectedItem.label)}
+                                    buttonStyle={styles.dropdownButton}
+                                    buttonTextStyle={styles.dropdownButtonText}
+                                    placeholder={formData[field] || "Select an option"} // Added fallback placeholder
+                                    placeholderTextColor="gray"
                                 />
-                            )}
-                        </View>
-                    ))}
-                    <View style={styles.inputContainer}>
-                        <Text style={styles.label}>Tags <Text style={{ color: 'red' }}>*</Text></Text>
-                        <TextInput
-                            style={styles.input}
 
-                            value={productData.tags}
-                            placeholderTextColor='gray'
-                            onChangeText={(text) => setProductData({ ...productData, tags: text })}
-                        />
-
-                    </View>
-
-                    {/* <Text style={styles.sectionTitle}>Media</Text> */}
-                    <View>
-
-                        <TouchableOpacity onPress={openGallery} style={styles.addMediaButton}>
-                            <Text style={styles.addMediaText}>
-                                Upload product image <Text style={{ color: 'red' }}>*</Text>
-                            </Text>
-                        </TouchableOpacity>
-
-                        <View style={styles.mediaContainer}>
-                            {/* Loop through selected images, limited to a maximum of 4 */}
-                            {filteredImages.slice(0, 4).map((item, index) => {
-                                const imageUri = item?.uri || signedUrls[item] || null;
-                                if (!imageUri) return null;
-
-                                return (
-                                    <View key={imageUri} style={styles.mediaWrapper}>
-                                        <Image source={{ uri: imageUri }} style={styles.mediaPreview} />
-                                        <TouchableOpacity
-                                            style={styles.closeIcon}
-                                            onPress={() => handleRemoveMedia("image", index)}
-                                        >
-                                            <Close width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.gray} />
-
-                                        </TouchableOpacity>
-                                    </View>
-                                );
-                            })}
-
-                            {/* Show a single "Upload Image" placeholder if there's space left */}
-                            {filteredImages.length < 4 && (
-                                <TouchableOpacity style={styles.placeholder} onPress={openGallery}>
-                                    <Text style={styles.placeholderText}>
-                                        Upload Image ({4 - filteredImages.length} remaining)
-                                    </Text>
-                                </TouchableOpacity>
-                            )}
-                        </View>
-
-
-                        <View>
-
-                            <TouchableOpacity onPress={pickVideo} style={styles.addMediaButton}>
-                                <Text style={styles.addMediaText}>Upload product video</Text>
-                            </TouchableOpacity>
-
-
-                            <View style={styles.mediaContainer}>
-                                {filteredVideos.length > 0 ? (
-                                    filteredVideos.map((item, index) => {
-                                        const videoUri = item?.uri || signedUrls[item] || null;
-                                        if (!videoUri) return null;
-
-                                        return (
-                                            <View key={`video-${index}`} style={styles.mediaWrapper}>
-                                                <Video
-                                                    source={{ uri: videoUri }}
-                                                    style={styles.mediaPreview}
-                                                    controls={false}
-                                                    muted
-                                                    resizeMode="cover"
-                                                />
-                                                <TouchableOpacity
-                                                    style={styles.closeIcon}
-                                                    onPress={() => handleRemoveMedia("video", index)}
-                                                >
-                                                    <Close width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.gray} />
-
-                                                </TouchableOpacity>
-                                            </View>
-                                        );
-                                    })
-                                ) : (
-                                    <TouchableOpacity style={styles.placeholder} onPress={pickVideo}>
-                                        <Text style={styles.placeholderText}>Upload Video</Text>
-                                    </TouchableOpacity>
+                                {formData[field]?.toLowerCase() === "others" && ( // Case-insensitive check for "Others"
+                                    <TextInput
+                                        style={styles.textInput}
+                                        placeholder={`Enter ${label.toLowerCase()}`}
+                                        value={customInputs[field] || ""}
+                                        onChangeText={(text) => handleCustomInputChange(field, text)}
+                                    />
                                 )}
                             </View>
+                        ))}
+                        <View style={styles.inputContainer}>
+                            <Text style={styles.label}>Tags <Text style={{ color: 'red' }}>*</Text></Text>
+                            <TextInput
+                                style={styles.input}
+
+                                value={productData.tags}
+                                placeholderTextColor='gray'
+                                onChangeText={(text) => setProductData({ ...productData, tags: text })}
+                            />
 
                         </View>
 
+                        {/* <Text style={styles.sectionTitle}>Media</Text> */}
                         <View>
-                            {/* Button to select PDF */}
-                            <TouchableOpacity onPress={selectPDF} style={styles.addMediaButton}>
-                                <Text style={styles.addMediaText}>Upload Product catalogue</Text>
+
+                            <TouchableOpacity onPress={openGallery} style={styles.addMediaButton}>
+                                <Text style={styles.addMediaText}>
+                                    Upload product image <Text style={{ color: 'red' }}>*</Text>
+                                </Text>
                             </TouchableOpacity>
 
-                            {/* Display Existing & Selected PDFs */}
-                            <View style={[styles.mediaContainer, {}]}>
-                                {[...files, ...newFiles].length > 0 ? (
-                                    [...files, ...newFiles].map((file, index) => (
-                                        <View key={index} style={[styles.mediaWrapper, { padding: 20 }]}>
-                                            <Pdf width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.danger} />
+                            <View style={styles.mediaContainer}>
+                                {/* Loop through selected images, limited to a maximum of 4 */}
+                                {filteredImages.slice(0, 4).map((item, index) => {
+                                    const imageUri = item?.uri || signedUrls[item] || null;
+                                    if (!imageUri) return null;
 
-                                            <Text style={[styles.fileName, { marginTop: 5 }]}>{file?.name || "Selected File"}</Text>
-
-
-                                            <TouchableOpacity onPress={() => handleRemoveFile(index)} style={styles.closeIcon}>
+                                    return (
+                                        <View key={imageUri} style={styles.mediaWrapper}>
+                                            <Image source={{ uri: imageUri }} style={styles.mediaPreview} />
+                                            <TouchableOpacity
+                                                style={styles.closeIcon}
+                                                onPress={() => handleRemoveMedia("image", index)}
+                                            >
                                                 <Close width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.gray} />
 
                                             </TouchableOpacity>
                                         </View>
-                                    ))
-                                ) : (
-                                    <TouchableOpacity style={styles.placeholder} onPress={selectPDF}>
+                                    );
+                                })}
 
-                                        <Text style={styles.placeholderText}>Upload PDF</Text>
+                                {/* Show a single "Upload Image" placeholder if there's space left */}
+                                {filteredImages.length < 4 && (
+                                    <TouchableOpacity style={styles.placeholder} onPress={openGallery}>
+                                        <Text style={styles.placeholderText}>
+                                            Upload Image ({4 - filteredImages.length} remaining)
+                                        </Text>
                                     </TouchableOpacity>
                                 )}
                             </View>
+
+
+                            <View>
+
+                                <TouchableOpacity onPress={pickVideo} style={styles.addMediaButton}>
+                                    <Text style={styles.addMediaText}>Upload product video</Text>
+                                </TouchableOpacity>
+
+
+                                <View style={styles.mediaContainer}>
+                                    {filteredVideos.length > 0 ? (
+                                        filteredVideos.map((item, index) => {
+                                            const videoUri = item?.uri || signedUrls[item] || null;
+                                            if (!videoUri) return null;
+
+                                            return (
+                                                <View key={`video-${index}`} style={styles.mediaWrapper}>
+                                                    <Video
+                                                        source={{ uri: videoUri }}
+                                                        style={styles.mediaPreview}
+                                                        controls={false}
+                                                        muted
+                                                        resizeMode="cover"
+                                                    />
+                                                    <TouchableOpacity
+                                                        style={styles.closeIcon}
+                                                        onPress={() => handleRemoveMedia("video", index)}
+                                                    >
+                                                        <Close width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.gray} />
+
+                                                    </TouchableOpacity>
+                                                </View>
+                                            );
+                                        })
+                                    ) : (
+                                        <TouchableOpacity style={styles.placeholder} onPress={pickVideo}>
+                                            <Text style={styles.placeholderText}>Upload Video</Text>
+                                        </TouchableOpacity>
+                                    )}
+                                </View>
+
+                            </View>
+
+                            <View>
+                                {/* Button to select PDF */}
+                                <TouchableOpacity onPress={selectPDF} style={styles.addMediaButton}>
+                                    <Text style={styles.addMediaText}>Upload Product catalogue</Text>
+                                </TouchableOpacity>
+
+                                {/* Display Existing & Selected PDFs */}
+                                <View style={[styles.mediaContainer, {}]}>
+                                    {[...files, ...newFiles].length > 0 ? (
+                                        [...files, ...newFiles].map((file, index) => (
+                                            <View key={index} style={[styles.mediaWrapper, { padding: 20 }]}>
+                                                <Pdf width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.danger} />
+
+                                                <Text style={[styles.fileName, { marginTop: 5 }]}>{file?.name || "Selected File"}</Text>
+
+
+                                                <TouchableOpacity onPress={() => handleRemoveFile(index)} style={styles.closeIcon}>
+                                                    <Close width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.gray} />
+
+                                                </TouchableOpacity>
+                                            </View>
+                                        ))
+                                    ) : (
+                                        <TouchableOpacity style={styles.placeholder} onPress={selectPDF}>
+
+                                            <Text style={styles.placeholderText}>Upload PDF</Text>
+                                        </TouchableOpacity>
+                                    )}
+                                </View>
+                            </View>
+
                         </View>
 
-                    </View>
 
 
+                        <TouchableOpacity
+                            activeOpacity={0.8}
+                            style={[
+                                AppStyles.Postbtn,
+                                (loading || isCompressing || submitting) && { opacity: 0.5 }
+                            ]}
+                            onPress={submitProduct}
+                            disabled={loading || isCompressing || submitting}
+                        >
+                            {(isCompressing || submitting) ? (
+                                <ActivityIndicator size="small" color="#075cab" />
+                            ) : (
+                                <Text style={AppStyles.PostbtnText}>
+                                    Update
+                                </Text>
+                            )}
+                        </TouchableOpacity>
 
-                    <TouchableOpacity
-                        activeOpacity={0.8}
-                        style={[
-                            AppStyles.Postbtn,
-                            (loading || isCompressing || submitting) && { opacity: 0.5 }
-                        ]}
-                        onPress={submitProduct}
-                        disabled={loading || isCompressing || submitting}
-                    >
-                        {(isCompressing || submitting) ? (
-                            <ActivityIndicator size="small" color="#075cab" />
-                        ) : (
-                            <Text style={AppStyles.PostbtnText}>
-                                Update
-                            </Text>
-                        )}
                     </TouchableOpacity>
+                </ScrollView>
 
-                </TouchableOpacity>
-            </ScrollView>
+                <Message3
+                    visible={showModal}
+                    onClose={() => setShowModal(false)}
+                    onCancel={handleStay}
+                    onOk={handleLeave}
+                    title="Are you sure ?"
+                    message="Your updates will be lost if you leave this page. This action cannot be undone."
+                    iconType="warning"
+                />
 
-            <Message3
-                visible={showModal}
-                onClose={() => setShowModal(false)}
-                onCancel={handleStay}
-                onOk={handleLeave}
-                title="Are you sure ?"
-                message="Your updates will be lost if you leave this page. This action cannot be undone."
-                iconType="warning"
-            />
-            <Toast />
-        </View>
+            </View>
         </KeyboardAvoid>
     );
 };
 
 
-const formatKey = (key) => key.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
-
 const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: "#f8f9fa",
-paddingTop: STATUS_BAR_HEIGHT
+
     },
 
     header: {

@@ -25,7 +25,8 @@ import ArrowLeftIcon from '../../assets/svgIcons/back.svg';
 import Add from '../../assets/svgIcons/add.svg';
 
 import { colors, dimensions } from '../../assets/theme.jsx';
-import AppStyles, { commonStyles, STATUS_BAR_HEIGHT } from "../AppUtils/AppStyles.js";
+import AppStyles from "../AppUtils/AppStyles.js";
+import { AppHeader } from "../AppUtils/AppHeader.jsx";
 
 const BASE_API_URL = 'https://h7l1568kga.execute-api.ap-south-1.amazonaws.com/dev';
 const API_KEY = 'k1xuty5IpZ2oHOEOjgMz57wHfdFT8UQ16DxCFkzk';
@@ -344,7 +345,7 @@ const MyServices = () => {
 
                     </TouchableOpacity>
 
-                    <TouchableOpacity onPress={() => handleEnquiry(item)} style={[styles.actionButton,{marginLeft:10}]} activeOpacity={1}>
+                    <TouchableOpacity onPress={() => handleEnquiry(item)} style={[styles.actionButton, { marginLeft: 10 }]} activeOpacity={1}>
 
                         <Text style={styles.buttonText}>View Enquiries</Text>
 
@@ -355,83 +356,44 @@ const MyServices = () => {
     };
 
 
-    if (loading) {
-        return (
-            <View style={styles.container}>
-      <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
-
-                <View style={styles.headerContainer}>
-
-                    <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-                        <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-
-                    </TouchableOpacity>
-
-                </View>
-                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                    <ActivityIndicator size="small" color="#075cab" />
-                </View>
-            </View>
-        );
-    }
-
-    if (!products || products.length === 0 || products?.removed_by_author) {
-        return (
-            <View style={styles.container}>
-                      <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
-                
-                <View style={styles.headerContainer}>
-
-                    <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                        <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.addProductButton} onPress={handleAddProduct}>
-                        <Add width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-
-                        <Text style={styles.addProductText}>Add Service</Text>
-                    </TouchableOpacity>
-
-                </View>
-                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                    <Text style={{ fontSize: 16, color: 'gray' }}>No services available</Text>
-                </View>
-            </View>
-        );
-    }
+    const isLoading = !products
+    const isRemoved = products?.removed_by_author
+    const hasProduct = products?.length > 0
 
     return (
         <View style={styles.container}>
-                  <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
-            
-            <View style={styles.headerContainer}>
-                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                    <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
 
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.addProductButton} onPress={handleAddProduct}>
-                    <Add width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-
-                    <Text style={styles.addProductText}>Add Service</Text>
-                </TouchableOpacity>
-
-            </View>
-            {!loading ? (
-                <FlatList
-                    data={products}
-                    keyExtractor={(item, index) => item.service_id?.toString() || `product-${index}`}
-                    renderItem={renderProduct}
-                    showsVerticalScrollIndicator={false}
-                    contentContainerStyle={{ paddingBottom: '20%' }}
-                    refreshControl={
-                        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-                    }
-                />
-            ) : (
-                <View style={styles.centeredContainer}>
-                    <ActivityIndicator size="large" color="#075cab" />
+            <AppHeader
+                title={"My services"}
+                onPost={handleAddProduct}
+                postLabel="Add service"
+            />
+            {isLoading && (
+                <View style={AppStyles.center}>
+                    <ActivityIndicator size="small" color="#075cab" />
                 </View>
             )}
+
+            {!isLoading && isRemoved && (
+                <View style={AppStyles.center}>
+                    <Text style={AppStyles.removedText}>
+                        No products available
+                    </Text>
+                </View>
+            )}
+            {!isLoading && !isRemoved && hasProduct && (
+                <>
+                    <FlatList
+                        data={products}
+                        keyExtractor={(item, index) => item.service_id?.toString() || `product-${index}`}
+                        renderItem={renderProduct}
+                        showsVerticalScrollIndicator={false}
+                        contentContainerStyle={{ paddingBottom: '20%' }}
+                        refreshControl={
+                            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+                        }
+                    />
+                </>)}
 
 
             {showDeleteConfirmation && (
@@ -454,8 +416,7 @@ const MyServices = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: "whitesmoke",
-    paddingTop: STATUS_BAR_HEIGHT
+        
     },
     headerContainer: {
         flexDirection: 'row',

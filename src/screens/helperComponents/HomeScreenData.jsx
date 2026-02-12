@@ -37,7 +37,6 @@ export const fetchJobs = async () => {
 
         // Fallback avatar
         const companyAvatar = generateAvatarFromName(job.company_name);
-
         return {
           ...job,
           image,          // final image field (UI will use this)
@@ -45,7 +44,6 @@ export const fetchJobs = async () => {
         };
       })
     );
-
     return { jobs: processedJobs };
   } catch (error) {
     console.error("Error fetching jobs:", error);
@@ -53,7 +51,7 @@ export const fetchJobs = async () => {
   }
 };
 
- 
+
 
 
 
@@ -74,22 +72,19 @@ export const fetchTrendingPosts = async () => {
       let authorImage = null;
       let avatar = null;
 
-      const isVideo = post?.extraData?.type?.startsWith("video");
-      const fileKeyToUse = isVideo ? post.thumbnail_fileKey : post.fileKey;
-
       try {
-        if (fileKeyToUse) {
-          const mediaSignedUrl = await getSignedUrl(post.forum_id, fileKeyToUse);
-          if (mediaSignedUrl && mediaSignedUrl[post.forum_id]) mediaUrl = mediaSignedUrl[post.forum_id];
-        }
-      } catch (e) {}
+
+        const mediaSignedUrl = await getSignedUrl(post.forum_id, post.fileKey);
+        if (mediaSignedUrl && mediaSignedUrl[post.forum_id]) mediaUrl = mediaSignedUrl[post.forum_id];
+
+      } catch (e) { }
 
       try {
         if (post.author_fileKey) {
           const authorSignedUrl = await getSignedUrl(post.forum_id, post.author_fileKey);
           if (authorSignedUrl && authorSignedUrl[post.forum_id]) authorImage = authorSignedUrl[post.forum_id];
         }
-      } catch (e) {}
+      } catch (e) { }
 
       if (!authorImage) avatar = generateAvatarFromName(post.author || 'Unknown');
 
@@ -122,28 +117,25 @@ export const fetchLatestPosts = async () => {
       let authorImage = null;
       let avatar = null;
 
-      const isVideo = post?.extraData?.type?.startsWith("video");
-      const fileKeyToUse = isVideo ? post.thumbnail_fileKey : post.fileKey;
-
       try {
-        if (fileKeyToUse) {
-          const mediaSignedUrl = await getSignedUrl(post.forum_id, fileKeyToUse);
+      
+          const mediaSignedUrl = await getSignedUrl(post.forum_id, post.fileKey);
           if (mediaSignedUrl && mediaSignedUrl[post.forum_id]) mediaUrl = mediaSignedUrl[post.forum_id];
-        }
-      } catch (e) {}
+     
+      } catch (e) { }
 
       try {
         if (post.author_fileKey) {
           const authorSignedUrl = await getSignedUrl(post.forum_id, post.author_fileKey);
           if (authorSignedUrl && authorSignedUrl[post.forum_id]) authorImage = authorSignedUrl[post.forum_id];
         }
-      } catch (e) {}
+      } catch (e) { }
 
       if (!authorImage) avatar = generateAvatarFromName(post.author || 'Unknown');
 
       return { ...post, mediaUrl, authorImage, avatar };
     }));
-
+// console.log('enrichedPosts',enrichedPosts)
     return enrichedPosts;
 
   } catch (error) {

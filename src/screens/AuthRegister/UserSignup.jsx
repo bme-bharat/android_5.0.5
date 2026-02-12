@@ -28,11 +28,12 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import messaging, { getMessaging, getToken } from '@react-native-firebase/messaging';
 import Message1 from '../../components/Message1';
 import ImagePicker from 'react-native-image-crop-picker';
-import ImageResizer from 'react-native-image-resizer';
+import ImageResizer from '@bam.tech/react-native-image-resizer';
+
 import { getApp } from '@react-native-firebase/app';
 import { showToast } from '../AppUtils/CustomToast';
 import apiClient from '../ApiClient';
-import AppStyles, { STATUS_BAR_HEIGHT } from '../AppUtils/AppStyles';
+import AppStyles from '../AppUtils/AppStyles';
 import DeviceInfo from 'react-native-device-info';
 
 import Camera from '../../assets/svgIcons/camera.svg';
@@ -49,6 +50,9 @@ import ImageCropPicker from 'react-native-image-crop-picker';
 
 import { colors, dimensions } from '../../assets/theme.jsx';
 import { useFcmToken } from '../AppUtils/fcmToken.jsx';
+import KeyboardAvoid from '../AppUtils/KeyboardAvoid.jsx';
+import { useNetwork } from '../AppUtils/IdProvider.jsx';
+import { AppHeader } from '../AppUtils/AppHeader.jsx';
 const { DocumentPicker } = NativeModules;
 
 const UserSignupScreen = () => {
@@ -56,7 +60,9 @@ const UserSignupScreen = () => {
   const route = useRoute();
   const { selectedCategory, selectedProfile, fullPhoneNumber } = route.params;
   const { fcmToken, refreshFcmToken } = useFcmToken();
+  const { login } = useNetwork();
 
+  const [Data, setData] = useState({});
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
@@ -67,8 +73,6 @@ const UserSignupScreen = () => {
   const [dateOfBirth, setDateOfBirth] = useState(null);
   const [loading, setLoading] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
-
-
 
   const [showAlert, setShowAlert] = useState(false);
   const [alertTitle, setAlertTitle] = useState('');
@@ -88,30 +92,39 @@ const UserSignupScreen = () => {
   const states = Object.keys(stateCityData);
   const cities = selectedState ? stateCityData[selectedState] : [];
 
+  const handleNormalUser = async (userData) => {
+    await AsyncStorage.setItem(
+      'normalUserData',
+      JSON.stringify(userData)
+    );
+
+    login(userData.user_id); // 🔥 REQUIRED
+  };
+
+  const sanitizeName = (value) => {
+    // Remove anything except letters and spaces
+    let v = value.replace(/[^a-zA-Z ]/g, '');
+
+    // Replace multiple spaces with single space
+    v = v.replace(/\s+/g, ' ');
+
+    return v;
+  };
+
   const handleFirstname = (e) => {
-    let firstNameVar = e.nativeEvent.text.trim();
-
-    // Allow only alphabetic characters and spaces
-    firstNameVar = firstNameVar.replace(/[^a-zA-Z ]/g, '');
-
-    // Ensure no multiple spaces in between
-    firstNameVar = firstNameVar.replace(/\s+/g, ' ');
+    const value = e.nativeEvent.text;
+    const firstNameVar = sanitizeName(value);
 
     setFirstName(firstNameVar);
-    setFirstNameVerify(firstNameVar.length > 2);
+    setFirstNameVerify(firstNameVar.trim().length > 2);
   };
 
   const handleLastName = (e) => {
-    let lastNameVar = e.nativeEvent.text.trim();
-
-    // Allow only alphabetic characters and spaces
-    lastNameVar = lastNameVar.replace(/[^a-zA-Z ]/g, '');
-
-    // Ensure no multiple spaces in between
-    lastNameVar = lastNameVar.replace(/\s+/g, ' ');
+    const value = e.nativeEvent.text;
+    const lastNameVar = sanitizeName(value);
 
     setLastName(lastNameVar);
-    setLastNameVerify(lastNameVar.length > 0);
+    setLastNameVerify(lastNameVar.trim().length > 0);
   };
 
 
@@ -479,12 +492,12 @@ const UserSignupScreen = () => {
 
       console.log(`Cropped image size: ${(croppedImage.size / 1024 / 1024).toFixed(2)} MB`);
 
-      // 3️⃣ Optionally resize further using ImageResizer
+
       const resizedImage = await ImageResizer.createResizedImage(
         croppedImage.path,
         800, // maxWidth
         600, // maxHeight
-        'JPEG',
+        'WEBP',
         80   // quality %
       );
 
@@ -541,7 +554,7 @@ const UserSignupScreen = () => {
       const res = await apiClient.post('/uploadFileToS3', {
         command: 'uploadFileToS3',
         headers: {
-          'Content-Type': fileType,
+          'Content-Type': 'image/webp',
           'Content-Length': fileSize,
         },
       });
@@ -555,7 +568,7 @@ const UserSignupScreen = () => {
         const uploadRes = await fetch(uploadUrl, {
           method: 'PUT',
           headers: {
-            'Content-Type': fileType,
+            'Content-Type': 'image/webp',
           },
           body: fileBlob,
         });
@@ -657,29 +670,12 @@ const UserSignupScreen = () => {
       );
 
       if (response.data.status === 'success') {
-        await AsyncStorage.setItem('normalUserData', JSON.stringify(response.data.user_details));
+        console.log('response.data.status', response.data.status)
+        const userDetails = response.data.user_details;
 
-        const userData = await AsyncStorage.getItem('normalUserData');
-        if (userData) {
-          const parsedUserData = JSON.parse(userData);
-          const userId = parsedUserData.user_id;
-
-          const sessionCreated = await createUserSession(userId);
-
-          if (!sessionCreated) {
-            showToast("Failed to create session. Please try again.", "error");
-            
-            return;  // ⛔ STOP LOGIN HERE
-          }
-
-          const sessionData = await AsyncStorage.getItem('userSession');
-          if (sessionData) {
-            const parsedSessionData = JSON.parse(sessionData);
-            const sessionId = parsedSessionData.sessionId;
-            // console.log("Session ID retrieved: ", sessionId);
-          }
-        }
-
+        // store temp only
+        setData(userDetails);
+        console.log('userDetails', userDetails)
         setAlertTitle('Success!');
         setAlertMessage(
           <Text style={{ textAlign: 'center' }}>
@@ -730,254 +726,264 @@ const UserSignupScreen = () => {
 
 
   return (
-    <View style={{ backgroundColor: COLORS.white, flex: 1, paddingTop: STATUS_BAR_HEIGHT }}>
-      <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
+    <KeyboardAvoid>
+      <View style={{ flex: 1, }}>
+        <AppHeader
+          title="Complete profile"
 
-      {/* Back Button */}
-      <TouchableOpacity onPress={() => navigation.replace("ProfileType")} style={styles.backButton}>
-        <ArrowLeftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
+        />
+        <ScrollView contentContainerStyle={[{ paddingBottom: '20%', paddingHorizontal: 10 }]}
+          showsVerticalScrollIndicator={false}
+          onScrollBeginDrag={() => Keyboard.dismiss()}
+        >
 
-      </TouchableOpacity>
-      <ScrollView contentContainerStyle={{ paddingBottom: '20%', paddingHorizontal: 10,paddingTop: STATUS_BAR_HEIGHT }}
-        showsVerticalScrollIndicator={false}
-        onScrollBeginDrag={() => Keyboard.dismiss()}
-      >
+          <TouchableOpacity onPress={handleImageSelection} style={styles.imageContainer}>
+            <Image
+              source={imageUri ? { uri: imageUri } : require('../../images/homepage/dummy.png')}
+              style={styles.image}
+            />
+            <TouchableOpacity style={styles.cameraIconContainer} onPress={handleImageSelection}>
+              <Camera width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.gray} />
 
-        <TouchableOpacity onPress={handleImageSelection} style={styles.imageContainer}>
-          <Image
-            source={imageUri ? { uri: imageUri } : require('../../images/homepage/dummy.png')}
-            style={styles.image}
+            </TouchableOpacity>
+          </TouchableOpacity>
+
+          <Text style={styles.label}>First name <Text style={{ color: 'red' }}>*</Text></Text>
+          <View style={styles.inputbox}>
+            <User width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.gray} />
+
+            <TextInput
+              style={styles.inputText}
+              placeholderTextColor="gray"
+              onChange={handleFirstname}
+              value={firstName}
+            />
+            {firstName.length <= 2 ? null : firstNameVerify &&
+              <Sucess width={dimensions.icon.small} height={dimensions.icon.small} color={colors.success} />
+            }
+          </View>
+          {firstName.length < 1 ? null : !firstNameVerify &&
+            <Text style={styles.errorText}>Name should be more than 3 characters</Text>}
+
+          <Text style={styles.label}>Last name</Text>
+          <View style={styles.inputbox}>
+            <User width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.gray} />
+
+            <TextInput
+              style={styles.inputText}
+              onChange={handleLastName}
+              placeholderTextColor="gray"
+              value={lastName}
+            />
+          </View>
+
+          <Text style={styles.label}>Email ID <Text style={{ color: 'red' }}>*</Text></Text>
+
+          <View style={styles.inputbox}>
+            <Email width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.gray} />
+
+            <TextInput
+              style={styles.inputText}
+              placeholderTextColor="gray"
+              onChange={handleEmail}
+              editable={!emailVerify1}
+            />
+
+            {emailVerify1 ? (
+              <Sucess width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.success} />
+
+            ) : email.length > 0 ? (
+              <TouchableOpacity style={styles.button1} onPress={sendEmailOtp} disabled={loading}>
+                <Text style={styles.buttonText3}>
+                  {loading ? 'Sending' : 'Verify'}
+                </Text>
+              </TouchableOpacity>
+            ) : null}
+          </View>
+
+
+
+          <Text style={styles.label}>Phone no.<Text style={{ color: 'red' }}>*</Text></Text>
+          <View style={styles.inputbox}>
+            <Phone width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.gray} />
+
+            <TextInput
+              style={styles.inputText}
+              value={fullPhoneNumber}
+              editable={false}
+
+            />
+          </View>
+
+          <Text style={[styles.label,]}>Gender <Text style={{ color: 'red' }}>*</Text></Text>
+          <CustomDropdown
+            label="Gender"
+            data={['Male', 'Female', 'Other']}
+            selectedItem={selectedGender} // Ensure gender selection is displayed
+            onSelect={handleGender}
+            placeholder="Select gender"
+            placeholderTextColor="gray"
+            buttonStyle={[styles.dropdownButton,]}
+            buttonTextStyle={styles.dropdownButtonText}
           />
-          <TouchableOpacity style={styles.cameraIconContainer} onPress={handleImageSelection}>
-            <Camera width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.gray} />
+
+          <Text style={styles.label}>Date of birth <Text style={{ color: 'red' }}>*</Text></Text>
+
+          <TouchableOpacity
+            onPress={() => setShowDatePicker(true)}
+            style={styles.inputbox}
+          >
+            <Text style={styles.dateText}>
+              {dateOfBirth ? formatDate(dateOfBirth) : 'Select date of birth'}
+            </Text>
+            <ArrowDown width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
+
 
           </TouchableOpacity>
-        </TouchableOpacity>
 
-        <Text style={styles.label}>First name <Text style={{ color: 'red' }}>*</Text></Text>
-        <View style={styles.inputbox}>
-          <User width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.gray} />
-
-          <TextInput
-            style={styles.inputText}
-            placeholderTextColor="gray"
-            onChange={handleFirstname}
-          />
-          {firstName.length <= 2 ? null : firstNameVerify &&
-            <Sucess width={dimensions.icon.small} height={dimensions.icon.small} color={colors.success} />
-          }
-        </View>
-        {firstName.length < 1 ? null : !firstNameVerify &&
-          <Text style={styles.errorText}>Name should be more than 3 characters</Text>}
-
-        <Text style={styles.label}>Last name</Text>
-        <View style={styles.inputbox}>
-          <User width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.gray} />
-
-          <TextInput
-            style={styles.inputText}
-            onChange={handleLastName}
-            placeholderTextColor="gray"
-          />
-        </View>
-
-        <Text style={styles.label}>Email ID <Text style={{ color: 'red' }}>*</Text></Text>
-
-        <View style={styles.inputbox}>
-          <Email width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.gray} />
-
-          <TextInput
-            style={styles.inputText}
-            placeholderTextColor="gray"
-            onChange={handleEmail}
-            editable={!emailVerify1}
-          />
-
-          {emailVerify1 ? (
-            <Sucess width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.success} />
-
-          ) : email.length > 0 ? (
-            <TouchableOpacity style={styles.button1} onPress={sendEmailOtp} disabled={loading}>
-              <Text style={styles.buttonText3}>
-                {loading ? 'Sending' : 'Verify'}
-              </Text>
-            </TouchableOpacity>
-          ) : null}
-        </View>
-
-
-
-        <Text style={styles.label}>Phone no.<Text style={{ color: 'red' }}>*</Text></Text>
-        <View style={styles.inputbox}>
-          <Phone width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.gray} />
-
-          <TextInput
-            style={styles.inputText}
-            value={fullPhoneNumber}
-            editable={false}
-
-          />
-        </View>
-
-        <Text style={[styles.label,]}>Gender <Text style={{ color: 'red' }}>*</Text></Text>
-        <CustomDropdown
-          label="Gender"
-          data={['Male', 'Female', 'Other']}
-          selectedItem={selectedGender} // Ensure gender selection is displayed
-          onSelect={handleGender}
-          placeholder="Select gender"
-          placeholderTextColor="gray"
-          buttonStyle={[styles.dropdownButton,]}
-          buttonTextStyle={styles.dropdownButtonText}
-        />
-
-        <Text style={styles.label}>Date of birth <Text style={{ color: 'red' }}>*</Text></Text>
-
-        <TouchableOpacity
-          onPress={() => setShowDatePicker(true)}
-          style={styles.inputbox}
-        >
-          <Text style={styles.dateText}>
-            {dateOfBirth ? formatDate(dateOfBirth) : 'Select date of birth'}
-          </Text>
-          <ArrowDown width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-
-
-        </TouchableOpacity>
-
-        {showDatePicker && (
-          <DateTimePicker
-            value={dateOfBirth || new Date(2011, 0, 1)}
-            mode="date"
-            display="default"
-            onChange={handleDateChange}
-            minimumDate={minimumDate}
-            maximumDate={maximumDate}
-          />
-        )}
-
-        <Text style={[styles.label,]}>State <Text style={{ color: 'red' }}>*</Text></Text>
-        <View>
-          <CustomDropdown
-            label="State"
-            data={states}
-            selectedItem={selectedState}
-            onSelect={(state) => {
-              setSelectedState(state);
-              setSelectedCity('');
-            }}
-            placeholder="Select state"
-            placeholderTextColor="gray"
-            buttonStyle={[styles.dropdownButton,]}
-            buttonTextStyle={styles.dropdownButtonText}
-          />
-
-          <Text style={[styles.label,]}>City <Text style={{ color: 'red' }}>*</Text></Text>
-          <CustomDropdown
-            label="City"
-            data={cities}
-            selectedItem={selectedCity}
-            onSelect={(city) => setSelectedCity(city)}
-            disabled={!selectedState}
-            placeholder="Select city"
-            placeholderTextColor="gray"
-            buttonStyle={[styles.dropdownButton,]}
-            buttonTextStyle={styles.dropdownButtonText}
-          />
-
-        </View>
-        <Text style={styles.label}>Institute / Company</Text>
-        <View style={styles.inputbox}>
-          <Graduation width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.gray} />
-
-          <TextInput
-            style={styles.inputText}
-            onChange={handleCollage}
-            placeholderTextColor="gray"
-          />
-
-        </View>
-
-        <TouchableOpacity
-          style={AppStyles.Postbtn}
-          onPress={UserSubmit}
-        >
-          <Text style={AppStyles.PostbtnText}>Submit</Text>
-        </TouchableOpacity>
-
-        <Message1
-          visible={showAlert}
-          title={alertTitle}
-          message={alertMessage}
-          iconType={alertIconType}
-          onOk={() => {
-            if (hasNavigated) return;
-            setHasNavigated(true);
-            setShowAlert(false);
-            // showToast('Signup successful', 'success');
-            setTimeout(() => {
-              navigation.reset({
-                index: 0,
-                routes: [{ name: 'UserBottom' }],
-              });
-            }, 100);
-          }}
-        />
-
-
-      </ScrollView>
-      <Modal
-        visible={modalVisibleemail}
-        animationType="slide"
-        onRequestClose={() => setModalVisibleemail(false)}
-        transparent={true}
-      >
-        <View style={styles.modalContaineremail}>
-          <View style={styles.modalContentemail}>
-            {/* Close Icon */}
-            <TouchableOpacity
-              style={styles.closeButton}
-              onPress={() => {
-                setModalVisibleemail(false);
-                setOtp1(['', '', '', '', '', '']);
-              }}
-            >
-              <Close width={dimensions.icon.small} height={dimensions.icon.small} color={colors.gray} />
-
-
-            </TouchableOpacity>
-
-            <Text style={styles.modalTitleemail}></Text>
-            <TextInput
-              style={styles.inputemail}
-              value={otp1}
-              onChangeText={(value) => {
-                setOtp1(value);
-                if (value.length === 6) {
-                  Keyboard.dismiss(); // Dismiss keyboard when 6 digits are entered
-                }
-              }}
-              placeholder="Enter OTP"
-              keyboardType="numeric"
-              placeholderTextColor="gray"
-              maxLength={6}
+          {showDatePicker && (
+            <DateTimePicker
+              value={dateOfBirth || new Date(2011, 0, 1)}
+              mode="date"
+              display="default"
+              onChange={handleDateChange}
+              minimumDate={minimumDate}
+              maximumDate={maximumDate}
             />
-            <TouchableOpacity style={styles.buttonemail} onPress={verifyOtp}>
-              <Text style={styles.buttonTextemail}>Verify OTP</Text>
-            </TouchableOpacity>
+          )}
 
-            {/* Resend OTP Button inside the Modal */}
-            {otpTimer > 0 ? (
-              <Text style={styles.buttonTextemailresend}>Resend in {otpTimer}s</Text>
-            ) : (
-              <TouchableOpacity onPress={handleResendOtp} disabled={loading}>
-                <Text style={styles.buttonemailResend}>Resend OTP</Text>
-              </TouchableOpacity>
-            )}
+          <Text style={[styles.label,]}>State <Text style={{ color: 'red' }}>*</Text></Text>
+          <View>
+            <CustomDropdown
+              label="State"
+              data={states}
+              selectedItem={selectedState}
+              onSelect={(state) => {
+                setSelectedState(state);
+                setSelectedCity('');
+              }}
+              placeholder="Select state"
+              placeholderTextColor="gray"
+              buttonStyle={[styles.dropdownButton,]}
+              buttonTextStyle={styles.dropdownButtonText}
+            />
+
+            <Text style={[styles.label,]}>City <Text style={{ color: 'red' }}>*</Text></Text>
+            <CustomDropdown
+              label="City"
+              data={cities}
+              selectedItem={selectedCity}
+              onSelect={(city) => setSelectedCity(city)}
+              disabled={!selectedState}
+              placeholder="Select city"
+              placeholderTextColor="gray"
+              buttonStyle={[styles.dropdownButton,]}
+              buttonTextStyle={styles.dropdownButtonText}
+            />
+
           </View>
-        </View>
-      </Modal>
-    </View>
+          <Text style={styles.label}>Institute / Company</Text>
+          <View style={styles.inputbox}>
+            <Graduation width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.gray} />
+
+            <TextInput
+              style={styles.inputText}
+              onChange={handleCollage}
+              placeholderTextColor="gray"
+            />
+
+          </View>
+
+          <TouchableOpacity
+            style={AppStyles.Postbtn}
+            onPress={UserSubmit}
+          >
+            <Text style={AppStyles.PostbtnText}>Submit</Text>
+          </TouchableOpacity>
+
+          <Message1
+            visible={showAlert}
+            title={alertTitle}
+            message={alertMessage}
+            iconType={alertIconType}
+            onOk={async () => {
+              try {
+
+                // ✅ create session
+                const sessionCreated = await createUserSession(Data.user_id);
+                if (!sessionCreated) {
+                  showToast('Session creation failed', 'error');
+                  return;
+                }
+
+                handleNormalUser(Data);
+
+                setShowAlert(false);
+              } catch (e) {
+                console.error('On OK failed:', e);
+                showToast('Something went wrong', 'error');
+              }
+            }}
+          />
+
+
+
+
+        </ScrollView>
+        <Modal
+          visible={modalVisibleemail}
+          animationType="slide"
+          onRequestClose={() => setModalVisibleemail(false)}
+          transparent={true}
+        >
+          <View style={styles.modalContaineremail}>
+            <View style={styles.modalContentemail}>
+              {/* Close Icon */}
+              <TouchableOpacity
+                style={styles.closeButton}
+                onPress={() => {
+                  setModalVisibleemail(false);
+                  setOtp1(['', '', '', '', '', '']);
+                }}
+              >
+                <Close width={dimensions.icon.small} height={dimensions.icon.small} color={colors.gray} />
+
+
+              </TouchableOpacity>
+
+              <Text style={styles.modalTitleemail}></Text>
+              <TextInput
+                style={styles.inputemail}
+                value={otp1}
+                onChangeText={(value) => {
+                  setOtp1(value);
+                  if (value.length === 6) {
+                    Keyboard.dismiss(); // Dismiss keyboard when 6 digits are entered
+                  }
+                }}
+                placeholder="Enter OTP"
+                keyboardType="numeric"
+                placeholderTextColor="gray"
+                maxLength={6}
+              />
+              <TouchableOpacity style={styles.buttonemail} onPress={verifyOtp}>
+                <Text style={styles.buttonTextemail}>Verify OTP</Text>
+              </TouchableOpacity>
+
+              {/* Resend OTP Button inside the Modal */}
+              {otpTimer > 0 ? (
+                <Text style={styles.buttonTextemailresend}>Resend in {otpTimer}s</Text>
+              ) : (
+                <TouchableOpacity onPress={handleResendOtp} disabled={loading}>
+                  <Text style={styles.buttonemailResend}>Resend OTP</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+        </Modal>
+      </View>
+    </KeyboardAvoid>
+
   );
 };
 
@@ -989,17 +995,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: 'rgba(0, 0, 0, 0.5)', // Semi-transparent background
   },
-  backButton: {
-    position: 'absolute',
-    alignSelf: 'flex-start',
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    padding: 10,
-    margin: 10,
-    elevation: 3,
-    marginTop: STATUS_BAR_HEIGHT + 10,
-    zIndex:1000
-  },
+  
   modalContent: {
     backgroundColor: 'white',
     padding: 20,
@@ -1020,9 +1016,6 @@ const styles = StyleSheet.create({
     borderRadius: 5,
   },
   dateText: {
-    color: 'black',
-    fontSize: 14,
-    fontWeight: '500',
     paddingVertical: 8,
     // paddingHorizontal: 20,
     flex: 1,
@@ -1047,8 +1040,8 @@ const styles = StyleSheet.create({
     borderRadius: 80,
     alignItems: 'center',
     justifyContent: 'center',
-    height: 140,
-    width: 140,
+    height: 100,
+    width: 100,
     marginBottom: 20,
     alignSelf: 'center',
     position: 'relative',
@@ -1118,7 +1111,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   errorText: {
-    marginLeft: 20, color: 'firebrick', textAlign: 'center', fontSize: 14
+    marginLeft: 20, color: 'firebrick', textAlign: 'center',
   },
   modalContaineremail: {
     flex: 1,
@@ -1157,7 +1150,6 @@ const styles = StyleSheet.create({
   buttonText3: {
 
     color: '#075cab',
-    fontSize: 14,
     fontWeight: '600'
   },
   inputbox1: {
@@ -1176,7 +1168,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     height: Platform.OS === 'android' ? 40 : 50,
     width: '80%',
-    color: 'black',
+    color: colors.text_primary,
+
   },
   modalTitleemail: {
     fontSize: 20,

@@ -4,16 +4,16 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { useNetwork } from './AppUtils/IdProvider';
 import { useConnection } from './AppUtils/ConnectionProvider';
 import apiClient from './ApiClient';
-import ArrowleftIcon from '../assets/svgIcons/back.svg';
+import ArrowLeftIcon from '../assets/svgIcons/back.svg';
 import { colors, dimensions } from '../assets/theme.jsx';
-import AppStyles, { STATUS_BAR_HEIGHT } from './AppUtils/AppStyles.js';
+import AppStyles from './AppUtils/AppStyles.js';
+import { AppHeader } from './AppUtils/AppHeader.jsx';
 
 
 const AllNotification = () => {
   const { myId, myData } = useNetwork();
 
   const [notifications, setNotifications] = useState([]);
-  console.log('notifications', notifications)
   const route = useRoute();
   const { userId } = route.params;
   const navigation = useNavigation();
@@ -105,7 +105,7 @@ const AllNotification = () => {
           break;
 
         case 'job_application':
-          navigation.navigate('CompanyGetAppliedJobs', {
+          navigation.navigate('CompanyGetJobCandidates', {
             userId: item.seeker_id,
           });
           break;
@@ -140,11 +140,11 @@ const AllNotification = () => {
 
         case 'contact_alert':
           if (item.enquirer_user_type === 'users') {
-            navigation.navigate('UserDetailsPage', {
+            navigation.navigate('UserDetails', {
               userId: item.enquirer_id,
             });
           } else if (item.enquirer_user_type === 'company') {
-            navigation.navigate('CompanyDetailsPage', {
+            navigation.navigate('CompanyDetails', {
               userId: item.enquirer_id,
             });
           } else {
@@ -195,64 +195,41 @@ const AllNotification = () => {
   };
 
 
-  if (!notifications) {
+  const isLoading = !notifications
+  const isRemoved = notifications?.removed_by_author
+  const hassNotification = notifications?.length > 0
 
-    return (
-      <View style={styles.container}>
-        <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
-
-        <View style={styles.headerContainer}>
-
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-            <ArrowleftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-
-          </TouchableOpacity>
-
-        </View>
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <ActivityIndicator size={'small'} color={'#075cab'} />
-
-        </View>
-      </View>
-    );
-  }
-
-  if (notifications?.removed_by_author) {
-    return (
-      <View style={styles.container}>
-        <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
-
-        <View style={styles.headerContainer}>
-
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-            <ArrowleftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-
-          </TouchableOpacity>
-
-        </View>
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <Text style={{ fontSize: 16, color: 'gray' }}>No notifications available</Text>
-        </View>
-      </View>
-    );
-  }
   return (
     <View style={styles.container}>
-      <View style={[AppStyles.toolbar, { backgroundColor: '#075cab' }]} />
+      <AppHeader
+        title={'All notifications'}
 
-      <View style={styles.headerContainer}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <ArrowleftIcon width={dimensions.icon.medium} height={dimensions.icon.medium} color={colors.primary} />
-
-        </TouchableOpacity>
-      </View>
-
-      <FlatList
-        data={notifications}
-        keyExtractor={(item) => item.notification_id}
-        renderItem={renderNotification}
-        showsVerticalScrollIndicator={false}
       />
+      {isLoading && (
+        <View style={AppStyles.center}>
+          <ActivityIndicator size="small" color="#075cab" />
+        </View>
+      )}
+
+      {!isLoading && isRemoved && (
+        <View style={AppStyles.center}>
+          <Text style={AppStyles.removedText}>
+            No notifications available
+          </Text>
+        </View>
+      )}
+
+      {!isLoading && !isRemoved && hassNotification && (
+        <>
+          <FlatList
+            data={notifications}
+            keyExtractor={(item) => item.notification_id}
+            renderItem={renderNotification}
+            showsVerticalScrollIndicator={false}
+
+          />
+        </>
+      )}
     </View>
   );
 };
@@ -260,14 +237,12 @@ const AllNotification = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.app_background,
-    paddingTop: STATUS_BAR_HEIGHT
   },
   headerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: 'white',
+
     elevation: 1,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
@@ -290,21 +265,18 @@ const styles = StyleSheet.create({
     top: 5
   },
   message: {
-    fontSize: 16,
     color: '#333',
   },
   readMessage: {
     color: colors.text_secondary,
-    fontSize: 13,
-    fontWeight: '500',
   },
   unreadMessage: {
     color: colors.text_primary,
-    fontSize: 13,
-    fontWeight: '500',
+    fontWeight: '500'
+
   },
   commentorName: {
-    fontSize: 14,
+
     color: '#555',
     marginBottom: 5,
   },
@@ -313,7 +285,7 @@ const styles = StyleSheet.create({
     color: '#000',
   },
   timestamp: {
-    fontSize: 12,
+
     color: '#888',
     marginTop: 10,
     textAlign: 'right',

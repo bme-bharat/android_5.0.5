@@ -1,5 +1,6 @@
 // colors.js
 export const colors = {
+  // existing
   primary: '#075cab',
   secondary: '#757575',
   danger: '#E53935',
@@ -13,7 +14,27 @@ export const colors = {
   text_secondary: '#5F6368',
   text_accent: '#FF4081',
   text_white: '#FFFFFF',
-  app_background: "#e9e6df"
+  app_background: '#e9e6df',
+
+  // ✅ ADD THESE (same names you are using)
+  LIGHT_BLUE: '#E6F0FA',
+  BLACK: '#212121',
+  WHITE: '#FFFFFF',
+  GRAY_LIGHT: '#F2F2F2',
+};
+
+export const lightColors = {
+  textPrimary: '#1D1B20',   // Deep Charcoal
+  textSecondary: '#49454F', // Slate Gray
+  textTertiary: '#79747E',  // Muted Gray
+  background: '#FEF7FF',
+};
+
+export const darkColors = {
+  textPrimary: '#E6E1E5',   // Crisp White/Gray
+  textSecondary: '#CAC4D0', // Soft Silver
+  textTertiary: '#938F99',  // Darker Slate
+  background: '#141218',
 };
 
 
@@ -25,7 +46,7 @@ export const dimensions = {
     minlarge: 24,
     ml: 28,
     large: 32,
-    xl:40
+    xl: 36
   },
   spacing: {
     xs: 4,
